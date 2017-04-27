@@ -45,5 +45,36 @@ or
 qsub run_metal.sh
 ```
 
+## 03
+
+Performing clumping on the results of 01. Using a p-val threshold of 1e-4 for cis and 5e-8 for trans. Using a radius of 1Mb from CpG to denote cis/trans. To run:
+
+```
+cd 03_clumping_16
+./run_clumping.sh <batch number>
+```
+
+or
+
+```
+qsub run_clumping.sh
+```
+
+
+## 04
+
+Performing conditional analysis on the results of 01. Same p-val thresholds as in 03. Slight problem - using the STDERR method to do the meta analysis in METAL does not return total sample sizes. So until that is fixed, approximating the sample size of every SNP to 2000. I don't know how sensitive the analysis is to this. To run
+
+```
+cd 04_conditional_16
+./run_conditional.sh <batch number>
+```
+
+or
+
+```
+qsub run_conditional.sh
+```
+
 
 

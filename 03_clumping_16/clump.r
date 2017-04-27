@@ -15,7 +15,7 @@ do_clump <- function(pval_file, bfile, pval_threshold, rsq_threshold, kb_thresho
 	if(!file.exists(fn)) return(NULL)
 
 	res <- read.table(fn, header=TRUE, stringsAsFactors=FALSE)
-	unlink(paste0(pval_file, "*"))
+	system(paste0("rm ", pval_file, "*"))
 	return(res$SNP)
 }
 
@@ -45,8 +45,6 @@ a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
 
 # Split into cis and trans
 # Apply different thresholds to cis and trans
-# e.g. 1e-8 for cis
-# e.g. 1e-14 for trans
 
 
 clumped <- group_by(a, cpg, cis) %>%
@@ -56,7 +54,7 @@ clumped <- group_by(a, cpg, cis) %>%
 		# write clump file
 		cpgname <- x$cpg[1]
 		fn <- paste0(cpgname, "_", i, ".txt")
-		unlink(paste0(fn, "*"))
+		system(paste0("rm ", fn, "*"))
 
 		y <- x[, c("snp", "P-value")]
 		names(y) <- c("SNP", "P")
@@ -65,6 +63,7 @@ clumped <- group_by(a, cpg, cis) %>%
 		# Get cis/trans clumping threshold
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_clump(fn, bfile, thresh, 0.0001, 2500)
+		system(paste0("rm ", fn, "*"))
 
 		x <- subset(x, snp %in% keep)
 		return(x)
