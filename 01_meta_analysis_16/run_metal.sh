@@ -1,18 +1,18 @@
 #!/bin/bash
 
-#PBS -N meta_17
-#PBS -o meta_17-output
-#PBS -e meta_17-error
-#PBS -t 1-300
-#PBS -l walltime=12:00:00
-#PBS -l nodes=1:ppn=2
+#PBS -N meta_16
+#PBS -o job_reports/meta_16-output
+#PBS -e job_reports/meta_16-error
+#PBS -t 1-100
+#PBS -l walltime=02:00:00
+#PBS -l nodes=1:ppn=1
 #PBS -S /bin/bash
 
 
 
 set -e
 
-# Need to gunzip the results_17.tgz for each cohort
+# Need to gunzip the results_16.tgz for each cohort
 # Takes about 2 minutes to create each GWAMA file for each cohort
 
 
@@ -26,11 +26,14 @@ fi
 i=${PBS_ARRAYID}
 
 
-cohort_dir="../data/17/"
-metal_dir="../scratch/17_${i}"
-result_dir="../results/17"
 
-metal_in="17_${i}.in"
+cd ~/repo/godmc_phase2_analysis/01_meta_analysis_16
+
+cohort_dir="../data/16/"
+metal_dir="../scratch/16_${i}"
+result_dir="../results/16"
+
+metal_in="16_${i}.in"
 
 mkdir -p ${result_dir}
 mkdir -p ${metal_dir}
@@ -39,7 +42,7 @@ touch ${metal_dir}/${metal_in}
 
 
 
-echo "OUTFILE 17_${i} .txt" >> ${metal_dir}/${metal_in}
+echo "OUTFILE 16_${i} .txt" >> ${metal_dir}/${metal_in}
 echo "" >> ${metal_dir}/${metal_in}
 echo "MARKER MARKERNAME" >> ${metal_dir}/${metal_in}
 echo "ALLELE EA NEA" >> ${metal_dir}/${metal_in}
@@ -51,18 +54,19 @@ echo "SCHEME STDERR" >> ${metal_dir}/${metal_in}
 echo "AVERAGEFREQ ON" >> ${metal_dir}/${metal_in}
 echo "" >> ${metal_dir}/${metal_in}
 
-for cohort in ${cohort_dir}*17.tar
+for cohort in ${cohort_dir}*16.tar
 do
 
 	echo $cohort
 	cohortname=$(basename "$cohort" .tar)
-	tar xvf ${cohort} results/17/results_${i}.txt.gz
-	mv results/17/results_${i}.txt.gz ${metal_dir}/${cohortname}_${i}.gz
-	rm -r results
+	mkdir -p ${cohortname}_${i}
+	cd ${cohortname}_${i}
+	tar xvf ../${cohort} results/16/results_${i}.gz
+	cd ../
+	mv ${cohortname}_${i}/results/16/results_${i}.gz ${metal_dir}/${cohortname}_${i}.gz
+	rm -r ${cohortname}_${i}
 
-	Rscript make_gwama.r ${metal_dir}/${cohortname}_${i}.gz ${metal_dir}/${cohortname}_${i}.out
-	rm ${metal_dir}/${cohortname}_${i}.gz
-	echo "PROCESS ${cohortname}_${i}.out" >> ${metal_dir}/${metal_in}
+	echo "PROCESS ${cohortname}_${i}.gz" >> ${metal_dir}/${metal_in}
 
 done
 
@@ -75,11 +79,10 @@ cp metal ${metal_dir}
 cd ${metal_dir}
 
 ./metal ${metal_in}
-mv 17_${i}1.txt 17_${i}.txt
-mv 17_${i}1.txt.info 17_${i}.txt.info
-gzip 17_${i}.txt
+mv 16_${i}1.txt 16_${i}.txt
+gzip 16_${i}.txt
 cd -
-mv ${metal_dir}/17_${i}.txt.* ${result_dir}
+mv ${metal_dir}/16_${i}.txt.* ${result_dir}
 rm -r ${metal_dir}
 
 # GWAMA --filelist ${metal_file} --quantitative

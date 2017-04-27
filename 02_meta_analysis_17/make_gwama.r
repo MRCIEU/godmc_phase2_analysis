@@ -43,4 +43,6 @@ fn <- arguments[1]
 out <- arguments[2]
 
 dat <- make_gwama(fn)
-write.table(dat, file=out, row=FALSE, col=TRUE, qu=FALSE)
+gz1 <- gzfile(out, "w")
+write.table(dat, file=gz1, row=FALSE, col=TRUE, qu=FALSE)
+close(gz1)
