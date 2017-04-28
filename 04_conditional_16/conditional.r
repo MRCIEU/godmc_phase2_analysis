@@ -41,7 +41,7 @@ a$cis <- FALSE
 a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
 
 snplist <- unique(a$snp)
-newbfile <- paste0("ref_", i)
+newbfile <- paste0("refc_", i)
 write.table(snplist, file=paste0(newbfile, ".snplist"), row=FALSE, col=FALSE, qu=FALSE)
 cmd <- paste0("plink",
 	" --bfile ", bfile,

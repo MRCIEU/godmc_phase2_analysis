@@ -15,7 +15,6 @@ do_clump <- function(pval_file, bfile, pval_threshold, rsq_threshold, kb_thresho
 	if(!file.exists(fn)) return(NULL)
 
 	res <- read.table(fn, header=TRUE, stringsAsFactors=FALSE)
-	system(paste0("rm ", pval_file, "*"))
 	return(res$SNP)
 }
 
@@ -43,6 +42,20 @@ a$cis <- FALSE
 cis_radius <- 1000000
 a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
 
+
+# Make specific file for each run
+# Might improve speed / reduce IO problem?
+snplist <- unique(a$snp)
+newbfile <- paste0("../scratch/ref_", i)
+write.table(snplist, file=paste0(newbfile, ".snplist"), row=FALSE, col=FALSE, qu=FALSE)
+cmd <- paste0("plink",
+	" --bfile ", bfile,
+	" --extract ", paste0(newbfile, ".snplist"),
+	" --make-bed ", 
+	" --out ", newbfile
+)
+system(cmd)
+
 # Split into cis and trans
 # Apply different thresholds to cis and trans
 
@@ -62,7 +75,7 @@ clumped <- group_by(a, cpg, cis) %>%
 
 		# Get cis/trans clumping threshold
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
-		keep <- do_clump(fn, bfile, thresh, 0.0001, 2500)
+		keep <- do_clump(fn, newbfile, thresh, 0.0001, 2500)
 		system(paste0("rm ", fn, "*"))
 
 		x <- subset(x, snp %in% keep)
@@ -71,5 +84,6 @@ clumped <- group_by(a, cpg, cis) %>%
 
 save(clumped, file=out)
 
+system(paste0("rm ", newbfile, ".*"))
 
 
