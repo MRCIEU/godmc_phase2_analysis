@@ -60,6 +60,14 @@ or
 qsub run_clumping.sh
 ```
 
+Once it is finished run 
+
+```
+Rscript aggregate_clumps.r
+```
+
+to create the file `results/16/16_clumped.rdata` which contains all the clumped results
+
 
 ## 04
 

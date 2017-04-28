@@ -3,7 +3,7 @@
 #PBS -N meta_16
 #PBS -o job_reports/meta_16-output
 #PBS -e job_reports/meta_16-error
-#PBS -t 1-100
+#PBS -t 901-962
 #PBS -l walltime=12:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -S /bin/bash

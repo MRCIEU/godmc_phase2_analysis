@@ -38,10 +38,11 @@ a <- a %>% separate(snp2, into=c("snpchr", "snppos", "snptype"), sep=":")
 a$snppos <- as.numeric(a$snppos)
 a <- inner_join(a, cpgpos, by=c("cpg"))
 a$cis <- FALSE
+cis_radius <- 1000000
 a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
 
 snplist <- unique(a$snp)
-newbfile <- paste0("refc_", i)
+newbfile <- paste0("../scratch/refc_", i)
 write.table(snplist, file=paste0(newbfile, ".snplist"), row=FALSE, col=FALSE, qu=FALSE)
 cmd <- paste0("plink",
 	" --bfile ", bfile,
@@ -72,7 +73,7 @@ clumped <- group_by(a, cpg, cis) %>%
 		# Get cis/trans clumping threshold
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_conditional(fn, newbfile, thresh)
-		system(paste0("rm ", fn, ".*"))
+		system(paste0("rm ", fn, "*"))
 
 		x <- subset(x, snp %in% keep)
 		return(x)
