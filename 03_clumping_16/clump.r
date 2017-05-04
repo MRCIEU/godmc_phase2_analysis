@@ -24,6 +24,11 @@ do_clump <- function(pval_file, bfile, pval_threshold, rsq_threshold, kb_thresho
 arguments <- commandArgs(T)
 i <- as.numeric(arguments[1])
 out <- arguments[2]
+cis_pval <- as.numeric(arguments[3])
+trans_pval <- as.numeric(arguments[4])
+rsq_thresh <- as.numeric(arguments[5])
+kb_thresh <- as.numeric(arguments[6])
+cis_radius <- as.numeric(arguments[7])
 
 bfile <- "/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur"
 
@@ -39,7 +44,6 @@ a <- a %>% separate(snp2, into=c("snpchr", "snppos", "snptype"), sep=":")
 a$snppos <- as.numeric(a$snppos)
 a <- inner_join(a, cpgpos, by=c("cpg"))
 a$cis <- FALSE
-cis_radius <- 1000000
 a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
 
 
@@ -74,8 +78,8 @@ clumped <- group_by(a, cpg, cis) %>%
 		write.table(y, file=fn, row=FALSE, col=TRUE, qu=FALSE)
 
 		# Get cis/trans clumping threshold
-		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
-		keep <- do_clump(fn, newbfile, thresh, 0.0001, 2500)
+		thresh <- ifelse(x$cis[1], cis_pval, trans_pval)
+		keep <- do_clump(fn, newbfile, thresh, rsq_thresh, kb_thresh)
 		system(paste0("rm ", fn, "*"))
 
 		x <- subset(x, snp %in% keep)

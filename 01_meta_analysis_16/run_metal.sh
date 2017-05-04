@@ -3,7 +3,7 @@
 #PBS -N meta_16
 #PBS -o job_reports/meta_16-output
 #PBS -e job_reports/meta_16-error
-#PBS -t 501-600
+#PBS -t 1-962
 #PBS -l walltime=02:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -S /bin/bash
@@ -27,7 +27,7 @@ i=${PBS_ARRAYID}
 
 
 
-cd ~/repo/godmc_phase2_analysis/01_meta_analysis_16
+cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/01_meta_analysis_16
 
 cohort_dir="../data/16/"
 metal_dir="../scratch/16_${i}"
@@ -50,6 +50,8 @@ echo "EFFECT BETA" >> ${metal_dir}/${metal_in}
 echo "FREQ EAF" >> ${metal_dir}/${metal_in}
 echo "STDERR SE" >> ${metal_dir}/${metal_in}
 echo "WEIGHT N" >> ${metal_dir}/${metal_in}
+echo "CUSTOMVARIABLE TotalSampleSize" >> ${metal_dir}/${metal_in}
+echo "LABEL TotalSampleSize as N" >> ${metal_dir}/${metal_in}
 echo "SCHEME STDERR" >> ${metal_dir}/${metal_in}
 echo "AVERAGEFREQ ON" >> ${metal_dir}/${metal_in}
 echo "" >> ${metal_dir}/${metal_in}

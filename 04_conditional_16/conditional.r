@@ -5,7 +5,7 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 	cmd <- paste0(
 		"./gcta64 --bfile ", bfile, 
 		" --cojo-file ", pval_file,
-		" --cojo-slct ",
+		" --cojo-joint ",
 		" --cojo-p ", pval_threshold,
 		" --out ", pval_file
 	)

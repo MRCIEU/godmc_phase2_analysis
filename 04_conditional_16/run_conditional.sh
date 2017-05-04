@@ -22,7 +22,8 @@ fi
 
 i=${PBS_ARRAYID}
 
-cd ~/repo/godmc_phase2_analysis/04_conditional_16
+cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/04_conditional_16
+
 Rscript conditional.r ${i} ../results/16/16_${i}_conditional.rdata
 
 
