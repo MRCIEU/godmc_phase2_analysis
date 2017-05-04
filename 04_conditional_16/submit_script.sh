@@ -17,6 +17,6 @@ echo "$end"
 
 cp ${scriptname} ${scriptname}.${batch}
 
-sed -i "s@-t 1-300@-t $start-$end@g" "${scriptname}.${batch}"
+sed -i "s@-t 1-962@-t $start-$end@g" "${scriptname}.${batch}"
 qsub ${scriptname}.${batch}
 

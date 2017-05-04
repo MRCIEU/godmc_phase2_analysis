@@ -5,7 +5,7 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 	cmd <- paste0(
 		"./gcta64 --bfile ", bfile, 
 		" --cojo-file ", pval_file,
-		" --cojo-joint ",
+		" --cojo-slct ",
 		" --cojo-p ", pval_threshold,
 		" --out ", pval_file
 	)
@@ -13,7 +13,24 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 	fn <- paste0(pval_file, ".jma.cojo")
 	if(!file.exists(fn)) return(NULL)
 
-	res <- read.table(fn, header=TRUE, stringsAsFactors=FALSE)
+	res <- read_tsv(fn,
+		col_types=cols(
+		  Chr = col_integer(),
+		  SNP = col_character(),
+		  bp = col_integer(),
+		  refA = col_character(),
+		  freq = col_double(),
+		  b = col_double(),
+		  se = col_double(),
+		  p = col_double(),
+		  n = col_double(),
+		  freq_geno = col_double(),
+		  bJ = col_double(),
+		  bJ_se = col_double(),
+		  pJ = col_double(),
+		  LD_r = col_double()
+		)
+	)
 	return(res$SNP)
 }
 
@@ -74,7 +91,6 @@ clumped <- group_by(a, cpg, cis) %>%
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_conditional(fn, newbfile, thresh)
 		system(paste0("rm ", fn, "*"))
-
 		x <- subset(x, snp %in% keep)
 		return(x)
 	})
