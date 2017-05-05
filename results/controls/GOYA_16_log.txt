@@ -1,0 +1,128 @@
+
+
+GoDMC version 0.1.1
+Commit: 92506db03539d7e3653da4abc475be10844f25da
+Commit date: 2017-03-21 16:43:16 +0000
+Current time: Fri Apr  7 13:00:11 BST 2017
+
+Please ensure your scripts are up to date.
+If in doubt, run 'git pull'
+
+
+Running positive control
+Testing cis-region of 
+
+
+
+Running positive control - This involves testing the cis-region of cg07959070, extracting the top hit and performing GWAS with the cis-hit fitted as a covariate
+
+There should be a strong signal at the cis region, and no evidence for population stratification in the GWAS
+
+
+
+Probe is available in the data
+cg07959070: 600 cis SNPs
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070_cis.log.
+Options in effect:
+  --allow-no-sex
+  --assoc
+  --bfile /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/genetic_data/data_phase2
+  --extract /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070.cis
+  --noweb
+  --out /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070_cis
+  --pheno /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/betas/subset_304
+  --pheno-name cg07959070
+
+Note: --noweb has no effect since no web check is implemented yet.
+129151 MB RAM detected; reserving 64575 MB for main workspace.
+7417938 variants loaded from .bim file.
+888 people (458 males, 430 females) loaded from .fam.
+888 phenotype values present after --pheno.
+--extract: 600 variants remaining.
+Using 1 thread (no multithreaded calculations invoked.
+Before main variant filters, 888 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+Total genotyping rate is 0.999666.
+600 variants and 888 people pass filters and QC.
+Phenotype data is quantitative.
+Warning: QT --assoc doesn't handle X/Y/MT/haploid variants normally (try
+--linear).
+Writing QT --assoc report to
+/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070_cis.qassoc
+... 0%done.
+Best cis SNP:
+chr22:50018639:SNP 4.358e-148
+519 SNP(s) with p-value < 0.001
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070.log.
+Options in effect:
+  --bfile /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/genetic_data/data_phase2
+  --noweb
+  --out /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070
+  --recode A
+  --snp chr22:50018639:SNP
+
+Note: --noweb has no effect since no web check is implemented yet.
+129151 MB RAM detected; reserving 64575 MB for main workspace.
+1 variant loaded from .bim file.
+888 people (458 males, 430 females) loaded from .fam.
+Using 1 thread (no multithreaded calculations invoked.
+Before main variant filters, 888 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+1 variant and 888 people pass filters and QC.
+Note: No phenotypes present.
+--recode A to
+/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070.raw
+... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Running GWAS with cis-SNP fitted as covariate
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/results/16/control/cg07959070.log.
+Options in effect:
+  --allow-no-sex
+  --bfile /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/genetic_data/data_phase2
+  --covar /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/scratch/cg07959070.cov
+  --linear
+  --noweb
+  --out /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/results/16/control/cg07959070
+  --pheno /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/processed_data/phase2/betas/subset_304
+  --pheno-name cg07959070
+
+Note: --noweb has no effect since no web check is implemented yet.
+129151 MB RAM detected; reserving 64575 MB for main workspace.
+7417938 variants loaded from .bim file.
+888 people (458 males, 430 females) loaded from .fam.
+888 phenotype values present after --pheno.
+Using 1 thread.
+Warning: This run includes BLAS/LAPACK linear algebra operations which
+currently disregard the --threads limit.  If this is problematic, you may want
+to recompile against single-threaded BLAS/LAPACK.
+--covar: 1 covariate loaded.
+Before main variant filters, 888 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+Total genotyping rate is 0.999594.
+7417938 variants and 888 people pass filters and QC.
+Phenotype data is quantitative.
+Writing linear model association results to
+/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/results/16/control/cg07959070.assoc.linear
+... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Reading in GWAS results
+Read 5.1% of 7417938 rowsRead 10.6% of 7417938 rowsRead 15.5% of 7417938 rowsRead 20.4% of 7417938 rowsRead 24.1% of 7417938 rowsRead 30.5% of 7417938 rowsRead 38.2% of 7417938 rowsRead 47.3% of 7417938 rowsRead 53.5% of 7417938 rowsRead 58.4% of 7417938 rowsRead 69.4% of 7417938 rowsRead 71.6% of 7417938 rowsRead 82.2% of 7417938 rowsRead 87.5% of 7417938 rowsRead 97.9% of 7417938 rowsRead 7417938 rows and 9 (of 9) columns from 0.705 GB file in 00:00:26
+Generating QQ-plot
+Generating QQ-plot without cis chromosome
+Generating Manhattan plot
+The following plots have been generated, please check!
+/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/results/16/control/cg07959070_manhattan.png
+/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/GOYA_Phase2/godmc/results/16/control/cg07959070_qqplot.png
+
+
+Expecting a large meQTL near 22:50053871
+Lowest p-value within 1e+05 base pairs:
+2.33e-10
+
+
+lambda value for GWAS: 1.00487425707552
+Successfully completed script 16b

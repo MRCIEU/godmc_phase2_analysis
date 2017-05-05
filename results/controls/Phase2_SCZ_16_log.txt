@@ -1,0 +1,133 @@
+
+
+GoDMC version 0.1.1
+Commit: 5ded439462189670c39ccab360cbfa75537cf9a9
+Commit date: 2017-04-21 17:41:20 +0100
+Current time: Fri 21 Apr 17:53:32 BST 2017
+
+Please ensure your scripts are up to date.
+If in doubt, run 'git pull'
+
+
+Running positive control
+Testing cis-region of 
+
+
+
+Running positive control - This involves testing the cis-region of cg07959070, extracting the top hit and performing GWAS with the cis-hit fitted as a covariate
+
+There should be a strong signal at the cis region, and no evidence for population stratification in the GWAS
+
+
+
+Probe is available in the data
+cg07959070: 338 cis SNPs
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070_cis.log.
+Options in effect:
+  --allow-no-sex
+  --assoc
+  --bfile /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/genetic_data/data_phase2
+  --extract /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070.cis
+  --noweb
+  --out /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070_cis
+  --pheno /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/betas/subset_304
+  --pheno-name cg07959070
+
+Note: --noweb has no effect since no web check is implemented yet.
+515800 MB RAM detected; reserving 257900 MB for main workspace.
+5880352 variants loaded from .bim file.
+665 people (0 males, 0 females, 665 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070_cis.nosex
+.
+665 phenotype values present after --pheno.
+--extract: 338 variants remaining.
+Using 1 thread (no multithreaded calculations invoked.
+Before main variant filters, 665 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+338 variants and 665 people pass filters and QC.
+Phenotype data is quantitative.
+Writing QT --assoc report to
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070_cis.qassoc
+... 0%done.
+Best cis SNP:
+chr22:50063980:SNP 3.976e-64
+230 SNP(s) with p-value < 0.001
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070.log.
+Options in effect:
+  --bfile /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/genetic_data/data_phase2
+  --noweb
+  --out /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070
+  --recode A
+  --snp chr22:50063980:SNP
+
+Note: --noweb has no effect since no web check is implemented yet.
+515800 MB RAM detected; reserving 257900 MB for main workspace.
+1 variant loaded from .bim file.
+665 people (0 males, 0 females, 665 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070.nosex
+.
+Using 1 thread (no multithreaded calculations invoked.
+Before main variant filters, 665 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+1 variant and 665 people pass filters and QC.
+Note: No phenotypes present.
+--recode A to
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070.raw
+... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Running GWAS with cis-SNP fitted as covariate
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/results/16/control/cg07959070.log.
+Options in effect:
+  --allow-no-sex
+  --bfile /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/genetic_data/data_phase2
+  --covar /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/scratch/cg07959070.cov
+  --linear
+  --noweb
+  --out /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/results/16/control/cg07959070
+  --pheno /mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/processed_data/phase2/betas/subset_304
+  --pheno-name cg07959070
+
+Note: --noweb has no effect since no web check is implemented yet.
+515800 MB RAM detected; reserving 257900 MB for main workspace.
+5880352 variants loaded from .bim file.
+665 people (0 males, 0 females, 665 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/results/16/control/cg07959070.nosex
+.
+665 phenotype values present after --pheno.
+Using 1 thread.
+Warning: This run includes BLAS/LAPACK linear algebra operations which
+currently disregard the --threads limit.  If this is problematic, you may want
+to recompile against single-threaded BLAS/LAPACK.
+--covar: 1 covariate loaded.
+Before main variant filters, 665 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+5880352 variants and 665 people pass filters and QC.
+Phenotype data is quantitative.
+Writing linear model association results to
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/results/16/control/cg07959070.assoc.linear
+... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Reading in GWAS results
+Read 0.0% of 5880352 rowsRead 6.6% of 5880352 rowsRead 9.9% of 5880352 rowsRead 13.8% of 5880352 rowsRead 18.4% of 5880352 rowsRead 24.0% of 5880352 rowsRead 30.6% of 5880352 rowsRead 35.7% of 5880352 rowsRead 38.6% of 5880352 rowsRead 48.1% of 5880352 rowsRead 48.3% of 5880352 rowsRead 57.1% of 5880352 rowsRead 59.9% of 5880352 rowsRead 67.7% of 5880352 rowsRead 73.8% of 5880352 rowsRead 83.5% of 5880352 rowsRead 90.5% of 5880352 rowsRead 99.8% of 5880352 rowsRead 5880352 rows and 9 (of 9) columns from 0.559 GB file in 00:00:36
+Generating QQ-plot
+Generating QQ-plot without cis chromosome
+Generating Manhattan plot
+The following plots have been generated, please check!
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/results/16/control/cg07959070_manhattan.png
+/mnt/data1/Schizophrenia/Blood/goDMC/Aberdeen/godmc.wiki/godmc/results/16/control/cg07959070_qqplot.png
+
+
+Expecting a large meQTL near 22:50053871
+Lowest p-value within 1e+05 base pairs:
+4.997e-25
+
+
+lambda value for GWAS: 0.99642606718496
+Successfully completed script 16b

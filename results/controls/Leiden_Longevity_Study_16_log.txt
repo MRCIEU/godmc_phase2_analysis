@@ -1,0 +1,132 @@
+
+
+GoDMC version 0.1.1
+Commit: 138671e247b9d5b9e355dc491554e74d5928bc1b
+Commit date: 2017-04-10 12:05:37 +0100
+Current time: Fri Apr 21 14:17:15 CEST 2017
+
+Please ensure your scripts are up to date.
+If in doubt, run 'git pull'
+
+
+Running positive control
+Testing cis-region of 
+
+
+
+Running positive control - This involves testing the cis-region of cg07959070, extracting the top hit and performing GWAS with the cis-hit fitted as a covariate
+
+There should be a strong signal at the cis region, and no evidence for population stratification in the GWAS
+
+
+
+Probe is available in the data
+cg07959070: 575 cis SNPs
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070_cis.log.
+Options in effect:
+  --allow-no-sex
+  --assoc
+  --bfile /virdir/Scratch/kfdekkers/godmc/processed_data/genetic_data/data_phase2
+  --extract /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070.cis
+  --noweb
+  --out /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070_cis
+  --pheno /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/betas/subset_304
+  --pheno-name cg07959070
+
+Note: --noweb has no effect since no web check is implemented yet.
+231755 MB RAM detected; reserving 115877 MB for main workspace.
+6695606 variants loaded from .bim file.
+718 people (0 males, 0 females, 718 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070_cis.nosex
+.
+718 phenotype values present after --pheno.
+--extract: 575 variants remaining.
+Using 1 thread (no multithreaded calculations invoked.
+Before main variant filters, 718 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+575 variants and 718 people pass filters and QC.
+Phenotype data is quantitative.
+Writing QT --assoc report to
+/virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070_cis.qassoc
+... 0%done.
+Best cis SNP:
+chr22:50025546:SNP 6.298e-126
+387 SNP(s) with p-value < 0.001
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070.log.
+Options in effect:
+  --bfile /virdir/Scratch/kfdekkers/godmc/processed_data/genetic_data/data_phase2
+  --noweb
+  --out /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070
+  --recode A
+  --snp chr22:50025546:SNP
+
+Note: --noweb has no effect since no web check is implemented yet.
+231755 MB RAM detected; reserving 115877 MB for main workspace.
+1 variant loaded from .bim file.
+718 people (0 males, 0 females, 718 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070.nosex
+.
+Using 1 thread (no multithreaded calculations invoked.
+Before main variant filters, 718 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+1 variant and 718 people pass filters and QC.
+Note: No phenotypes present.
+--recode A to
+/virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070.raw
+... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Running GWAS with cis-SNP fitted as covariate
+PLINK v1.90b3w 64-bit (3 Sep 2015)         https://www.cog-genomics.org/plink2
+(C) 2005-2015 Shaun Purcell, Christopher Chang   GNU General Public License v3
+Logging to /virdir/Scratch/kfdekkers/godmc/results/16/control/cg07959070.log.
+Options in effect:
+  --allow-no-sex
+  --bfile /virdir/Scratch/kfdekkers/godmc/processed_data/genetic_data/data_phase2
+  --covar /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/scratch/cg07959070.cov
+  --linear
+  --noweb
+  --out /virdir/Scratch/kfdekkers/godmc/results/16/control/cg07959070
+  --pheno /virdir/Scratch/kfdekkers/godmc/processed_data/phase2/betas/subset_304
+  --pheno-name cg07959070
+
+Note: --noweb has no effect since no web check is implemented yet.
+231755 MB RAM detected; reserving 115877 MB for main workspace.
+6695606 variants loaded from .bim file.
+718 people (0 males, 0 females, 718 ambiguous) loaded from .fam.
+Ambiguous sex IDs written to
+/virdir/Scratch/kfdekkers/godmc/results/16/control/cg07959070.nosex .
+718 phenotype values present after --pheno.
+Using 1 thread.
+Warning: This run includes BLAS/LAPACK linear algebra operations which
+currently disregard the --threads limit.  If this is problematic, you may want
+to recompile against single-threaded BLAS/LAPACK.
+--covar: 1 covariate loaded.
+Before main variant filters, 718 founders and 0 nonfounders present.
+Calculating allele frequencies... 0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99% done.
+6695606 variants and 718 people pass filters and QC.
+Phenotype data is quantitative.
+Writing linear model association results to
+/virdir/Scratch/kfdekkers/godmc/results/16/control/cg07959070.assoc.linear ...
+0%1%2%3%4%5%6%7%8%9%10%11%12%13%14%15%16%17%18%19%20%21%22%23%24%25%26%27%28%29%30%31%32%33%34%35%36%37%38%39%40%41%42%43%44%45%46%47%48%49%50%51%52%53%54%55%56%57%58%59%60%61%62%63%64%65%66%67%68%69%70%71%72%73%74%75%76%77%78%79%80%81%82%83%84%85%86%87%88%89%90%91%92%93%94%95%96%97%98%99%done.
+Reading in GWAS results
+Read 6.4% of 6695606 rowsRead 11.9% of 6695606 rowsRead 16.1% of 6695606 rowsRead 21.1% of 6695606 rowsRead 26.9% of 6695606 rowsRead 33.9% of 6695606 rowsRead 42.4% of 6695606 rowsRead 52.6% of 6695606 rowsRead 59.4% of 6695606 rowsRead 64.8% of 6695606 rowsRead 76.9% of 6695606 rowsRead 79.5% of 6695606 rowsRead 91.1% of 6695606 rowsRead 97.1% of 6695606 rowsRead 6695606 rows and 9 (of 9) columns from 0.636 GB file in 00:00:31
+Generating QQ-plot
+Generating QQ-plot without cis chromosome
+Generating Manhattan plot
+The following plots have been generated, please check!
+/virdir/Scratch/kfdekkers/godmc/results/16/control/cg07959070_manhattan.png
+/virdir/Scratch/kfdekkers/godmc/results/16/control/cg07959070_qqplot.png
+
+
+Expecting a large meQTL near 22:50053871
+Lowest p-value within 1e+05 base pairs:
+4.944e-15
+
+
+lambda value for GWAS: 1.0140104625893
+Successfully completed script 16b
