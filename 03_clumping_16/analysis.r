@@ -186,3 +186,34 @@ theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
 labs(y="Isq for mQTL with p < 1e-14")
 ggsave("../images/isq_direction.pdf", width=10, height=6)
 
+
+
+# Conditioanl 
+
+load("../results/16/16_conditional.rdata")
+
+## Number of independent SNPs per cis and trans
+
+sig <- subset(conditional, (cis & pval < 1e-7) | (!cis & pval < 1e-14))
+clump_counts <- group_by(sig, cpg, cis) %>%
+	summarise(n=n())
+
+p1 <- ggplot(clump_counts, aes(x=n)) +
+geom_bar(position="dodge", aes(fill=cis)) +
+labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per CpG")
+ggsave(p1, file="../images/clump_counts_cpg.pdf", width=7, height=7)
+
+
+## Number of hits per SNP
+
+clump_counts_snp <- group_by(sig, snp, cis) %>%
+	summarise(n=n()) %>%
+	group_by(n, cis) %>%
+	summarise(count=n())
+
+p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
+geom_bar(position="dodge", aes(fill=cis), stat="identity") +
+labs(x="Independent hits from clumping (p < 1e-7; 1e-14)")
+ggsave(p2, file="../images/clump_counts_snp.pdf", width=7, height=7)
+
+
