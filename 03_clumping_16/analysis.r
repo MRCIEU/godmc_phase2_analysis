@@ -80,7 +80,7 @@ clump_counts_snp <- group_by(sig, snp, cis) %>%
 
 ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
-labs(x="Independent hits from clumping (p < 1e-7; 1e-14)")
+labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per SNP")
 ggsave("../images/clump_counts_snp.pdf", width=7, height=7)
 
 
@@ -200,8 +200,8 @@ clump_counts <- group_by(sig, cpg, cis) %>%
 
 p1 <- ggplot(clump_counts, aes(x=n)) +
 geom_bar(position="dodge", aes(fill=cis)) +
-labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per CpG")
-ggsave(p1, file="../images/clump_counts_cpg.pdf", width=7, height=7)
+labs(x="Independent hits from conditional analysis (p < 1e-7; 1e-14)", y="mQTLs per CpG")
+ggsave(p1, file="../images/conditional_counts_cpg.pdf", width=7, height=7)
 
 
 ## Number of hits per SNP
@@ -213,7 +213,7 @@ clump_counts_snp <- group_by(sig, snp, cis) %>%
 
 p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
-labs(x="Independent hits from clumping (p < 1e-7; 1e-14)")
-ggsave(p2, file="../images/clump_counts_snp.pdf", width=7, height=7)
+labs(x="Independent hits from conditional analysis (p < 1e-7; 1e-14)", y="mQTLs per SNP")
+ggsave(p2, file="../images/conditional_counts_snp.pdf", width=7, height=7)
 
 
