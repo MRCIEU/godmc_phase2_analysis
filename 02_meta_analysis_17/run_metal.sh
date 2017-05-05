@@ -17,6 +17,8 @@ set -e
 
 
 echo "Running on ${HOSTNAME}"
+start_time=`date +%s`
+
 
 if [ -n "${1}" ]; then
   echo "${1}"
@@ -86,11 +88,14 @@ cd ${metal_dir}
 
 ./metal ${metal_in}
 mv 17_${i}1.txt 17_${i}.txt
-mv 17_${i}1.txt.info 17_${i}.txt.info
 gzip 17_${i}.txt
 cd -
 mv ${metal_dir}/17_${i}.txt.* ${result_dir}
 rm -r ${metal_dir}
 
 # GWAMA --filelist ${metal_file} --quantitative
+
+
+end_time=`date +%s`
+echo execution time was `expr $end_time - $start_time` s.
 

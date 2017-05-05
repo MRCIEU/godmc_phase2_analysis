@@ -20,5 +20,20 @@ cs <- subset(clumped, pval < 5e-14)
 table(cs$cis)
 length(unique(cs$cpg))
 
+range(cs$TotalSampleSize)
+
+temp <- clumped[clumped$pval < 1e-5 & clumped$cis,]
+length(unique(temp$cpg))
+
+table(table(clumped$cpg))
 
 
+# Are there any trans with many hits
+trans <- subset(clumped, !cis)
+x <- names(table(trans$snp)[which.max(table(trans$snp))])
+subset(trans, snp==x)$pval
+bigt <- subset(trans, snp==x)
+table(bigt$cpgchr)
+bigt %>% as.data.frame
+ls()
+subset(clumped, snp == x & cis)$pval
