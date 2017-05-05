@@ -2,7 +2,7 @@ library(dplyr)
 
 
 l <- list()
-for(i in 1:500)
+for(i in 1:962)
 {
 	load(paste0("../results/16/16_", i, "_conditional.rdata"))
 	l[[i]] <- clumped
