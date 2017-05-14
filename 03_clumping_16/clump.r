@@ -73,7 +73,7 @@ clumped <- group_by(a, cpg, cis) %>%
 		fn <- paste0(cpgname, "_", i, ".txt")
 		system(paste0("rm ", fn, "*"))
 
-		y <- x[, c("snp", "P-value")]
+		y <- x[, c("snp", "Pvalue")]
 		names(y) <- c("SNP", "P")
 		write.table(y, file=fn, row=FALSE, col=TRUE, qu=FALSE)
 

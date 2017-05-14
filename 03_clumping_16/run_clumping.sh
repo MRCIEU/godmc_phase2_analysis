@@ -27,7 +27,7 @@ Rscript clump.r \
 	../results/16/16_${i}_clumped.rdata \
 	1e-4 \
 	5e-8 \
-	0.001 \
-	2500 \
+	0.0001 \
+	5000 \
 	1000000
 

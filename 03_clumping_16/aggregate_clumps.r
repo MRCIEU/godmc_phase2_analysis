@@ -4,11 +4,12 @@ library(dplyr)
 l <- list()
 for(i in 1:962)
 {
+	message(i)
 	load(paste0("../results/16/16_", i, "_clumped.rdata"))
 	l[[i]] <- clumped
 }
 clumped <- bind_rows(l)
-names(clumped)[names(clumped) == "P-value"] <- "pval"
+names(clumped)[names(clumped) == "Pvalue"] <- "pval"
 
 save(clumped, file="../results/16/16_clumped.rdata")
 
