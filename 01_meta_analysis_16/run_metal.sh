@@ -85,7 +85,7 @@ mv 16_${i}1.txt 16_${i}.txt
 gzip 16_${i}.txt
 cd -
 mv ${metal_dir}/16_${i}.txt.* ${result_dir}
-rm -r ${metal_dir}
+# rm -r ${metal_dir}
 
 # GWAMA --filelist ${metal_file} --quantitative
 

@@ -6,12 +6,15 @@ for(i in 1:962)
 {
 	message(i)
 	load(paste0("../results/16/16_", i, "_clumped.rdata"))
+	clumped$chunk <- i
 	l[[i]] <- clumped
 }
 clumped <- bind_rows(l)
 names(clumped)[names(clumped) == "Pvalue"] <- "pval"
 
 save(clumped, file="../results/16/16_clumped.rdata")
+
+q()
 
 table(clumped$pval < 5e-8)
 table(clumped$pval < 5e-14)

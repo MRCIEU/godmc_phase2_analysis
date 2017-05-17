@@ -79,7 +79,7 @@ do
 done
 
 echo "" >> ${metal_dir}/${metal_in}
-echo "ANALYZE HETEROGENEITY" >> ${metal_dir}/${metal_in}
+echo "ANALYZE RANDOM" >> ${metal_dir}/${metal_in}
 echo "CLEAR" >> ${metal_dir}/${metal_in}
 echo "QUIT" >> ${metal_dir}/${metal_in}
 
