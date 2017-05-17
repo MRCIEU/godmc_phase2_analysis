@@ -65,7 +65,7 @@ sig <- subset(clumped, (cis & pval < 1e-7) | (!cis & pval < 1e-14))
 clump_counts <- group_by(sig, cpg, cis) %>%
 	summarise(n=n())
 
-ggplot(clump_counts, aes(x=n)) +
+ggplot(clump_counts, aes(x=as.factor(n))) +
 geom_bar(position="dodge", aes(fill=cis)) +
 labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per CpG")
 ggsave("../images/clump_counts_cpg.pdf", width=7, height=7)
@@ -81,7 +81,7 @@ clump_counts_snp <- group_by(sig, snp, cis) %>%
 ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
 labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per SNP")
-ggsave("../images/clump_counts_snp.pdf", width=7, height=7)
+ggsave("../images/clump_counts_snp.pdf", width=10, height=7)
 
 
 
@@ -174,9 +174,15 @@ ggsave("../images/directions_all.pdf", width=8, height=6)
 ## hterogeneity by direction
 
 temp3 <- subset(clumped, Direction %in% dir_count$Direction)
-ggplot(temp3, aes(x=Direction, y=HetISq)) +
+ggplot(temp3, aes(x=Direction, y=-log10(HetPVal))) +
 geom_boxplot(fill="red") +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
+
+temp33 <- group_by(temp3, Direction) %>% summarise(p = sum(HetPVal < 0.01)/n())
+
+ggplot(temp33, aes(x=Direction, y=p)) + geom_point() +
+theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
+
 
 
 temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
