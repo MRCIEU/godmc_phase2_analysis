@@ -1,5 +1,6 @@
 library(tidyverse)
 library(ggthemes)
+library(meffil)
 load("../results/16/16_clumped.rdata")
 
 
@@ -25,12 +26,43 @@ mqtl_counts <- bind_rows(
 	tibble(thresh=transthresh, count=art, cis='Trans')
 )
 
+##
+y<-meffil.get.features("450k")
+ncpg<-length(unique(y$name))
+
+
+####
+#n_independent_regions <- 1000000 used in Frank Dudbridge paper
+
+n_independent_regions <- 1000000
+#3 billion basepairs residing in 23 pairs of chromosomes
+n_bases <- 3000000000
+
+#SNP-CpG distance is 1 Mb 
+cis_window <- 2000000
+
+n_independent_regions_cis <- n_independent_regions / (n_bases / cis_window)
+n_independent_regions_trans <- n_independent_regions - n_independent_regions_cis
+
+#number of analysed CpGs - all probe on 450k array
+ncpg <- ncpg
+
+ntest_cis <- ncpg * n_independent_regions_cis
+ntest_trans <- ncpg * n_independent_regions_trans
+
+# we used pval threshold of 1e-05
+exp_cis <- ntest_cis * 1e-4
+exp_trans <- ntest_trans * 1e-14
+exp_cis
+exp_trans
+###
+
 ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
 geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 6 cohorts")
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 7 cohorts")
 ggsave("../images/mqtl_counts_thresholds.pdf", width=7, height=7)
 
 
@@ -55,7 +87,7 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 6 cohorts")
+labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 7 cohorts")
 ggsave("../images/cpg_counts_thresholds.pdf", width=7, height=7)
 
 
@@ -137,15 +169,19 @@ median(subset(rsqt, ! cpg %in% temp$cpg)$rsq)
 
 group_by(rsq, cis) %>% summarise(rsq=sum(rsq)/450000)
 
-median()
+#median()
 
 ## Position of CpG relative to SNP
 
 temp1 <- subset(clumped, cpgchr == snpchr)
 temp1$posdif <- temp1$snppos - temp1$cpgpos 
+cisdist<-temp1[which(temp1$cis=="TRUE"),]
+mediandist<-round(median(abs(cisdist$posdif))/1000,0)
+
 ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
 geom_density() +
-labs(x="Distance of SNP from CpG")
+labs(x="Distance of SNP from CpG") +
+annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 ggsave("../images/snp_cpg_distance.pdf")
 
 ## Plot maf
@@ -196,7 +232,7 @@ ggsave("../images/isq_direction.pdf", width=10, height=6)
 
 # Conditioanl 
 
-load("../results/16/16_conditional.rdata")
+load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_conditional.rdata")
 
 ## Number of independent SNPs per cis and trans
 
