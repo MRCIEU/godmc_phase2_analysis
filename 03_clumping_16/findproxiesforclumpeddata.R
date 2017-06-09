@@ -5,16 +5,20 @@ library(dplyr)
 load("../results/16/16_clumped.rdata")
 cl<-data.frame(clumped)
 
-i=22
+cl.out<-data.frame()
+for (i in 1:23){
+cat(i,"\n")
+cl_chr<-cl[which(cl$snpchr%in%paste0("chr",i)),]
 a <- read_tsv(paste0("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered.",i,".ld.formatted.gz"))
 a<-data.frame(a)
+a2<-a[which(a$SNP_A%in%cl_chr$snp),]
 
-a2<-a[which(a$SNP_A%in%cl$snp),]
+agg<-a2 %>%  
+  group_by(BP_A) %>%  
+  summarise (start_bp = min(BP_B),  
+             stop_bp = max(BP_B))
 
-a2 %>% 
-  group_by(as.factor(a2$BP_A)) %>% 
-  summarise (min_bp = min(a2$BP_B), 
-  	         max_bp = max(a2$BP_B))
+agg<-data.frame(agg)
 
 #test<-a3[a3$BP_A=="16855618",]
 #min(test$BP_B)
@@ -22,11 +26,22 @@ a2 %>%
 #max(test$BP_B)
 #[1] 16866339
 
-#library(data.table)
-#a3<-a2[1:1000,]
-#dt <- data.table(a3)
-#dt[,list(min=min(a3$BP_B),max=max(a3$BP_B)),by=a3$BP_A]
-#    a3$BP_A      min      max
-#1: 16855618 16855677 17065023
-#2: 16868784 16855677 17065023
-#3: 17057138 16855677 17065023
+m<-match(cl_chr$snppos,agg$BP_A)
+cl_chr<-data.frame(cl_chr,agg[m,])
+
+cl.out<-rbind(cl.out,cl_chr)
+
+}
+
+save(cl.out,file="../results/16/clumpedwithldregion.rdata")
+
+
+w<-which(is.na(cl.out$BP_A))
+length(w)
+#[1] 67159
+table(miss$snpchr)
+
+# chr1 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19  chr2 chr20 
+# 5903  3666  3907  3435  1730  1804  2013  3222  3827   796  3438  4544  1501 
+#chr21 chr22 chr23  chr3  chr4  chr5  chr6  chr7  chr8  chr9 
+#  881  1208   269  3093  2795  3462  6651  4278  3297  1439 
