@@ -40,15 +40,16 @@ cl.out<-rbind(cl.out,cl_chr)
 
 }
 
+w<-which(is.na(cl.out$start_bp))
+cl.out$start_bp[w]<-cl.out$snppos[w]
+cl.out$stop_bp[w]<-cl.out$snppos[w]
+
+w<-which(cl.out$start_bp>cl.out$snppos)
+cl.out$start_bp[w]<-cl.out$snppos[w]
+
+w<-which(cl.out$stop_bp<cl.out$snppos)
+cl.out$stop_bp[w]<-cl.out$snppos[w]
+
 save(cl.out,file="../results/16/clumpedwithldregion.rdata")
 
 
-w<-which(is.na(cl.out$BP_A))
-length(w)
-#[1] 67159
-table(miss$snpchr)
-
-# chr1 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19  chr2 chr20 
-# 5903  3666  3907  3435  1730  1804  2013  3222  3827   796  3438  4544  1501 
-#chr21 chr22 chr23  chr3  chr4  chr5  chr6  chr7  chr8  chr9 
-#  881  1208   269  3093  2795  3462  6651  4278  3297  1439 
