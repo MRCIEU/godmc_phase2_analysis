@@ -4,19 +4,19 @@ library(tidyverse)
 library(igraph)
 
 load("../../results/16/16_clumped.rdata")
-load("../../data/misc/naeem.rdata")
-naeem_keep <- subset(naeem, Flag.discard.keep. == "keep")$probe
-table(unique(clumped$cpg) %in% naeem_keep) / length(unique(clumped$cpg))
-table(naeem_keep %in% naeem$probe) / nrow(naeem)
-clumped <- subset(clumped, cpg %in% naeem_keep)
+# load("../../data/misc/naeem.rdata")
+# naeem_keep <- subset(naeem, Flag.discard.keep. == "keep")$probe
+# table(unique(clumped$cpg) %in% naeem_keep) / length(unique(clumped$cpg))
+# table(naeem_keep %in% naeem$probe) / nrow(naeem)
+# clumped <- subset(clumped, cpg %in% naeem_keep)
 
 
 # Get the trans hits
 
-tcpg <- subset(clumped, !cis & pval < 1e-14)
+tcpg <- subset(clumped, !cis & pval < 1e-10)
 tcpg <- data_frame(snp=tcpg$snp, tcpg_chr=tcpg$cpgchr, tcpg_pos=tcpg$cpgpos, tcpg_pval=tcpg$pval, tcpg_b=tcpg$Effect, tcpg=tcpg$cpg)
 
-creg <- subset(clumped, cis & pval < 1e-14)
+creg <- subset(clumped, cis & pval < 1e-8)
 creg <- data_frame(snp=creg$snp, creg_chr=creg$cpgchr, creg_pos=creg$cpgpos, creg_pval=creg$pval, creg_b=creg$Effect, creg=creg$cpg)
 
 dat <- inner_join(creg, tcpg, by="snp")
@@ -31,7 +31,22 @@ table(dat$creg_b > dat$tcpg_b)
 table(sign(dat$creg_b) == sign(dat$tcpg_b))
 
 gr <- graph_from_data_frame(dat, directed=TRUE)
-plot(gr)
+# plot(gr)
+
+wc <- cluster_walktrap(gr, steps=20)
+class(wc)
+length(wc)
+
+m <- membership(wc)
+m <- data_frame(cpg=names(m), cluster=as.numeric(m))
+
+save(m, file="../../results/enrichments/cis_trans.rdata")
+
+
+
+###########
+
+
 
 
 

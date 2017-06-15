@@ -86,6 +86,6 @@ cl.out$start_bp[w]<-cl.out$snppos[w]
 w<-which(cl.out$stop_bp<cl.out$snppos)
 cl.out$stop_bp[w]<-cl.out$snppos[w]
 
-save(cl.out,file="../results/16/clumpedwithldregion.rdata")
+save(cl.out,file="../results/enrichments/clumpedwithldregion.rdata")
 
 
