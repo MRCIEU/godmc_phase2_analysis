@@ -103,4 +103,4 @@ group_by(abl, celltype) %>%
 # write.table(oe_pchic_cpg, file="oe_pchic_cpg.tsv", sep="\t", quote=F, row.names=F)
 # write.table(oe_pchic_snp, file="oe_pchic_snp.tsv", sep="\t", quote=F, row.names=F)
 
-save(ab, abc, file="../results/enrichments/mqtl_interactions.rdata")
+save(ab, abc, file="../results/enrichments/mqtl_pchic.rdata")
