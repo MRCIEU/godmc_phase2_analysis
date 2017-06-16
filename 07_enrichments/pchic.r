@@ -3,6 +3,7 @@ library(GenomicRanges)
 library(FDb.InfiniumMethylation.hg19)
 library(AnnotationHub)
 library(data.table)
+library(tidyverse)
 feats <- features(FDb.InfiniumMethylation.hg19)
 pchic <- fread("zcat ../data/misc/PCHiC_peak_matrix_cutoff5.tsv.gz") #http://dx.doi.org/10.1016/j.cell.2016.09.037
 pchic$interaction <- 1:nrow(pchic)
@@ -68,8 +69,7 @@ oe_pchic_cpg <- oe.overlap.cpg(unique(clumped$cpg)) # cpg in interacting region
 oe_pchic_snp <- oe.overlap.snp(unique(clumped$snp)) # snp in interacting region
 
 
-# Any interaction IDs that are the same on bait_pchic_cpg and oe_pchic_snp?
-library(dplyr)
+# Any interaction IDs that are the same on bait_pchic_cpg and oe_pchic_snp etc?
 
 a <- merge(bait_pchic_cpg, subset(oe_pchic_snp, select=c(interaction, SNP)), by="interaction")
 a$code <- paste(a$CpG, a$SNP)
