@@ -26,6 +26,26 @@ mqtl_counts <- bind_rows(
 	tibble(thresh=transthresh, count=art, cis='Trans')
 )
 
+# Count number of mQTLs
+
+arr <- rep(0, length(cisthresh))
+for(i in 1:length(cisthresh))
+{
+	arr[i] <- sum(xc$PvalueRandom < cisthresh[i])
+}
+arrt <- rep(0, length(transthresh))
+for(i in 1:length(transthresh))
+{
+	arrt[i] <- sum(xt$PvalueRandom < transthresh[i])
+}
+mqtl_countsr <- bind_rows(
+	tibble(thresh=cisthresh, count=arr, cis='Cis'),
+	tibble(thresh=transthresh, count=arrt, cis='Trans')
+)
+
+
+
+
 ##
 y<-meffil.get.features("450k")
 ncpg<-length(unique(y$name))
@@ -57,13 +77,49 @@ exp_cis
 exp_trans
 ###
 
-ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
+p1 <- ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
 geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 7 cohorts")
-ggsave("../images/mqtl_counts_thresholds.pdf", width=7, height=7)
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 13 cohorts")
+ggsave(plot=p1, file="../images/mqtl_counts_thresholds.pdf", width=7, height=7)
+
+p1 <- ggplot(mqtl_countsr, aes(x=as.factor(-log10(thresh)), y=count)) +
+geom_bar(stat="identity") +
+geom_text(aes(label=count, y=count+10000), size=3) +
+facet_grid(. ~ cis, space="free_x", scale="free_x") +
+theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 13 cohorts")
+ggsave(plot=p1, file="../images/mqtl_counts_thresholds_random.pdf", width=7, height=7)
+
+
+## Overlaps between fixed and random
+
+arf <- rep(0, length(cisthresh))
+arr <- rep(0, length(cisthresh))
+arb <- rep(0, length(cisthresh))
+for(i in 1:length(cisthresh))
+{
+	arf[i] <- sum(xc$pval < cisthresh[i] & xc$PvalueRandom > cisthresh[i])
+	arr[i] <- sum(xc$pval > cisthresh[i] & xc$PvalueRandom < cisthresh[i])
+	arb[i] <- sum(xc$pval < cisthresh[i] & xc$PvalueRandom < cisthresh[i])
+}
+art <- rep(0, length(transthresh))
+for(i in 1:length(transthresh))
+{
+	art[i] <- sum(xt$pval < transthresh[i])
+}
+
+artf <- rep(0, length(transthresh))
+artr <- rep(0, length(transthresh))
+artb <- rep(0, length(transthresh))
+for(i in 1:length(transthresh))
+{
+	artf[i] <- sum(xt$pval < transthresh[i] & xt$PvalueRandom > transthresh[i])
+	artr[i] <- sum(xt$pval > transthresh[i] & xt$PvalueRandom < transthresh[i])
+	artb[i] <- sum(xt$pval < transthresh[i] & xt$PvalueRandom < transthresh[i])
+}
 
 
 ## Count number of CpGs
@@ -82,38 +138,38 @@ cpg_counts <- bind_rows(
 	tibble(thresh=cisthresh, count=ar, cis='Cis'),
 	tibble(thresh=transthresh, count=art, cis='Trans')
 )
-ggplot(cpg_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
+p1 <- ggplot(cpg_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
 geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
 labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 7 cohorts")
-ggsave("../images/cpg_counts_thresholds.pdf", width=7, height=7)
+ggsave(plot=p1, file="../images/cpg_counts_thresholds.pdf", width=7, height=7)
 
 
 ## Number of independent SNPs per cis and trans
 
 sig <- subset(clumped, (cis & pval < 1e-7) | (!cis & pval < 1e-14))
 clump_counts <- group_by(sig, cpg, cis) %>%
-	summarise(n=n())
+	dplyr::summarise(n=n())
 
-ggplot(clump_counts, aes(x=as.factor(n))) +
+p1 <- ggplot(clump_counts, aes(x=as.factor(n))) +
 geom_bar(position="dodge", aes(fill=cis)) +
 labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per CpG")
-ggsave("../images/clump_counts_cpg.pdf", width=7, height=7)
+ggsave(plot=p1, file="../images/clump_counts_cpg.pdf", width=7, height=7)
 
 
 ## Number of hits per SNP
 
 clump_counts_snp <- group_by(sig, snp, cis) %>%
-	summarise(n=n()) %>%
+	dplyr::summarise(n=n()) %>%
 	group_by(n, cis) %>%
-	summarise(count=n())
+	dplyr::summarise(count=n())
 
-ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
+p1 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
 labs(x="Independent hits from clumping (p < 1e-7; 1e-14)", y="mQTLs per SNP")
-ggsave("../images/clump_counts_snp.pdf", width=10, height=7)
+ggsave(plot=p1, file="../images/clump_counts_snp.pdf", width=10, height=7)
 
 
 
@@ -125,49 +181,49 @@ clumped$rsq <- 2 * clumped$Effect^2 * clumped$Freq1 * (1 - clumped$Freq1)
 
 rsq <- filter(clumped, pval < 5e-8) %>%
 	group_by(cpg, cis) %>%
-	summarise(rsq=sum(rsq))
+	dplyr::summarise(rsq=sum(rsq))
 
 rsqt <- filter(clumped, pval < 5e-8) %>%
 	group_by(cpg) %>%
-	summarise(rsq=sum(rsq))
+	dplyr::summarise(rsq=sum(rsq))
 rsq
 
-ggplot(rsq, aes(x=rsq)) +
+p1 <- ggplot(rsq, aes(x=rsq)) +
 geom_density(aes(fill=cis), alpha=0.3) +
 labs(x="Rsq ")
-ggsave(file="../images/rsq_density_cistrans.pdf", width=12, height=8)
+ggsave(plot=p1, file="../images/rsq_density_cistrans.pdf", width=12, height=8)
 
-ggplot(rsqt, aes(x=rsq)) +
-geom_density() +
-labs(x="Rsq ")
+# ggplot(rsqt, aes(x=rsq)) +
+# geom_density() +
+# labs(x="Rsq ")
 
 
 
 # Plot cis against trans
-temp <- spread(rsq, key=cis, value=rsq)
-names(temp) <- c("cpg", "cis", "trans")
-temp <- subset(temp, !is.na(cis) & !is.na(trans))
-temp$tot <- temp$cis + temp$trans
-temp$rat <- temp$cis / temp$tot
-ggplot(temp, aes(x=cis, y=trans)) +
-geom_point(alpha=0.06) +
-labs(x="Rsq in cis", y="Rsq in trans")
-ggsave("../images/rsqcis_vs_rsqtrans.png", width=7, height=7)
+# temp <- spread(rsq, key=cis, value=rsq)
+# names(temp) <- c("cpg", "cis", "trans")
+# temp <- subset(temp, !is.na(cis) & !is.na(trans))
+# temp$tot <- temp$cis + temp$trans
+# temp$rat <- temp$cis / temp$tot
+# ggplot(temp, aes(x=cis, y=trans)) +
+# geom_point(alpha=0.06) +
+# labs(x="Rsq in cis", y="Rsq in trans")
+# ggsave("../images/rsqcis_vs_rsqtrans.png", width=7, height=7)
 
-ggplot(temp, aes(x=rat)) +
-geom_density() +
-labs(x="Rsq_cis / (Rsq_cis + Rsq_trans)")
-ggsave("../images/rsqcis_vs_rsqtrans_ratio.png", width=7, height=7)
-
-
+# ggplot(temp, aes(x=rat)) +
+# geom_density() +
+# labs(x="Rsq_cis / (Rsq_cis + Rsq_trans)")
+# ggsave("../images/rsqcis_vs_rsqtrans_ratio.png", width=7, height=7)
 
 
-mean(rsqt$rsq)
 
-median(subset(rsqt, cpg %in% temp$cpg)$rsq)
-median(subset(rsqt, ! cpg %in% temp$cpg)$rsq)
 
-group_by(rsq, cis) %>% summarise(rsq=sum(rsq)/450000)
+# mean(rsqt$rsq)
+
+# median(subset(rsqt, cpg %in% temp$cpg)$rsq)
+# median(subset(rsqt, ! cpg %in% temp$cpg)$rsq)
+
+# group_by(rsq, cis) %>% summarise(rsq=sum(rsq)/450000)
 
 #median()
 
@@ -178,55 +234,55 @@ temp1$posdif <- temp1$snppos - temp1$cpgpos
 cisdist<-temp1[which(temp1$cis=="TRUE"),]
 mediandist<-round(median(abs(cisdist$posdif))/1000,0)
 
-ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
-geom_density() +
-labs(x="Distance of SNP from CpG") +
-annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
-ggsave("../images/snp_cpg_distance.pdf")
+p1 <- ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
+	geom_density() +
+	labs(x="Distance of SNP from CpG") +
+	annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
+ggsave(plot=p1, file="../images/snp_cpg_distance.pdf")
 
 ## Plot maf
 
 clumped$maf <- clumped$Freq1
 clumped$maf[clumped$maf > 0.5] <- 1 - clumped$maf[clumped$maf > 0.5]
-ggplot(clumped, aes(x=maf, y=abs(Effect))) +
+p1 <- ggplot(clumped, aes(x=maf, y=abs(Effect))) +
 geom_point(alpha=0.04) +
 scale_x_log10() +
 scale_y_log10()
-ggsave("../images/maf_vs_beta.png", width=7, height=7)
+ggsave(plot=p1, file="../images/maf_vs_beta.png", width=7, height=7)
 
 
 ## Directions
 
 dir_count <- group_by(clumped, Direction) %>%
-	summarise(count=n()) %>%
+	dplyr::summarise(count=n()) %>%
 	filter(count > 100)
 
 
-ggplot(dir_count, aes(x=Direction, y=count)) +
+p1 <- ggplot(dir_count, aes(x=Direction, y=count)) +
 geom_bar(stat="identity") +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
-ggsave("../images/directions_all.pdf", width=8, height=6)
+ggsave(plot=p1, file="../images/directions_all.pdf", width=8, height=6)
 
 ## hterogeneity by direction
 
-temp3 <- subset(clumped, Direction %in% dir_count$Direction)
-ggplot(temp3, aes(x=Direction, y=-log10(HetPVal))) +
-geom_boxplot(fill="red") +
-theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
+# temp3 <- subset(clumped, Direction %in% dir_count$Direction)
+# ggplot(temp3, aes(x=Direction, y=-log10(HetPVal))) +
+# geom_boxplot(fill="red") +
+# theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
 
-temp33 <- group_by(temp3, Direction) %>% summarise(p = sum(HetPVal < 0.01)/n())
+# temp33 <- group_by(temp3, Direction) %>% summarise(p = sum(HetPVal < 0.01)/n())
 
-ggplot(temp33, aes(x=Direction, y=p)) + geom_point() +
-theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
+# ggplot(temp33, aes(x=Direction, y=p)) + geom_point() +
+# theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5))
 
 
 
 temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
-ggplot(temp4, aes(x=Direction, y=HetISq)) +
+p1 <- ggplot(temp4, aes(x=Direction, y=HetISq)) +
 geom_boxplot(fill="red") +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
 labs(y="Isq for mQTL with p < 1e-14")
-ggsave("../images/isq_direction.pdf", width=10, height=6)
+ggsave(plot=p1, file="../images/isq_direction.pdf", width=10, height=6)
 
 
 

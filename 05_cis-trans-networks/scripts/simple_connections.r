@@ -48,6 +48,54 @@ save(m, file="../../results/enrichments/cis_trans.rdata")
 
 
 
+# For each tcpg try to find a cis-SNP
+	temp <- group_by(dat, snp) %>%
+		do({
+			x <- .
+			y <- subset(clumped, cis & cpg %in% x$tcpg & pval < 1e-5)
+			if(nrow(y) > 0)	y$centralsnp <- x$snp[1]
+			return(y)
+		})
+
+table(unique(dat$tcpg) %in% temp$cpg)
+table(unique(dat$snp) %in% temp$centralsnp)
+
+
+centralsnp <- unique(temp$centralsnp)
+peripheralsnp <- unique(temp$snp)
+
+library(TwoSampleMR)
+library(data.table)
+b <- fread("~/data/1000g_reference/1000GP_Phase3/vcf/eur.bim", header=FALSE)
+b$code <- paste0("chr", b$V1, ":", b$V4, ":SNP")
+b1 <- subset(b, code %in% centralsnp)
+b2 <- subset(b, code %in% peripheralsnp)
+
+a <- extract_outcome_data2(b1$V2, 2, proxies=FALSE)
+pa <- extract_outcome_data2(b2$V2, 2, proxies=FALSE)
+
+a1 <- merge(a, b1, by.x="SNP", by.y="V2")
+a1 <- dplyr::select(a1, centralsnp=code, bmi_pval=pval.outcome, bmi_beta=beta.outcome)
+
+a2 <- merge(pa, b2, by.x="SNP", by.y="V2")
+a2 <- dplyr::select(a2, peripheralsnp=code, bmi_pvalp=pval.outcome, bmi_betap=beta.outcome)
+
+
+
+temp2 <- inner_join(temp, a1, by="centralsnp")
+temp2 <- inner_join(temp2, a2, by=c("snp"="peripheralsnp"))
+
+
+r <- temp2 %>% group_by(centralsnp) %>%
+	summarise(
+		npsnp=n(),
+		csnp_sig=bmi_pval[1] < 0.001,
+		npsnp_sig=sum(bmi_pvalp < 0.001)
+	)
+
+
+
+##
 
 
 pathlengths <- data_frame(cpg=unique(c(dat$creg)), max_length=NA, connection=NA)
