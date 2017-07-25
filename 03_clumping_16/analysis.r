@@ -32,19 +32,33 @@ mqtl_counts <- bind_rows(
 arr <- rep(0, length(cisthresh))
 for(i in 1:length(cisthresh))
 {
-	arr[i] <- sum(xc$PvalueRandom < cisthresh[i])
+	arr[i] <- sum(xc$PvalueARE < cisthresh[i])
 }
 arrt <- rep(0, length(transthresh))
 for(i in 1:length(transthresh))
 {
-	arrt[i] <- sum(xt$PvalueRandom < transthresh[i])
+	arrt[i] <- sum(xt$PvalueARE < transthresh[i])
 }
 mqtl_countsr <- bind_rows(
 	tibble(thresh=cisthresh, count=arr, cis='Cis'),
 	tibble(thresh=transthresh, count=arrt, cis='Trans')
 )
 
-
+# Count number of mQTLs
+arr <- rep(0, length(cisthresh))
+for(i in 1:length(cisthresh))
+{
+	arr[i] <- sum(xc$PvalueMRE < cisthresh[i])
+}
+arrt <- rep(0, length(transthresh))
+for(i in 1:length(transthresh))
+{
+	arrt[i] <- sum(xt$PvalueMRE < transthresh[i])
+}
+mqtl_countsrm <- bind_rows(
+	tibble(thresh=cisthresh, count=arr, cis='Cis'),
+	tibble(thresh=transthresh, count=arrt, cis='Trans')
+)
 
 
 ##
@@ -83,16 +97,24 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 13 cohorts")
-ggsave(plot=p1, file="../images/mqtl_counts_thresholds.pdf", width=7, height=7)
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
+ggsave(plot=p1, file="../images/mqtl_counts_thresholds_FE.pdf", width=7, height=7)
 
 p1 <- ggplot(mqtl_countsr, aes(x=as.factor(-log10(thresh)), y=count)) +
 geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 13 cohorts")
-ggsave(plot=p1, file="../images/mqtl_counts_thresholds_random.pdf", width=7, height=7)
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
+ggsave(plot=p1, file="../images/mqtl_counts_thresholds_ARE.pdf", width=7, height=7)
+
+p1 <- ggplot(mqtl_countsrm, aes(x=as.factor(-log10(thresh)), y=count)) +
+geom_bar(stat="identity") +
+geom_text(aes(label=count, y=count+10000), size=3) +
+facet_grid(. ~ cis, space="free_x", scale="free_x") +
+theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
+ggsave(plot=p1, file="../images/mqtl_counts_thresholds_MRE.pdf", width=7, height=7)
 
 
 ## Overlaps between fixed and random
@@ -285,7 +307,83 @@ theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
 labs(y="Isq for mQTL with p < 1e-14")
 ggsave(plot=p1, file="../images/isq_direction.pdf", width=10, height=6)
 
+temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
+p1 <- ggplot(temp4, aes(x=Direction, y=tausq)) +
+geom_boxplot(fill="red") +
+theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
+labs(y="Tausq for mQTL with p < 1e-14") + scale_y_log10()
+ggsave(plot=p1, file="../images/tausq_direction.pdf", width=10, height=6)
 
+temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
+p1 <- ggplot(temp4, aes(x=HetISq, y=tausq)) +
+geom_point(alpha=0.04) +
+theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
+labs(y="Tausq for mQTL with p < 1e-14") + scale_y_log10()
+labs(x="Isq for mQTL with p < 1e-14")
+
+ggsave(plot=p1, file="../images/tausq_isq.pdf", width=10, height=6)
+
+temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
+temp4$Effect_abs<-abs(temp4$Effect)
+
+temp4$i2cat<-cut(as.numeric(as.character(temp4$HetISq)), breaks = seq(0,100,by=10))
+w<-which(is.na(temp4$i2cat))
+table(temp4$HetISq[w])
+temp4$i2cat[w]<-"(0,10]"
+
+labs <- data.frame(table(temp4$i2cat))
+m<-match(temp4$i2cat,labs[,1])
+temp4<-data.frame(temp4,Ncati2=as.character(labs[m,-1]))
+
+m <- data.frame(c(by(abs(temp4$Effect), temp4$i2cat, max)))
+m2<-match(temp4$i2cat,row.names(m))
+temp4<-data.frame(temp4,maxbeta=abs(m[m2,]))
+
+
+p1<-ggplot(temp4, aes(x=i2cat, y=Effect_abs)) +
+geom_boxplot() +
+geom_text(data=temp4, aes(x=temp4$i2cat,y = (maxbeta+0.1),label = Ncati2),vjust = 0,size=3) +
+ylab("Beta coefficient") 
+ggsave(p1,file="../images/I2catvsbeta.pdf",height=6,width=16)
+
+#
+temp4$tau2cat<-cut(as.numeric(as.character(temp4$tausq)), breaks = seq(0,2,by=0.01))
+w<-which(is.na(temp4$tau2cat))
+table(temp4$tau2cat[w])
+temp4$tau2cat[w]<-"(0,0.01]"
+
+labs <- data.frame(table(temp4$tau2cat))
+m<-match(temp4$tau2cat,labs[,1])
+temp4<-data.frame(temp4,Ncattau2=as.character(labs[m,-1]))
+
+m <- data.frame(c(by(abs(temp4$Effect), temp4$tau2cat, max)))
+m2<-match(temp4$tau2cat,row.names(m))
+temp4<-data.frame(temp4,maxbeta_tau=abs(m[m2,]))
+
+p1<-ggplot(temp4, aes(x=tau2cat, y=Effect_abs)) +
+geom_boxplot() +
+geom_text(data=temp4, aes(x=temp4$tau2cat,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
+ylab("Beta coefficient") 
+ggsave(p1,file="../images/tau2catvsbeta.pdf",height=6,width=16)
+#
+temp4$qcat<-cut(as.numeric(as.character(temp4$HetChiSq)), breaks = seq(0,2000,by=10))
+w<-which(is.na(temp4$qcat))
+table(temp4$qcat[w])
+temp4$qcat[w]<-"(0,10]"
+
+labs <- data.frame(table(temp4$qcat))
+m<-match(temp4$qcat,labs[,1])
+temp4<-data.frame(temp4,Ncatq=as.character(labs[m,-1]))
+
+m <- data.frame(c(by(abs(temp4$Effect), temp4$qcat, max)))
+m2<-match(temp4$qcat,row.names(m))
+temp4<-data.frame(temp4,maxbeta_q=abs(m[m2,]))
+
+p1<-ggplot(temp4, aes(x=qcat, y=Effect_abs)) +
+geom_boxplot() +
+geom_text(data=temp4, aes(x=temp4$qcat,y = (maxbeta_q+0.1),label = Ncatq),vjust = 0,size=3) +
+ylab("Beta coefficient") 
+ggsave(p1,file="../images/qcatvsbeta.pdf",height=6,width=16)
 
 # Conditioanl 
 
