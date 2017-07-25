@@ -1,6 +1,9 @@
 
 #extract results files
-#results_dir="/projects/MRC-IEU/groups/godmc/meta-analysis/input"
+##results_dir="/projects/MRC-IEU/groups/godmc/meta-analysis/input"
+#results_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
+#cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/16/"
+
 #metal_in="16_${i}.in"
 #cd $results_dir
 
@@ -10,13 +13,15 @@
 #	echo $cohort
 #	cohortname=$(basename "$cohort" .tar)
 #	echo $cohortname
-#	mkdir -p $results_dir/${cohortname}
-#	cd $results_dir/${cohortname}
-#	tar -xvf ../${cohortname}.tar results/16/results_*.gz
-#	cd $results_dir
-	
+#	mkdir -p $cohort_dir/${cohortname}
+#	cd $cohort_dir/${cohortname}
+#for i in `seq 1 25`; 
+#do
+#	tar -xvf ../${cohortname}.tar results/16/results_${i}.gz
 #done
 
+#mv $cohort_dir/${cohortname} $results_dir
+#done
 
 
 
@@ -44,6 +49,24 @@ path="/panfs/panasas01/shared-godmc/godmc_phase2_analysis"
 load(paste0(path,"/results/16/16_clumped.rdata"))
 dim(clumped)
 #[1] 312024     21
+
+retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
+#435391
+
+#exclusion probes from TwinsUK
+excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_exclusion_probes.txt",he=T)
+#42446
+rm<-which(retaincpg%in%excl[,1])
+#14882
+retaincpg<-retaincpg[-rm]
+#420509
+
+nrow(clumped)
+#316245
+clumped<-clumped[which(clumped$cpg%in%retaincpg),]
+nrow(clumped)
+#249008
+
 a<-clumped
 a$id<-as.character(paste(a$snp,a$cpg,sep="_"))
 a14.cis.out<-a[which(a$cis==F & a$pval<1e-14),]
@@ -118,4 +141,4 @@ getmstatistic_results$M_expected_mean
 getmstatistic_results$M_expected_sd
 getmstatistic_results$M_crit_alpha_0_05
 
-save.image("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats.RData")
+save(dframe,file="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats.RData")
