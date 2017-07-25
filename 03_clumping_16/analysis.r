@@ -143,7 +143,7 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 7 cohorts")
+labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 13 cohorts")
 ggsave(plot=p1, file="../images/cpg_counts_thresholds.pdf", width=7, height=7)
 
 
