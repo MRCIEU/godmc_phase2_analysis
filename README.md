@@ -27,6 +27,34 @@ or
 qsub run_metal.sh
 ```
 
+Explanation of the output:
+
+```
+# Fixed effects
+Effect
+StdErr
+pval
+
+# Heterogeneity stats
+Direction
+HetISq
+HetChiSq # This is Q statistic
+HetDf
+HetPVal
+tausq
+
+# Additive random effects (DerSimonian-Laird estimator)
+EffectARE
+StdErrARE
+PvalueARE
+
+# Multiplicative random effects
+# The Effect size for this is the same as the Fixed effects
+StdErrMRE
+PvalueMRE
+```
+
+
 
 ## 02
 
