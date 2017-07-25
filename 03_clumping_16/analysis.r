@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ggthemes)
 library(meffil)
+library(dplyr)
 load("../results/16/16_clumped.rdata")
 
 
@@ -143,14 +144,14 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 13 cohorts")
+labs(x="-log10 p threshold", y="CpGs with at least one mQTL from meta analysis of 7 cohorts")
 ggsave(plot=p1, file="../images/cpg_counts_thresholds.pdf", width=7, height=7)
 
 
 ## Number of independent SNPs per cis and trans
 
 sig <- subset(clumped, (cis & pval < 1e-7) | (!cis & pval < 1e-14))
-clump_counts <- group_by(sig, cpg, cis) %>%
+clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
 	dplyr::summarise(n=n())
 
 p1 <- ggplot(clump_counts, aes(x=as.factor(n))) +
@@ -161,9 +162,9 @@ ggsave(plot=p1, file="../images/clump_counts_cpg.pdf", width=7, height=7)
 
 ## Number of hits per SNP
 
-clump_counts_snp <- group_by(sig, snp, cis) %>%
+clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
 	dplyr::summarise(n=n()) %>%
-	group_by(n, cis) %>%
+	dplyr::group_by(n, cis) %>%
 	dplyr::summarise(count=n())
 
 p1 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
@@ -180,11 +181,11 @@ ggsave(plot=p1, file="../images/clump_counts_snp.pdf", width=10, height=7)
 clumped$rsq <- 2 * clumped$Effect^2 * clumped$Freq1 * (1 - clumped$Freq1)
 
 rsq <- filter(clumped, pval < 5e-8) %>%
-	group_by(cpg, cis) %>%
+	dplyr::group_by(cpg, cis) %>%
 	dplyr::summarise(rsq=sum(rsq))
 
 rsqt <- filter(clumped, pval < 5e-8) %>%
-	group_by(cpg) %>%
+	dplyr::group_by(cpg) %>%
 	dplyr::summarise(rsq=sum(rsq))
 rsq
 
@@ -253,7 +254,7 @@ ggsave(plot=p1, file="../images/maf_vs_beta.png", width=7, height=7)
 
 ## Directions
 
-dir_count <- group_by(clumped, Direction) %>%
+dir_count <- dplyr::group_by(clumped, Direction) %>%
 	dplyr::summarise(count=n()) %>%
 	filter(count > 100)
 
@@ -293,8 +294,8 @@ load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_conditio
 ## Number of independent SNPs per cis and trans
 
 sig <- subset(conditional, (cis & pval < 1e-7) | (!cis & pval < 1e-14))
-clump_counts <- group_by(sig, cpg, cis) %>%
-	summarise(n=n())
+clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
+	dplyr::summarise(n=n())
 
 p1 <- ggplot(clump_counts, aes(x=n)) +
 geom_bar(position="dodge", aes(fill=cis)) +
@@ -304,10 +305,10 @@ ggsave(p1, file="../images/conditional_counts_cpg.pdf", width=7, height=7)
 
 ## Number of hits per SNP
 
-clump_counts_snp <- group_by(sig, snp, cis) %>%
-	summarise(n=n()) %>%
-	group_by(n, cis) %>%
-	summarise(count=n())
+clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
+	dplyr::summarise(n=n()) %>%
+	dplyr::group_by(n, cis) %>%
+	dplyr::summarise(count=n())
 
 p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +

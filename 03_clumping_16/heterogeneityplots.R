@@ -70,6 +70,23 @@ path="/panfs/panasas01/shared-godmc/godmc_phase2_analysis"
 load(paste0(path,"/results/16/16_clumped.rdata"))
 a<-clumped
 
+retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
+#435391
+
+#exclusion probes from TwinsUK
+excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_exclusion_probes.txt",he=T)
+#42446
+rm<-which(retaincpg%in%excl[,1])
+#14882
+retaincpg<-retaincpg[-rm]
+#420509
+
+nrow(a)
+#316245
+a<-a[which(a$cpg%in%retaincpg),]
+nrow(a)
+
+
 f<-function(x){
 y<-strsplit(x,split="")
 length(which(y[[1]]=="?"))}
@@ -95,10 +112,10 @@ a<-data.frame(a,NoDirection,Directionplus,Directionminus)
 o<-order(a$NoDirection,decreasing=T)
 a<-a[o,]
 
-a14.cis.out<-data.frame(a[which(a$cis==T & a$pval<1e-14),],subset = "cis p<1e-14")
-a14.trans.out<-data.frame(a[which(a$cis==F & a$pval<1e-14),],subset = "trans p<1e-14")
-a8.cis.out<-data.frame(a[which(a$cis==T & a$pval<5e-8),],subset = "cis p<5e-8")
-a8.trans.out<-data.frame(a[which(a$cis==F & a$pval<5e-8),],subset = "trans p<5e-8")
+a14.cis.out<-data.frame(a[which(a$cis==TRUE & a$pval<1e-14),],subset = "cis p<1e-14")
+a14.trans.out<-data.frame(a[which(a$cis==FALSE & a$pval<1e-14),],subset = "trans p<1e-14")
+a8.cis.out<-data.frame(a[which(a$cis==TRUE & a$pval<5e-8),],subset = "cis p<5e-8")
+a8.trans.out<-data.frame(a[which(a$cis==FALSE & a$pval<5e-8),],subset = "trans p<5e-8")
 all<-rbind(a8.cis.out,a14.cis.out,a8.trans.out,a14.trans.out)
 
 p1<-ggplot(all, aes(x=HetISq)) + 
