@@ -42,7 +42,10 @@ arguments <- commandArgs(T)
 fn <- arguments[1]
 out <- arguments[2]
 
-dat <- make_gwama(fn)
-gz1 <- gzfile(out, "w")
-write.table(dat, file=gz1, row=FALSE, col=TRUE, qu=FALSE)
-close(gz1)
+dat <- try(make_gwama(fn))
+if(!class(dat) == "try-error")
+{
+	gz1 <- gzfile(out, "w")
+	write.table(dat, file=gz1, row=FALSE, col=TRUE, qu=FALSE)
+	close(gz1)
+}

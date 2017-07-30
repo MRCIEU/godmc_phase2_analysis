@@ -1,6 +1,6 @@
 # Construct c-reg t-cpg networks
 
-library(tidyverse)
+library(dplyr)
 library(igraph)
 
 load("../../results/16/16_clumped.rdata")
@@ -49,13 +49,13 @@ save(m, file="../../results/enrichments/cis_trans.rdata")
 
 
 # For each tcpg try to find a cis-SNP
-	temp <- group_by(dat, snp) %>%
-		do({
-			x <- .
-			y <- subset(clumped, cis & cpg %in% x$tcpg & pval < 1e-5)
-			if(nrow(y) > 0)	y$centralsnp <- x$snp[1]
-			return(y)
-		})
+temp <- group_by(dat, snp) %>%
+	do({
+		x <- .
+		y <- subset(clumped, cis & cpg %in% x$tcpg & pval < 1e-5)
+		if(nrow(y) > 0)	y$centralsnp <- x$snp[1]
+		return(y)
+	})
 
 table(unique(dat$tcpg) %in% temp$cpg)
 table(unique(dat$snp) %in% temp$centralsnp)

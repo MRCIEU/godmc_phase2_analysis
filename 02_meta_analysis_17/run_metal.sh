@@ -80,8 +80,10 @@ do
 		echo "Already produced"
 	fi
 
-	echo "PROCESS ${cohortname}_${i}.out.gz" >> ${metal_dir}/${metal_in}
-
+	if [ -e "${metal_dir}/${cohortname}_${i}.out.gz" ]
+	then
+		echo "PROCESS ${cohortname}_${i}.out.gz" >> ${metal_dir}/${metal_in}
+	fi
 done
 
 echo "" >> ${metal_dir}/${metal_in}
