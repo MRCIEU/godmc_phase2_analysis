@@ -48,7 +48,11 @@ path="/panfs/panasas01/shared-godmc/godmc_phase2_analysis"
 
 load(paste0(path,"/results/16/16_clumped.rdata"))
 dim(clumped)
-#[1] 312024     21
+#[1] 342722     28
+
+clumped<-clumped[clumped$pval<1e-14,]
+dim(clumped)
+#[1] 288797     28
 
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
 #435391
@@ -62,21 +66,23 @@ retaincpg<-retaincpg[-rm]
 #420509
 
 nrow(clumped)
-#316245
+#288797
 clumped<-clumped[which(clumped$cpg%in%retaincpg),]
 nrow(clumped)
-#249008
+#226205
 
 a<-clumped
 a$id<-as.character(paste(a$snp,a$cpg,sep="_"))
 a14.cis.out<-a[which(a$cis==F & a$pval<1e-14),]
 dim(a14.cis.out)
-#[1] 156857     22
+#[1] 156857     22 cis
+# [1] 21526    29 trans
 o<-order(a14.cis.out$pval)
 a14.cis.out<-a14.cis.out[o,]
 probe<-unique(a14.cis.out$cpg)
 m<-match(probe,a14.cis.out$cpg)
 a14.cis.out<-a14.cis.out[m,]
+
 #a14.cis.out<-a[which(a$cis==T & a$pval<1e-14&a$cpgchr=="chr20"),]
 #dim(a14.cis.out)
 #[1] 3213   21
@@ -87,6 +93,9 @@ o<-order(as.numeric(as.character(a14.cis.out$cpgpos)))
 a14.cis.out<-a14.cis.out[o,]
 
 l<-list.files(path=cohort_dir)
+w<-which(l%in%c("ARIES_16"))
+l<-l[-w]
+
 l2<-list.files(paste(cohort_dir,"/",l[1],"/results/16/",sep=""))
 study<-gsub("_16","",l)
 
@@ -113,8 +122,9 @@ res$study<-as.character(res$study)
 res$SNP<-as.character(res$SNP)
 res$MARKERNAME<-as.character(res$MARKERNAME)
 
-res2<-res[which(res$PVAL<1e-14),]
+#res2<-res[which(res$PVAL<1e-14),]
 
+res2<-res
 m<-data.frame(table(res2$MARKERNAME))
 m<-m[which(m$Freq>1),1]
 res2<-res2[res2$MARKERNAME%in%m,]
