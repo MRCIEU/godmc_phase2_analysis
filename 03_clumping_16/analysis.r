@@ -95,7 +95,7 @@ exp_trans
 ###
 cohort_dir="/panfs/panasas01/shared-godmc/results/01/"
 results_dir="/projects/MRC-IEU/groups/godmc/sftp/GoDMC/"
-ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input/cohortsizes.txt")
+ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizes.txt")
 ss[,1]<-gsub("_16","",ss[,1])
 ss[,1]<-gsub("00_ARIES","ARIES",ss[,1])
 w<-which(ss[,1]%in%c("DunedinAge38","PREDO"))
