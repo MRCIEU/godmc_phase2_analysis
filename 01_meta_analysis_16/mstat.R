@@ -108,7 +108,7 @@ cat(i,"\n")
 		#for (j in 1:length(l2)){
 		cat(j,"\n")
 r<-read.table(paste(cohort_dir,"/",l[i],"/results/16/results_",j,".gz",sep=""),he=T)
-m<-which(r$SNP%in%a14.cis.out$snp)
+m<-which(r$MARKERNAME%in%a14.cis.out$id)
 
 if(length(m)>0){
 
@@ -128,6 +128,7 @@ res2<-res
 m<-data.frame(table(res2$MARKERNAME))
 m<-m[which(m$Freq>1),1]
 res2<-res2[res2$MARKERNAME%in%m,]
+
 
 length(unique(res2$MARKERNAME))
 #[1] 22813
@@ -152,3 +153,11 @@ getmstatistic_results$M_expected_sd
 getmstatistic_results$M_crit_alpha_0_05
 
 save(dframe,file="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats.RData")
+
+
+
+
+
+
+
+
