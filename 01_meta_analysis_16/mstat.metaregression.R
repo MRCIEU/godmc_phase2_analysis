@@ -40,8 +40,6 @@ path="/panfs/panasas01/shared-godmc/godmc_phase2_analysis"
 w<-which(dframe2[,1]%in%c("DunedinAge38"))
 dframe2<-dframe2[-w,]
 
-# Sort getmstatistic_results dataframe by M statistics
-
 
 
 dframe2$age<-NA
@@ -63,6 +61,7 @@ dframe2$nsnps[i]<-nsnps
 }
 
 ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizes.txt")
+names(ss)<-c("study","n")
 ss[,1]<-gsub("_16","",ss[,1])
 ss[,1]<-gsub("00_ARIES","ARIES",ss[,1])
 m<-match(dframe2$study_names_in,ss[,1])
@@ -95,7 +94,31 @@ theme(axis.text.x = element_text(face = "bold"))
 ggsave(p1,file="../images/SNPsbyNcohort.pdf",width=8,height=6)
 
 
+# Sort getmstatistic_results dataframe by M statistics
+getm_res_srtd <- dplyr::arrange(dframe, M)
+getm_res_plus_n <- merge(getm_res_srtd, ss, by.x="study_names_in", by.y="study")
+
+# Sort data.frame by M statistics
+getm_res_plus_n_srtd <- dplyr::arrange(getm_res_plus_n, M)
+metafor_results_fe <- metafor::rma.uni(yi = getm_res_plus_n_srtd[, "M"], sei = getm_res_plus_n_srtd[, "M_se"], weighted = T, slab = sprintf("%02.0f", getm_res_plus_n_srtd[, "study"]), method = "FE")
+
+# Compute inverse-variance weighted random effects model
+metafor_results_dl <- metafor::rma.uni(yi = getm_res_plus_n_srtd[, "M"], sei = getm_res_plus_n_srtd[, "M_se"], weighted = T, knha = T, slab = sprintf("%2.0f", getm_res_plus_n_srtd[, "study"]), method = "DL")
+metafor_results_dl
 
 
+# Plotting:
+
+# set margins
+par(mar=c(4,4,1,2))
+
+# generate forest plot
+forest(metafor_results_fe, xlim=c(-1.8, 1.6), at=c(-1, -0.5, 0, 0.5, 1), cex=0.66, xlab = "M statistic", ilab=cbind(getm_res_plus_cases_ctrls_srtd$cases, getm_res_plus_cases_ctrls_srtd$controls), ilab.xpos = c(-1.4,-1.1), ilab.pos = c(2,2), addfit=F)
+
+# Adding labels
+text(1.6, 50, "M statistic [95% CI]", pos=2, cex=0.66)
+text(-1.6, 50, "Cases", pos=4, cex=0.66)
+text(-1.39, 50, "Controls", pos=4, cex=0.66)
+text(-1.8, 50, "Study", pos=4, cex=0.66)
 
 
