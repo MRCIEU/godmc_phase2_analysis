@@ -2,6 +2,8 @@ library(tidyverse)
 library(ggthemes)
 library(meffil)
 library(dplyr)
+library(gridExtra)
+
 load("../results/16/16_clumped.rdata")
 
 
@@ -91,7 +93,210 @@ exp_trans <- ntest_trans * 1e-14
 exp_cis
 exp_trans
 ###
+cohort_dir="/panfs/panasas01/shared-godmc/results/01/"
+results_dir="/projects/MRC-IEU/groups/godmc/sftp/GoDMC/"
+ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizes.txt")
+ss[,1]<-gsub("_16","",ss[,1])
+ss[,1]<-gsub("00_ARIES","ARIES",ss[,1])
+w<-which(ss[,1]%in%c("DunedinAge38","PREDO"))
+ss<-ss[-w,]
 
+
+y<-meffil.get.features("450k")
+y<-y[which(!is.na(y$chromosome)),]
+w<-which(y$chromosome=="chrY"|y$chromosome=="chrX")
+cpgs<-unique(y$name)
+sd.out<-data.frame(cpgs)
+
+for (i in 1:nrow(ss)){
+cat(ss[i,1],"\n")
+load(paste0(cohort_dir,ss[i,1],"_01/results/01/methylation_summary.RData"))
+m<-match(cpgs,row.names(meth_summary))
+sd<-meth_summary[m,"sd"]
+sd.out<-data.frame(sd.out,sd)}
+row.names(sd.out)<-cpgs
+sd.out<-sd.out[,-1]
+names(sd.out)<-ss[,1]
+
+for (i in 1:ncol(sd.out)){
+cat(ss[i,1],"\n")
+cat(length(which(is.na(sd.out[,i]))),"\n")
+}
+
+for (i in 1:ncol(sd.out)){
+cat(ss[i,1],"\n")
+cat(length(which(is.na(sd.out[-w,i]))),"\n")
+}
+
+sdmean<-data.frame(cpgs,sd=rowMeans(sd.out, na.rm=TRUE))
+m<-match(clumped$cpg,sdmean$cpgs)
+clumped<-data.frame(clumped,cpgsd=sdmean[m,2])
+
+clumped$id<-paste(clumped$snp,clumped$cpg,sep="_")
+clumped$studycount<-0
+
+###
+path="/panfs/panasas01/shared-godmc/counts_2017/combined"
+l<-list.files(path=path,pattern=".ge1.2.allcohorts.txt.gz")
+
+for (i in 1:length(l)){
+cat(i,"\n")
+#r<-read.table(paste0("/panfs/panasas01/sscm/epzjlm/repo/goya/godmc/processed_data/phase2/assoclist/assoclist_",i,".gz"))
+r<-read.table(paste0(path,"/",l[i]))
+r$id<-paste(r$V2,r$V3,sep="_")
+w<-which(r$id%in%clumped$id)
+r<-r[w,]
+w<-which(clumped$id%in%r$id)
+clumped$studycount[w]<-r$V1
+}
+save(clumped,file="../results/16/16_clumpedwithstudycount.rdata")
+
+#which association fall out if you compare fixed vs random
+length(which(clumped$pval<clumped$PvalueARE))
+#314495
+length(which(clumped$pval<clumped$PvalueMRE))
+#315096
+length(which(clumped$pval>clumped$PvalueARE))
+#0
+length(which(clumped$pval>clumped$PvalueMRE))
+#0
+length(which(clumped$PvalueARE<clumped$PvalueMRE))
+#312493
+length(which(clumped$PvalueARE>clumped$PvalueMRE))
+#2596
+
+clumped2<-clumped[which(clumped$pval<1e-14),]
+length(which(clumped2$pval<clumped2$PvalueARE))
+#267763
+length(which(clumped2$pval<clumped2$PvalueMRE))
+#268364
+length(which(clumped2$pval>clumped2$PvalueARE))
+#0
+length(which(clumped2$pval>clumped2$PvalueMRE))
+#0
+length(which(clumped2$PvalueARE<clumped2$PvalueMRE))
+#268108
+length(which(clumped2$PvalueARE>clumped2$PvalueMRE))
+#256
+#w<-which(clumped2$PvalueARE>clumped2$PvalueMRE)
+#clumped2$mre<-"FE + MRE"
+#clumped2$mre[w]<-"MRE only"
+w<-which(clumped2$pval==0)
+clumped2$pval[w]<-rep(1e-323,length(w))
+w<-which(clumped2$PvalueARE==0)
+clumped2$PvalueARE[w]<-rep(1e-323,length(w))
+w<-which(clumped2$PvalueMRE==0)
+clumped2$PvalueMRE[w]<-rep(1e-323,length(w))
+clumped2$pval<-as.numeric(clumped2$pval)
+clumped2$PvalueARE<-as.numeric(clumped2$PvalueARE)
+clumped2$PvalueMRE<-as.numeric(clumped2$PvalueMRE)
+
+w<-which(clumped2$pval<1e-14 & clumped2$PvalueMRE>1e-14)
+clumped2$mre<-"MRE + FE"
+clumped2$mre[w]<-"FE only"
+
+mean(abs(clumped2$Effect))
+#[1] -0.009308104
+mean(clumped2$HetDf)
+#[1] 18.06114
+mean(clumped2$StdErr)
+#[1] 0.0171036
+mean(clumped2$HetISq)
+#[1] 52.77369
+table(clumped2$HetDf)
+#    0     1     2     3     4     5     6     7     8     9    10    11    12 
+#  712   785  1167  1432  1803  1465  1798  2581  3629  4048  4779  4182  5206 
+#   13    14    15    16    17    18    19    20    21    22    23 
+# 6806  9311 12387 15769 20539 26034 28735 29971 32496 41776 31386 
+mean(clumped2$tausq)
+#[1] 0.01432297
+mean(clumped2$TotalSampleSize)
+#[1] 16615.94
+table(clumped2$snptype)
+#INDEL    SNP 
+# 11292 277505 
+table(clumped2$cis)
+#FALSE   TRUE 
+# 35966 252831 
+mean(clumped2$rsq)
+#[1] 0.0425435
+mean(clumped2$maf)
+#[1] 0.2382847
+mean(clumped2$cpgsd)
+#[1] 0.04757534
+mean(as.numeric(clumped2$studycount))
+#[1] 6.1695
+
+
+p1 <- ggplot(clumped2, aes(x=as.factor(mre), y=-log10(pval))) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="-log10 pvalue")
+
+p2 <- ggplot(clumped2, aes(x=as.factor(mre), y=-log10(PvalueMRE))) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="-log10 MRE pvalue")
+
+p3 <- ggplot(clumped2, aes(x=as.factor(mre), y=abs(Effect))) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="abs Effect")
+
+p4<- ggplot(clumped2, aes(x=as.factor(mre), y=StdErr)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="Std Err")
+
+clumped2$nstudies<-clumped2$HetDf+1
+p5 <- ggplot(clumped2, aes(x=as.factor(mre), y=nstudies)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="Number of phase2 Studies")
+
+clumped2$studycount<-as.numeric(clumped2$studycount)
+p6 <- ggplot(clumped2, aes(x=as.factor(mre), y=studycount)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="Number of phase1 Studies")
+
+p7 <- ggplot(clumped2, aes(x=as.factor(mre), y=HetISq)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="HetISq")
+
+p8 <- ggplot(clumped2, aes(x=as.factor(mre), y=tausq)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="tausq")
+
+p9 <- ggplot(clumped2, aes(x=as.factor(mre), y=TotalSampleSize)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="TotalSampleSize")
+
+p10 <- ggplot(clumped2, aes(x=as.factor(mre), y=rsq)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="rsq")
+
+p11 <- ggplot(clumped2, aes(x=as.factor(mre), y=maf)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="maf")
+
+p12 <- ggplot(clumped2, aes(x=as.factor(mre), y=cpgsd)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="mre", y="cpgsd")
+
+pdf("../images/mrevsfe.pdf", width=7, height=7)
+grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,ncol=3,nrow=4)
+dev.off()
+
+
+
+###
 p1 <- ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
 geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
@@ -307,25 +512,42 @@ theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
 labs(y="Isq for mQTL with p < 1e-14")
 ggsave(plot=p1, file="../images/isq_direction.pdf", width=10, height=6)
 
-temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
 p1 <- ggplot(temp4, aes(x=Direction, y=tausq)) +
 geom_boxplot(fill="red") +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
 labs(y="Tausq for mQTL with p < 1e-14") + scale_y_log10()
 ggsave(plot=p1, file="../images/tausq_direction.pdf", width=10, height=6)
 
-temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
+p1 <- ggplot(temp4, aes(x=cpgsd, y=tausq)) +
+geom_point(alpha=0.04) +
+theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
+labs(y="Tausq for mQTL with p < 1e-14") + scale_y_log10()
+labs(x="SD for mQTL CpG")
+ggsave(plot=p1, file="../images/tausq_cpgsd.pdf", width=10, height=6)
+
+temp4$sdcat<-cut(as.numeric(as.character(temp4$cpgsd)), breaks = seq(0,1,by=0.01))
+labs <- data.frame(table(temp4$sdcat))
+m<-match(temp4$sdcat,labs[,1])
+temp4<-data.frame(temp4,Ncatsd=as.character(labs[m,-1]))
+
+m <- data.frame(c(by(abs(temp4$tausq), temp4$sdcat, max)))
+m2<-match(temp4$sdcat,row.names(m))
+temp4<-data.frame(temp4,maxtausq=abs(m[m2,]))
+
+p1<-ggplot(temp4, aes(x=sdcat, y=tausq)) +
+geom_boxplot() +
+geom_text(data=temp4, aes(x=temp4$sdcat,y = (maxtausq+0.1),label = Ncatsd),vjust = 0,size=3) +
+ylab("Tau^2") 
+ggsave(p1,file="../images/sdcatvstausq.pdf",height=6,width=16)
+
 p1 <- ggplot(temp4, aes(x=HetISq, y=tausq)) +
 geom_point(alpha=0.04) +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5)) +
 labs(y="Tausq for mQTL with p < 1e-14") + scale_y_log10()
 labs(x="Isq for mQTL with p < 1e-14")
-
 ggsave(plot=p1, file="../images/tausq_isq.pdf", width=10, height=6)
 
-temp4 <- subset(clumped, pval < 1e-14 & Direction %in% dir_count$Direction)
 temp4$Effect_abs<-abs(temp4$Effect)
-
 temp4$i2cat<-cut(as.numeric(as.character(temp4$HetISq)), breaks = seq(0,100,by=10))
 w<-which(is.na(temp4$i2cat))
 table(temp4$HetISq[w])
@@ -365,10 +587,24 @@ geom_boxplot() +
 geom_text(data=temp4, aes(x=temp4$tau2cat,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
 ylab("Beta coefficient") 
 ggsave(p1,file="../images/tau2catvsbeta.pdf",height=6,width=16)
+
+temp4$studycount<-factor(temp4$studycount,levels=temp4$studycount[order(as.numeric(as.character(temp4$studycount)))])
+p1<-ggplot(temp4, aes(x=studycount, y=tausq)) +
+geom_boxplot() +
+#geom_text(data=temp4, aes(x=temp4$tausq,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
+ylab("Tau^2") 
+ggsave(p1,file="../images/tau2vsstudycount.pdf",height=6,width=16)
+
+p1<-ggplot(temp4, aes(x=studycount, y=HetISq)) +
+geom_boxplot() +
+#geom_text(data=temp4, aes(x=temp4$tausq,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
+ylab("I2") 
+ggsave(p1,file="../images/i2vsstudycount.pdf",height=6,width=16)
+
 #
 temp4$qcat<-cut(as.numeric(as.character(temp4$HetChiSq)), breaks = seq(0,2000,by=10))
 w<-which(is.na(temp4$qcat))
-table(temp4$qcat[w])
+#table(temp4$qcat[w])
 temp4$qcat[w]<-"(0,10]"
 
 labs <- data.frame(table(temp4$qcat))
@@ -384,6 +620,8 @@ geom_boxplot() +
 geom_text(data=temp4, aes(x=temp4$qcat,y = (maxbeta_q+0.1),label = Ncatq),vjust = 0,size=3) +
 ylab("Beta coefficient") 
 ggsave(p1,file="../images/qcatvsbeta.pdf",height=6,width=16)
+
+
 
 # Conditioanl 
 
