@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=meta17
-#SBATCH --array=1-300
+#SBATCH --array=255
 #SBATCH --nodes=1 --mem=25G --time=0-12:00:00
 
 set -e
