@@ -96,29 +96,38 @@ ggsave(p1,file="../images/SNPsbyNcohort.pdf",width=8,height=6)
 
 # Sort getmstatistic_results dataframe by M statistics
 getm_res_srtd <- dplyr::arrange(dframe, M)
-getm_res_plus_n <- merge(getm_res_srtd, ss, by.x="study_names_in", by.y="study")
+
+# First, drop duplicate study_names in the sorted getmsatistic_results
+getm_res_srtd_nodups <- subset(getm_res_srtd, getm_res_srtd$snp == 5)
+
+# Checking dimensions to confirm that we have 48 studies
+str(getm_res_srtd_nodups)
+
+
+getm_res_plus_n <- merge(getm_res_srtd_nodups, ss, by.x="study_names_in", by.y="study")
 
 # Sort data.frame by M statistics
 getm_res_plus_n_srtd <- dplyr::arrange(getm_res_plus_n, M)
-metafor_results_fe <- metafor::rma.uni(yi = getm_res_plus_n_srtd[, "M"], sei = getm_res_plus_n_srtd[, "M_se"], weighted = T, slab = sprintf("%02.0f", getm_res_plus_n_srtd[, "study"]), method = "FE")
+metafor_results_fe <- metafor::rma.uni(yi = getm_res_plus_n_srtd[, "M"], sei = getm_res_plus_n_srtd[, "M_se"], weighted = T, slab = getm_res_plus_n_srtd[, "study_names_in"], method = "FE")
 
 # Compute inverse-variance weighted random effects model
-metafor_results_dl <- metafor::rma.uni(yi = getm_res_plus_n_srtd[, "M"], sei = getm_res_plus_n_srtd[, "M_se"], weighted = T, knha = T, slab = sprintf("%2.0f", getm_res_plus_n_srtd[, "study"]), method = "DL")
+metafor_results_dl <- metafor::rma.uni(yi = getm_res_plus_n_srtd[, "M"], sei = getm_res_plus_n_srtd[, "M_se"], weighted = T, knha = T, slab = getm_res_plus_n_srtd[, "study_names_in"], method = "DL")
 metafor_results_dl
 
 
 # Plotting:
 
 # set margins
+pdf("mstat.forestplot.pdf",height=6,width=6)
 par(mar=c(4,4,1,2))
 
+#forest(metafor_results_fe,cex=0.01,psize=0.01)
 # generate forest plot
-forest(metafor_results_fe, xlim=c(-1.8, 1.6), at=c(-1, -0.5, 0, 0.5, 1), cex=0.66, xlab = "M statistic", ilab=cbind(getm_res_plus_cases_ctrls_srtd$cases, getm_res_plus_cases_ctrls_srtd$controls), ilab.xpos = c(-1.4,-1.1), ilab.pos = c(2,2), addfit=F)
+forest(metafor_results_fe, xlim=c(-3, 1.6), at=c(-1, -0.5, 0, 0.5, 1), cex=0.66, xlab = "M statistic", ilab=getm_res_plus_n_srtd$n, ilab.xpos = c(-1.1), ilab.pos = c(2,2), addfit=F)
 
 # Adding labels
-text(1.6, 50, "M statistic [95% CI]", pos=2, cex=0.66)
-text(-1.6, 50, "Cases", pos=4, cex=0.66)
-text(-1.39, 50, "Controls", pos=4, cex=0.66)
-text(-1.8, 50, "Study", pos=4, cex=0.66)
-
-
+text(1.6, 27.3, "M statistic [95% CI]", pos=2, cex=0.66)
+text(-1.4, 27.3, "N", pos=4, cex=0.66)
+#text(-1.39, 50, "Controls", pos=4, cex=0.66)
+text(-3, 27.3, "Study", pos=4, cex=0.66)
+dev.off()
