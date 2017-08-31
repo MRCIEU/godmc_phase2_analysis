@@ -165,7 +165,7 @@ df.out2<-df.out2[-w,]
 write.table(df.out2,paste("/panfs/panasas01/sscm/epzjlm/GARFIELD/garfield-data/pval/mqtl/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 f.all2<-f.all2[-w,]
-write.table(r,paste("~/GARFIELD/garfield-data/sel_annotation/chr",j,sep=""),sep=" ",col.names=F,row.names=F,quote=F)
+write.table(f.all2[,1:2],paste("~/GARFIELD/garfield-data/sel_annotation/chr",j,sep=""),sep=" ",col.names=F,row.names=F,quote=F)
 
 
 
