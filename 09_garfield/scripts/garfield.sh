@@ -13,8 +13,8 @@ ANNOTDIR=$ANNODIR
 ANNOTLINKFILE=$ANNOTDIR/link_file.txt
 NPERM=100000
 NANNOT=$((`cat $ANNOTLINKFILE | wc -l` - 1))
-PTHRESH=1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7,1e-8
-PTHRESHTEST=1e-5,1e-6,1e-7,1e-8
+PTHRESH=5e-5,5e-6,5e-7,5e-8
+PTHRESHTEST=5e-5,5e-6,5e-7,5e-8
 BINNING=m10n10t7
 
 # Parts that will change for each clinical trait
