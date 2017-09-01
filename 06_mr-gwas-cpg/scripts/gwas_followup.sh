@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=gwasfumr
-#SBATCH --nodes=1 --mem=25G --time=0-20:00:00
+#SBATCH --nodes=1 --mem=30G --time=0-20:00:00
 #SBATCH --array=1-481
 
 echo "Running on ${HOSTNAME}"

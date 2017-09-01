@@ -10,7 +10,7 @@ load("/mnt/storage/home/gh13047/repo/godmc_phase2_analysis/06_mr-gwas-cpg/result
 
 load("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/snps_gwas.rdata")
 a <- subset(gwas, mr_keep.exposure == TRUE)
-a <- subset(a, exposure %in% res$exposure)
+# a <- subset(a, exposure %in% res$exposure)
 
 res$code <- paste(res$exposure, res$outcome)
 
@@ -47,48 +47,51 @@ m <- list()
 for(i in i1:nrow(param))
 {
 	message(i, " of ", nrow(param))
-	fn <- paste0("zcat ../../results/17/17_", param$chunk[i], ".txt.gz")
-	if(fn != curr)
+	if(param$gwas[i] %in% res$exposure)
 	{
-		message("Reading")
-		b <- fread(fn)
-		b <- separate(b, MarkerName, c("snp", "cpg"), "_")
-		b <- subset(b, cpg %in% res$outcome)
-		curr <- fn
-	} else {
-		message("Same cpg file")
-	}
-	exposure <- subset(a, exposure == param$gwas[i])
-	exposure$SNP <- exposure$id
-	exposure$exposure <- param$gwas[i]
-	exposure <- subset(exposure, select=-c(id, trait))
-
-	outcome <- subset(b, snp %in% exposure$SNP)
-	if(nrow(outcome) > 0)
-	{
-		message("Formatting")
-		outcome <- format_data(outcome, type="outcome",
-			phenotype_col="cpg",
-			snp_col="snp",
-			beta_col="Effect",
-			se_col="StdErr",
-			effect_allele_col="Allele1",
-			other_allele_col="Allele2",
-			eaf_col="Freq1",
-			pval_col="P-value",
-			samplesize_col="TotalSampleSize"
-		)
-		exposure$SNP <- tolower(exposure$SNP)
-		message("Harmonising")
-		dat <- suppressMessages(harmonise_data(exposure, outcome, action=2))
-		dat$code <- paste(dat$exposure, dat$outcome)
-		dat <- subset(dat, code %in% res$code)
-		if(nrow(dat) > 0)
+		fn <- paste0("zcat ../../results/17/17_", param$chunk[i], ".txt.gz")
+		if(fn != curr)
 		{
-			message("Analysing")
-			m[[i]] <- suppressMessages(mr(dat))
-			message("Saving")
-			save(m, dat, file=outtemp)
+			message("Reading")
+			b <- fread(fn)
+			b <- separate(b, MarkerName, c("snp", "cpg"), "_")
+			b <- subset(b, cpg %in% res$outcome)
+			curr <- fn
+		} else {
+			message("Same cpg file")
+		}
+		exposure <- subset(a, exposure == param$gwas[i])
+		exposure$SNP <- exposure$id
+		exposure$exposure <- param$gwas[i]
+		exposure <- subset(exposure, select=-c(id, trait))
+
+		outcome <- subset(b, snp %in% exposure$SNP)
+		if(nrow(outcome) > 0)
+		{
+			message("Formatting")
+			outcome <- format_data(outcome, type="outcome",
+				phenotype_col="cpg",
+				snp_col="snp",
+				beta_col="Effect",
+				se_col="StdErr",
+				effect_allele_col="Allele1",
+				other_allele_col="Allele2",
+				eaf_col="Freq1",
+				pval_col="P-value",
+				samplesize_col="TotalSampleSize"
+			)
+			exposure$SNP <- tolower(exposure$SNP)
+			message("Harmonising")
+			dat <- suppressMessages(harmonise_data(exposure, outcome, action=2))
+			dat$code <- paste(dat$exposure, dat$outcome)
+			dat <- subset(dat, code %in% res$code)
+			if(nrow(dat) > 0)
+			{
+				message("Analysing")
+				m[[i]] <- suppressMessages(mr(dat))
+				message("Saving")
+				save(m, dat, file=outtemp)
+			}
 		}
 	}
 }
