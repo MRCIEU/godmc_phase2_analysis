@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # Parts that will stay the same throughout all clinical traits
-DATADIR=../garfield-data
+DATADIR=/mnt/data1/programs/GARFIELD/garfield-data
 ANNODIR=/mnt/data1/goDMC_Phase2/godmc_phase2_analysis/09_garfield/annotation/
+GARFIELDDIR=/mnt/data1/programs/GARFIELD/garfield/
 
 PRUNETAGSDIR=$DATADIR/tags/r01
 CLUMPTAGSDIR=$DATADIR/tags/r08
@@ -17,8 +18,8 @@ PTHRESHTEST=1e-5,1e-6,1e-7,1e-8
 BINNING=m10n10t7
 
 # Parts that will change for each clinical trait
-GWASTRAIT=Height
-INPUTNAME=GIANT_HEIGHT
+GWASTRAIT=$1
+INPUTNAME=$2
 PVALDIR=$DATADIR/pval/$INPUTNAME
 
 OUTDIR=/mnt/data1/goDMC_Phase2/godmc_phase2_analysis/09_garfield/results/$INPUTNAME
@@ -37,6 +38,7 @@ do
 
 echo 'CHR'$CHR
 
+cd $GARFIELDDIR
 ./garfield-prep $PRUNETAGSDIR/chr$CHR $CLUMPTAGSDIR/chr$CHR $MAFTSSDDIR/chr$CHR $PVALDIR/chr$CHR $ANNOTDIR/chr$CHR 895,975,976,977,978,979,980 >> $F1 || { echo 'Failure!'; } 
 
 done
@@ -49,10 +51,8 @@ echo 'Calculate Fold Enrichment and Significance'
 # original permutation step
 #./garfield-perm -n $NPERM -a $NANNOT -p $PTHRESH -pt $PTHRESHTEST -q $BINNING -i $F1 -o $F2
 
-echo 'Create Plots'
+#echo 'Create Plots'
 
-Rscript garfield-plot.R $F2 $NPERM $OUTDIR/garfield.${INPUTNAME} ${GWASTRAIT} 10 0
+#Rscript garfield-plot.R $F2 $NPERM $OUTDIR/garfield.${INPUTNAME} ${GWASTRAIT} 10 0
 
 echo 'GARFIELD Analysis Complete!'
-
-
