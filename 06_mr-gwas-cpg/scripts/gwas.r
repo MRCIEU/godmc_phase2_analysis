@@ -28,6 +28,8 @@ param <- param[first:last, ]
 out <- paste0("../results/out", jid, ".rdata")
 outtemp <- paste0(out, ".temp")
 
+if(file.exists(out)) q()
+
 if(file.exists(outtemp))
 {
 	load(outtemp)

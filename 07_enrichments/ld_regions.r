@@ -71,14 +71,14 @@ retaincpg<-retaincpg[-rm]
  
 nrow(cl)
 
-#316245
+#342722
 cl<-cl[which(cl$cpg%in%retaincpg),]
 nrow(cl)
-#[1] 249008
+#[1] 269780
 
  
 length(unique(cl$snp))
-#[1] 186395
+#[1] 199843
 
 y<-meffil.get.features("450k")
 
@@ -315,5 +315,6 @@ f.all<-rbind(f.all,f)
 save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
  
 }
+
 
 
