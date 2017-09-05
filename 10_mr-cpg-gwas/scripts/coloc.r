@@ -68,18 +68,23 @@ run_coloc <- function(dat, type1, type2)
 
 ## Setup data
 
-load("../data/coloc_data.rdata")
 
 ## Parallel
 
-snplist <- unique(filtered_gwas_mqtl$V2)
 args <- commandArgs(T)
 jid <- as.numeric(args[1])
 num <- as.numeric(args[2])
+
+out <- paste0("../results/coloc", jid, ".rdata")
+
+if(file.exists(out)) q()
+
+load("../data/coloc_data.rdata")
+snplist <- unique(filtered_gwas_mqtl$V2)
+
 first <- (jid - 1) * num + 1
 last <- min(jid * num, length(snplist))
 snplist <- snplist[first:last]
-out <- paste0("../results/coloc", jid, ".rdata")
 
 i <- 0
 res <- filter(filtered_gwas_mqtl, V2 %in% snplist) %>%
