@@ -10,87 +10,92 @@ get_gene_from_cpg <- function(cpglist, out="symbol", annot=anno)
 	return(xli)
 }
 
-gsea_enrichment <- function(gene.list, gene.set, universe)
+gsea_wrapper <- function(gene.list, universe, MSigDB)
 {
-	gene.list2 <- gene.list[gene.list %in% universe]
-	gene.set2 <- gene.set[gene.set %in% universe]
-	if(length(gene.set2) > 0)
-	{
-		noverlap <- sum(gene.list2 %in% gene.set2)
-		p <- phyper(noverlap, length(gene.set2), length(universe) - length(gene.set2), length(gene.list2), lower.tail=FALSE)
-	} else {
-		noverlap <- 0
-		p <- NA
-	}
-	d <- data.frame(
-		gene_orig = length(gene.list),
-		set_orig = length(gene.set),
-		universe = length(universe),
-		gene = length(gene.list2),
-		set = length(gene.set2),
-		overlap = noverlap,
-		pval = p
-	)
-	return(d)
-}
-
-gsea_wrapper <- function(gene.list, universe)
-{
-	require(MSigDB)
-
 	# Make list of gene sets
-	nom1 <- names(MSigDB)
-	l <- list()
-	for(i in 1:length(nom1))
+	a <- list()
+	for(i in 1:length(MSigDB))
 	{
-		l[[i]] <- data.frame(category = nom1[i], gene.set = names(MSigDB[[nom1[i]]]), stringsAsFactors = FALSE)
+		a[[i]] <- data.frame(category = names(MSigDB)[i], gene.set = names(MSigDB[[i]]), set = sapply(MSigDB[[i]], length), stringsAsFactors = FALSE)
 	}
-	gene.sets <- bind_rows(l)
-
-	# For each gene set perform enrichment
-	out <- gene.sets %>%
-		group_by(category, gene.set) %>%
-		do({
-			x <- .
-			gsea_enrichment(gene.list, MSigDB[[x$category]][[x$gene.set]], universe)
-		})
-	out$fdr <- p.adjust(out$pval, "fdr")
-	return(out)
+	gene.sets <- bind_rows(a)
+	for(i in 1:nrow(gene.sets))
+	{
+		gene.sets$overlap[i] <- sum(gene.list %in% MSigDB[[gene.sets$category[i]]][[gene.sets$gene.set[i]]])
+	}
+	gene.sets$pval <- phyper(gene.sets$overlap, gene.sets$set, length(universe)-gene.sets$set, length(gene.list), lower.tail=FALSE)
+	gene.sets$fdr <- p.adjust(gene.sets$pval, "fdr")
+	return(gene.sets)
 }
 
-## Run
 
+permute_wc <- function(wc)
+{
+	wc$cpg <- sample(wc$cpg, replace=FALSE)
+	return(wc)
+}
 
+# Run main analysis
+# Save full result
+# Run permutations
+# Save number of sets exceeding FDR 0.05
 
 suppressPackageStartupMessages(library(dplyr, quietly = TRUE))
 suppressPackageStartupMessages(library(igraph, quietly = TRUE))
 suppressPackageStartupMessages(library(mygene, quietly = TRUE))
-suppressPackageStartupMessages(library(MSigDB, quietly = TRUE))
 
 
 args <- commandArgs(T)
 jid <- as.numeric(args[1])
-num <- as.numeric(args[2])
 
-out <- paste0("../results/annot", jid, ".rdata")
-if(file.exists(out)) q()
+out1 <- paste0("../results/annot", jid, ".rdata")
+out2 <- paste0("../results/annot_perm", jid, ".rdata")
+if(all(file.exists(c(out1, out2)))) q()
 
 load("../data/entrez_genes.rdata")
 load("../results/graph.rdata")
-universe <- unique(masterlist$ind)
+universe <- unique(anno$values)
 
-first <- (jid - 1) * num + 1
-last <- min(jid * num, length(wc))
-message("Running ", first, " to ", last)
+wc <- membership(wc)
+wc <- data.frame(cpg=names(wc), membership=as.numeric(wc), stringsAsFactors = FALSE)
 
-l <- list()
-for(i in first:last)
+count <- table(wc$membership)
+keep <- as.numeric(names(count)[count >= 10])
+wc <- subset(wc, membership %in% keep)
+
+memlist <- unique(sort(wc$membership))
+mem <- memlist[jid]
+
+message(jid, " : ", mem)
+
+gene.list <- subset(wc, membership==mem)$cpg %>% get_gene_from_cpg
+res <- gsea_wrapper(gene.list, universe, MSigDB2)
+res$mem <- mem
+save(res, file=out1)
+
+message("Running permutations")
+
+nperm <- 100
+perms <- data.frame(
+	mem = mem,
+	perm = 0:nperm,
+	minpval = NA,
+	sig = NA,
+	fdr = NA
+)
+
+perms$minpval[1] <- min(res$pval, na.rm=TRUE)
+perms$sig[1] <- sum(res$pval < 0.05, na.rm=TRUE)
+perms$fdr[1] <- sum(res$fdr < 0.05, na.rm=TRUE)
+
+for(i in 1:nperm)
 {
-	message("Community ", i, " of ", length(wc))
-	gene.list <- wc[[i]] %>% get_gene_from_cpg
-	l[[i]] <- gsea_wrapper(gene.list, universe)
-	l[[i]]$community <- i
+	message(i)
+	gene.list2 <- subset(permute_wc(wc), membership==mem)$cpg %>% get_gene_from_cpg
+	b <- gsea_wrapper(gene.list2, universe, MSigDB2)
+	perms$minpval[i+1] <- min(b$pval, na.rm=TRUE)
+	perms$sig[i+1] <- sum(b$pval < 0.05, na.rm=TRUE)
+	perms$fdr[i+1] <- sum(b$fdr < 0.05, na.rm=TRUE)
 }
 
-res <- bind_rows(l)
-save(res, file=out)
+save(perms, file=out2)

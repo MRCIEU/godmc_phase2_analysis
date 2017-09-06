@@ -1,3 +1,4 @@
+library(MSigDB)
 library(data.table)
 library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 data(IlluminaHumanMethylation450kanno.ilmn12.hg19)
@@ -27,15 +28,54 @@ masterlist <- rbind(m2, m3)
 
 anno2 <- data.frame(cpg=rownames(anno), sym=anno$UCSC_RefGene_Name, stringsAsFactors = FALSE)
 anno3 <- stack(setNames(strsplit(anno2$sym, ";"), anno2$cpg))
+anno3$ind <- as.character(anno3$ind)
 anno4 <- data.frame(values="", ind=anno2$cpg[anno2$sym==""], stringsAsFactors = FALSE)
 anno <- rbind(anno3, anno4)
 
 annocur <- subset(anno, values %in% masterlist$ind)
-annoold <- subset(anno, values %in% masterlist$values)
+annoold <- subset(anno, values %in% masterlist$values & values != "")
+annoempty <- subset(anno, values == "")
 ind <- match(annoold$values, masterlist$values)
 annoold$values <- masterlist$ind[ind]
 
-anno <- rbind(annocur, annoold)
+anno <- rbind(annocur, annoold, annoempty)
 
-save(anno, masterlist, file="../data/entrez_genes.rdata")
+
+replace_old <- function(gl, masterlist, annolist)
+{
+	gl <- gl[(gl %in% masterlist$ind | gl %in% masterlist$values)]
+	if(length(gl) > 0)
+	{
+		index <- gl %in% masterlist$values
+		i <- match(gl[index], masterlist$values)
+		gl[index] <- as.character(masterlist$ind[i])
+	} else {
+		message("none left")
+		return(gl)
+	}
+
+	gl <- gl[gl %in% annolist]
+	return(gl)
+}
+
+k <- 1
+MSigDB2 <- list()
+annolist <- unique(anno$values)
+for(i in 1:length(MSigDB))
+{
+	MSigDB2[[names(MSigDB)[i]]] <- list()
+	for(j in 1:length(MSigDB[[i]]))
+	{
+		message(k)
+		out <- replace_old(MSigDB[[i]][[j]], masterlist, annolist)
+		if(length(out) > 2)
+		{
+			MSigDB2[[i]][[names(MSigDB[[i]])[j]]] <- out
+		}
+		k <- k+1
+	}
+}
+
+
+save(anno, masterlist, MSigDB2, file="../data/entrez_genes.rdata")
 
