@@ -31,7 +31,7 @@ for(i in fn)
 {
 	message(i)
 	load(i)
-	l[[i]] <- subset(res, pval < 0.01)
+	l[[i]] <- subset(res, pval < 0.001)
 }
 res <- bind_rows(l)
 dim(res)

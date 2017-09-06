@@ -75,7 +75,7 @@ save(res, file=out1)
 
 message("Running permutations")
 
-nperm <- 100
+nperm <- 1000
 perms <- data.frame(
 	mem = mem,
 	perm = 0:nperm,
