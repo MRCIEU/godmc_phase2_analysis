@@ -9,3 +9,4 @@
 ./garfield.sh BipolarDisorder BipolarDisorder;
 ./garfield.sh CoronaryArteryDisease CAD_2014;
 ./garfield.sh MyocardialInfarction MI_2015;
+./garfield.sh ApoptoticDermatitis ECZEMA;

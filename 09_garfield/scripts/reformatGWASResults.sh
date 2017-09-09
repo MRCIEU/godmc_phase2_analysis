@@ -62,4 +62,26 @@ for chr in {1..22};
 	do awk '{if ($2 == "'$chr'") print $3,$11}' mi.add.030315.website.txt | sort -n > $PVALDIR/MI_2015/chr${chr};
 done
 
+mkdir -p $PVALDIR/ECZEMA
 
+cd /mnt/data1/reference_files/EAGLE_ECZEMA_CONSORTIUM/AD
+for chr in {1..22};
+	do awk '{if ($2 == "'$chr'") print $3,$10}' EAGLE_AD_GWAS_results_2015.txt | sort -n > $PVALDIR/ECZEMA/chr${chr};
+done
+
+mkdir -p $PVALDIR/IBD
+mkdir -p $PVALDIR/Crohns
+mkdir -p $PVALDIR/UC
+
+cd /mnt/data1/reference_files/IBD/iibdgc-trans-ancestry-summary-stats
+for chr in {1..22};
+	do awk '{if ($1 == "'$chr'") print $3,$11}' EUR.CD.gwas.assoc | sort -n > $PVALDIR/Crohns/chr${chr};
+done
+
+for chr in {1..22};
+	do awk '{if ($1 == "'$chr'") print $3,$11}' EUR.IBD.gwas.assoc | sort -n > $PVALDIR/IBD/chr${chr};
+done
+
+for chr in {1..22};
+	do awk '{if ($1 == "'$chr'") print $3,$11}' EUR.UC.gwas.assoc | sort -n > $PVALDIR/UC/chr${chr};
+done
