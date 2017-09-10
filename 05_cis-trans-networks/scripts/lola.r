@@ -101,10 +101,15 @@ save(enr_global, enr_creg, enr_tcpg, file="../results/lola_global.rdata")
 enr_communities <- runLOLA(userset, communitymqtl, tfbsdb, cores=10)
 save(enr_communities, file="../results/lola_communities.rdata")
 
+enr_communities_tophits <- group_by(enr_communities, userSet) %>%
+	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
+	filter(fdr2 < 0.5)
+save(enr_communities_tophits, file="../results/lola_communities_tophits.rdata")
+
 enr_communities_perm <- runLOLA(userset_perm, communitymqtl, tfbsdb, cores=10)
 save(enr_communities_perm, file="../results/lola_communities_perm.rdata")
 
-
+#####
 
 x <- subset(enr_communities, collection == "encode_tfbs")
 length(unique(x$description))
