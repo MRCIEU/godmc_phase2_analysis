@@ -54,3 +54,22 @@ for(i in 1:nperm)
 
 save(corres, mean_cor_perms, file="../results/corres.rdata")
 
+
+
+library(dplyr)
+library(ggplot2)
+
+load("../results/corres.rdata")
+load("../results/graph.rdata")
+a <- inner_join(resdat, subset(corres, select=c(creg, tcpg, r)), by=c("creg", "tcpg"))
+a$rquant <- cut(sqrt(abs(a$r)), breaks=5)
+
+ggplot(a, aes(x=waldratio, y=r)) + geom_point(alpha=0.1, aes(colour=rquant)) + scale_colour_brewer(type="qual")
+
+with(subset(a, abs(r) > 0.0), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
+with(subset(a, abs(r) > 0.1), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
+with(subset(a, abs(r) > 0.2), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
+with(subset(a, abs(r) > 0.3), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
+with(subset(a, abs(r) > 0.4), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
+with(subset(a, abs(r) > 0.5), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
+with(subset(a, abs(r) > 0.6), table(sign(waldratio) == sign(r))/sum(!is.na(r)))
