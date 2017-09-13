@@ -10,10 +10,12 @@ load("../../results/16/16_clumped.rdata")
 # table(naeem_keep %in% naeem$probe) / nrow(naeem)
 # clumped <- subset(clumped, cpg %in% naeem_keep)
 
+zhou <- scan("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what=character())
+clumped <- subset(clumped, cpg %in% zhou)
 
 # Get the trans hits
 
-tcpg <- subset(clumped, !cis & pval < 1e-10)
+tcpg <- subset(clumped, !cis & pval < 1e-8)
 tcpg <- data_frame(snp=tcpg$snp, tcpg_chr=tcpg$cpgchr, tcpg_pos=tcpg$cpgpos, tcpg_pval=tcpg$pval, tcpg_b=tcpg$Effect, tcpg=tcpg$cpg)
 
 creg <- subset(clumped, cis & pval < 1e-8)
@@ -40,8 +42,18 @@ length(wc)
 m <- membership(wc)
 m <- data_frame(cpg=names(m), cluster=as.numeric(m))
 
-save(m, file="../../results/enrichments/cis_trans.rdata")
+temp <- bind_rows(
+	data_frame(cpg=dat$creg, snp=dat$snp, type="creg"),
+	data_frame(cpg=dat$tcpg, snp=dat$snp, type="tcpg")) %>% 
+filter(!duplicated(paste(cpg, type)))
+temp$id <- 1:nrow(temp)
 
+temp <- inner_join(temp, m, by="cpg")
+
+communities <- temp
+
+save(m, file="../../results/enrichments/cis_trans.rdata")
+save(communities, file="../results/communities.rdata")
 
 
 ###########
