@@ -107,22 +107,37 @@ tcpgmqtl <- with(subset(dat2, !duplicated(tcpg)), GRanges(seqnames=tcpg_chr, ran
 
 
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
+tfbsdb2 <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
 
 enr_global <- runLOLA(communitymqtl, allmqtl, tfbsdb)
 enr_creg <- runLOLA(cregmqtl, allmqtl, tfbsdb)
 enr_tcpg <- runLOLA(tcpgmqtl, allmqtl, tfbsdb)
 save(enr_global, enr_creg, enr_tcpg, file="../results/lola_global.rdata")
 
+enr_global2 <- runLOLA(communitymqtl, allmqtl, tfbsdb2)
+enr_creg2 <- runLOLA(cregmqtl, allmqtl, tfbsdb2)
+enr_tcpg2 <- runLOLA(tcpgmqtl, allmqtl, tfbsdb2)
+save(enr_global2, enr_creg2, enr_tcpg2, file="../results/lola_global2.rdata")
+
 enr_communities <- runLOLA(userset, communitymqtl, tfbsdb, cores=10)
 save(enr_communities, file="../results/lola_communities.rdata")
+
+enr_communities2 <- runLOLA(userset, communitymqtl, tfbsdb2, cores=10)
+save(enr_communities2, file="../results/lola_communities2.rdata")
 
 enr_communities_tophits <- group_by(enr_communities, userSet) %>%
 	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
 	filter(fdr2 < 0.5)
-save(enr_communities_tophits, file="../results/lola_communities_tophits.rdata")
+enr_communities_tophits2 <- group_by(enr_communities2, userSet) %>%
+	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
+	filter(fdr2 < 0.5)
+save(enr_communities_tophits, enr_communities_tophits2, file="../results/lola_communities_tophits.rdata")
 
 enr_communities_perm <- runLOLA(userset_perm, communitymqtl, tfbsdb, cores=10)
 save(enr_communities_perm, file="../results/lola_communities_perm.rdata")
+
+enr_communities_perm2 <- runLOLA(userset_perm, communitymqtl, tfbsdb2, cores=10)
+save(enr_communities_perm2, file="../results/lola_communities_perm2.rdata")
 
 #####
 
