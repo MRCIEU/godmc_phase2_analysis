@@ -38,13 +38,28 @@ length(wc)
 mem <- membership(wc)
 mem <- data_frame(cpg=names(mem), cluster=as.numeric(mem))
 
+temp <- bind_rows(
+	data_frame(cpg=dat2$creg, snp=dat2$snp, type="creg"),
+	data_frame(cpg=dat2$tcpg, snp=dat2$snp, type="tcpg")) %>% 
+filter(!duplicated(paste(cpg, type)))
+temp$id <- 1:nrow(temp)
+
+temp <- inner_join(temp, mem, by="cpg")
+
+
+
+
 grinfo <- data_frame(
 	cpg=c(dat2$creg, dat2$tcpg),
 	chr=c(dat2$creg_chr, dat2$tcpg_chr),
-	pos=c(dat2$creg_pos, dat2$tcpg_pos)
+	pos=c(dat2$creg_pos, dat2$tcpg_pos),
+	snp=c(dat2$snp, dat2$snp)
 ) %>% filter(!duplicated(cpg))
 grinfo <- inner_join(grinfo, mem, by="cpg") %>% arrange(cluster)
 
+grinfo <- tidyr::separate(grinfo, snp, c("snpchr", "snppos", "snptype"))
+grinfo$snppos <- as.numeric(grinfo$snppos)
+save(grinfo, file="../data/grinfo.rdata")
 
 # Check that position is the same as lola expects
 load("../../data/lola/annotated_cpgs.RData")
@@ -126,4 +141,5 @@ length(unique(x1$userSet))
 unique(x1$userSet)
 
 filter(mem, cluster %in% unique(x1$userSet)) %>% group_by(cluster) %>% summarise(n=n()) %>% arrange(n) %>% as.data.frame
+
 
