@@ -1,3 +1,4 @@
+message("Running SNP enrichments")
 library(dplyr)
 library(LOLA)
 library(igraph)
@@ -26,17 +27,18 @@ grinfo2 <- subset(grinfo, !duplicated(snp))
 
 temp1 <- inner_join(clumped, ldinfo, by=c("snp"="SNP"))
 
-snpuniverse <- GRanges(seqnames=temp1$snpchr, ranges=IRanges(temp1$min, temp1$max), strand="+")
+# DUE TO MEMORY ISSUES ONLY USING 50k mQTLs as background
+index <- sample(1:nrow(temp1), 50000, replace=FALSE)
+snpuniverse <- GRanges(seqnames=temp1$snpchr[index], ranges=IRanges(temp1$min[index], temp1$max[index]), strand="+")
 community_universe <- GRanges(seqnames=grinfo2$snpchr, ranges=IRanges(grinfo2$min, grinfo2$max), strand="+")
 
 
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
-tfbsdb2 <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
 
+message("global")
+enr_snp_global <- runLOLA(community_universe, snpuniverse, tfbsdb)
 
-enr_snp_global <- runLOLA(community_universe, snpuniverse, tfbsdb)y
-enr_snp_global2 <- runLOLA(community_universe, snpuniverse, tfbsdb2)
-save(enr_snp_global2, enr_snp_global, file="../results/lola_snp_global.rdata")
+save(enr_snp_global, file="../results/lola_snp_global.rdata")
 
 temp <- lapply(split(enr_communities_tophits, enr_communities_tophits$antibody), function(x) {
 	a <- subset(grinfo, cluster %in% x$userSet)
@@ -44,11 +46,38 @@ temp <- lapply(split(enr_communities_tophits, enr_communities_tophits$antibody),
 	return(GRanges(seqnames=a$snpchr, ranges=IRanges(a$min, a$max), strand="+"))
 }) %>% GRangesList
 
-enr_snp_communities <- runLOLA(temp, community_universe, tfbsdb, cores=10)
+message("communities")
+enr_snp_communities <- list()
+for(i in 1:length(temp))
+{
+	message(i)
+	 enr_snp_communities[[i]] <- runLOLA(temp[[i]], community_universe, tfbsdb, cores=5)
+	 enr_snp_communities[[i]][, "userSet"] <- rep(names(temp)[i], nrow(enr_snp_communities[[i]]))
+}
+enr_snp_communities <- bind_rows(enr_snp_communities)
 save(enr_snp_communities, file="../results/lola_snp_communities.rdata")
 
-enr_snp_communities2 <- runLOLA(temp, community_universe, tfbsdb2, cores=10)
+rm(tfbsdb)
+gc()
+
+
+tfbsdb2 <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
+
+message("global2")
+enr_snp_global2 <- runLOLA(community_universe, snpuniverse, tfbsdb2)
+save(enr_snp_global2, file="../results/lola_snp_global2.rdata")
+
+message("communities2")
+enr_snp_communities2 <- list()
+for(i in 1:length(temp))
+{
+	message(i, " of ", length(temp))
+	 enr_snp_communities2[[i]] <- runLOLA(temp[[i]], community_universe, tfbsdb2, cores=5)
+	 enr_snp_communities2[[i]][, "userSet"] <- rep(names(temp)[i], nrow(enr_snp_communities2[[i]]))
+}
+enr_snp_communities2 <- bind_rows(enr_snp_communities2)
 save(enr_snp_communities2, file="../results/lola_snp_communities2.rdata")
+
 
 
 # Quick summary
