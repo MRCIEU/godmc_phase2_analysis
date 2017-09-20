@@ -31,11 +31,14 @@ temp1 <- inner_join(clumped, ldinfo, by=c("snp"="SNP"))
 index <- sample(1:nrow(temp1), 50000, replace=FALSE)
 snpuniverse <- GRanges(seqnames=temp1$snpchr[index], ranges=IRanges(temp1$min[index], temp1$max[index]), strand="+")
 community_universe <- GRanges(seqnames=grinfo2$snpchr, ranges=IRanges(grinfo2$min, grinfo2$max), strand="+")
+names(community_universe) <- grinfo2$snp
 
 temp <- lapply(split(enr_communities_tophits, enr_communities_tophits$antibody), function(x) {
 	a <- subset(grinfo, cluster %in% x$userSet)
 	a <- subset(a, !duplicated(snp))
-	return(GRanges(seqnames=a$snpchr, ranges=IRanges(a$min, a$max), strand="+"))
+	b <- GRanges(seqnames=a$snpchr, ranges=IRanges(a$min, a$max), strand="+")
+	names(b) <- a$snp
+	return(b)
 }) %>% GRangesList
 
 
