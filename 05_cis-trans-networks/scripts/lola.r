@@ -105,7 +105,12 @@ communitymqtl <- readBed("../data/lola/communitymqtl.bed")
 cregmqtl <- with(subset(dat2, !duplicated(creg)), GRanges(seqnames=creg_chr, ranges=IRanges(creg_pos, creg_pos), strand="+"))
 tcpgmqtl <- with(subset(dat2, !duplicated(tcpg)), GRanges(seqnames=tcpg_chr, ranges=IRanges(tcpg_pos, tcpg_pos), strand="+"))
 
+# Save for future analysis
+community_cpgs <- communitymqtl
+community_cpgs_separate <- userset
+save(community_cpgs, community_cpgs_separate, file="../data/lola/cpg_granges.rdata")
 
+# Read in stuff
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
 
 message("global")

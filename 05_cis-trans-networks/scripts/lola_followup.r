@@ -32,6 +32,17 @@ index <- sample(1:nrow(temp1), 50000, replace=FALSE)
 snpuniverse <- GRanges(seqnames=temp1$snpchr[index], ranges=IRanges(temp1$min[index], temp1$max[index]), strand="+")
 community_universe <- GRanges(seqnames=grinfo2$snpchr, ranges=IRanges(grinfo2$min, grinfo2$max), strand="+")
 
+temp <- lapply(split(enr_communities_tophits, enr_communities_tophits$antibody), function(x) {
+	a <- subset(grinfo, cluster %in% x$userSet)
+	a <- subset(a, !duplicated(snp))
+	return(GRanges(seqnames=a$snpchr, ranges=IRanges(a$min, a$max), strand="+"))
+}) %>% GRangesList
+
+
+## Saving for future analysis
+community_snps <- community_universe
+community_snps_separate <- temp
+save(community_snps, community_snps_separate, file="../data/lola/snp_granges.rdata")
 
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
 
@@ -39,12 +50,6 @@ message("global")
 enr_snp_global <- runLOLA(community_universe, snpuniverse, tfbsdb)
 
 save(enr_snp_global, file="../results/lola_snp_global.rdata")
-
-temp <- lapply(split(enr_communities_tophits, enr_communities_tophits$antibody), function(x) {
-	a <- subset(grinfo, cluster %in% x$userSet)
-	a <- subset(a, !duplicated(snp))
-	return(GRanges(seqnames=a$snpchr, ranges=IRanges(a$min, a$max), strand="+"))
-}) %>% GRangesList
 
 message("communities")
 enr_snp_communities <- list()
