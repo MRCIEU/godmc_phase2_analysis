@@ -38,13 +38,28 @@ length(wc)
 mem <- membership(wc)
 mem <- data_frame(cpg=names(mem), cluster=as.numeric(mem))
 
+temp <- bind_rows(
+	data_frame(cpg=dat2$creg, snp=dat2$snp, type="creg"),
+	data_frame(cpg=dat2$tcpg, snp=dat2$snp, type="tcpg")) %>% 
+filter(!duplicated(paste(cpg, type)))
+temp$id <- 1:nrow(temp)
+
+temp <- inner_join(temp, mem, by="cpg")
+
+
+
+
 grinfo <- data_frame(
 	cpg=c(dat2$creg, dat2$tcpg),
 	chr=c(dat2$creg_chr, dat2$tcpg_chr),
-	pos=c(dat2$creg_pos, dat2$tcpg_pos)
+	pos=c(dat2$creg_pos, dat2$tcpg_pos),
+	snp=c(dat2$snp, dat2$snp)
 ) %>% filter(!duplicated(cpg))
 grinfo <- inner_join(grinfo, mem, by="cpg") %>% arrange(cluster)
 
+grinfo <- tidyr::separate(grinfo, snp, c("snpchr", "snppos", "snptype"))
+grinfo$snppos <- as.numeric(grinfo$snppos)
+save(grinfo, file="../data/grinfo.rdata")
 
 # Check that position is the same as lola expects
 load("../../data/lola/annotated_cpgs.RData")
@@ -90,24 +105,66 @@ communitymqtl <- readBed("../data/lola/communitymqtl.bed")
 cregmqtl <- with(subset(dat2, !duplicated(creg)), GRanges(seqnames=creg_chr, ranges=IRanges(creg_pos, creg_pos), strand="+"))
 tcpgmqtl <- with(subset(dat2, !duplicated(tcpg)), GRanges(seqnames=tcpg_chr, ranges=IRanges(tcpg_pos, tcpg_pos), strand="+"))
 
+# Save for future analysis
+community_cpgs <- communitymqtl
+community_cpgs_separate <- userset
+save(community_cpgs, community_cpgs_separate, file="../data/lola/cpg_granges.rdata")
 
+# Read in stuff
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
 
+message("global")
 enr_global <- runLOLA(communitymqtl, allmqtl, tfbsdb)
+message("creg")
 enr_creg <- runLOLA(cregmqtl, allmqtl, tfbsdb)
+message("tcpg")
 enr_tcpg <- runLOLA(tcpgmqtl, allmqtl, tfbsdb)
 save(enr_global, enr_creg, enr_tcpg, file="../results/lola_global.rdata")
 
-enr_communities <- runLOLA(userset, communitymqtl, tfbsdb, cores=10)
+message("communities")
+enr_communities <- runLOLA(userset, communitymqtl, tfbsdb, cores=5)
 save(enr_communities, file="../results/lola_communities.rdata")
 
 enr_communities_tophits <- group_by(enr_communities, userSet) %>%
 	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
 	filter(fdr2 < 0.5)
-save(enr_communities_tophits, file="../results/lola_communities_tophits.rdata")
 
-enr_communities_perm <- runLOLA(userset_perm, communitymqtl, tfbsdb, cores=10)
+rm(enr_communities)
+gc()
+
+message("permutations")
+enr_communities_perm <- runLOLA(userset_perm, communitymqtl, tfbsdb, cores=5)
 save(enr_communities_perm, file="../results/lola_communities_perm.rdata")
+
+
+rm(tfbsdb)
+gc()
+
+## LOLA EXT
+
+tfbsdb2 <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
+message("global")
+enr_global2 <- runLOLA(communitymqtl, allmqtl, tfbsdb2)
+message("creg")
+enr_creg2 <- runLOLA(cregmqtl, allmqtl, tfbsdb2)
+message("tcpg")
+enr_tcpg2 <- runLOLA(tcpgmqtl, allmqtl, tfbsdb2)
+save(enr_global2, enr_creg2, enr_tcpg2, file="../results/lola_global2.rdata")
+
+message("communities")
+enr_communities2 <- runLOLA(userset, communitymqtl, tfbsdb2, cores=5)
+save(enr_communities2, file="../results/lola_communities2.rdata")
+
+message("permutations")
+enr_communities_perm2 <- runLOLA(userset_perm, communitymqtl, tfbsdb2, cores=5)
+save(enr_communities_perm2, file="../results/lola_communities_perm2.rdata")
+
+enr_communities_tophits2 <- group_by(enr_communities2, userSet) %>%
+	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
+	filter(fdr2 < 0.5)
+
+save(enr_communities_tophits, enr_communities_tophits2, file="../results/lola_communities_tophits.rdata")
+
 
 #####
 
@@ -126,4 +183,5 @@ length(unique(x1$userSet))
 unique(x1$userSet)
 
 filter(mem, cluster %in% unique(x1$userSet)) %>% group_by(cluster) %>% summarise(n=n()) %>% arrange(n) %>% as.data.frame
+
 
