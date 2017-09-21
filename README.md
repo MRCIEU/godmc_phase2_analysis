@@ -1,5 +1,47 @@
 # Phase 2 analysis
 
+The paper is being written [here](https://drive.google.com/drive/folders/0B0vAR1k68I5fZkhpS1I3and0T2s?usp=sharing)
+
+**Current strategy**
+
+1. Use Google docs so that we can write and edit collaboratively
+2. Use [paperpile](http://paperpile.com) for citations. Install it on google chrome so that you can edit / add citations
+
+Problems with google docs: It doesn't do referencing of figures/tables automatically, so have to manually type e.g. Supplementary figure 1 etc.
+
+The paper structure is currently written in the Main document in the shared google drive folder
+
+## To do
+
+There is a task list [here](https://docs.google.com/spreadsheets/d/1VihsoQhCNYwY07g-Asjgr6p9PBnQ44PQqhCSgzYm5mQ/edit?usp=sharing).
+
+Information required from cohorts:
+
+1. Informed consent information
+2. Ethical approval information
+3. Authorships
+
+
+QC section for supplementary information:
+
+1. Generate table from cohort_descriptives.rdata (03/analysis.r)
+2. Plot of n CpGs and n SNPs (03/analysis.r)
+3. M statistics (01/mstat.R)
+4. comparison of FE and MRE (03/analysis.r)
+5. Histograms of effect directions in meta analysis (03/analysis.r)
+6. Meta regression (01/mstat.metaregression.R)
+7. Check 16a and lambdas - add lambdas to table
+8. Show that largest effect sizes have largest heterogeneity because standard errors are very small - scale issue
+
+
+Main figures:
+
+???
+
+---
+
+## How to run each section
+
 ## 01
 
 This performs the meta analysis of the putative mQTLs from section 16 of the pipeline.
