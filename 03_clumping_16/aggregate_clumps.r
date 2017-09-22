@@ -7,11 +7,14 @@ for(i in 1:962)
 	message(i)
 	load(paste0("../results/16/16_", i, "_clumped.rdata"))
 	clumped$chunk <- i
+	clumped$Pvalue <- as.numeric(clumped$Pvalue)
+	clumped$HetPVal <- as.numeric(clumped$HetPVal)
+	clumped$PvalueARE <- as.numeric(clumped$PvalueARE)
+	clumped$PvalueMRE <- as.numeric(clumped$PvalueMRE)
 	l[[i]] <- clumped
 }
 clumped <- bind_rows(l)
 names(clumped)[names(clumped) == "Pvalue"] <- "pval"
-
 save(clumped, file="../results/16/16_clumped.rdata")
 
 q()
@@ -19,8 +22,8 @@ q()
 table(clumped$pval < 5e-8)
 table(clumped$pval < 5e-14)
 
-cs <- subset(clumped, pval < 5e-14)
 
+cs <- subset(clumped, pval < 5e-14)
 table(cs$cis)
 length(unique(cs$cpg))
 
@@ -41,3 +44,4 @@ table(bigt$cpgchr)
 bigt %>% as.data.frame
 ls()
 subset(clumped, snp == x & cis)$pval
+
