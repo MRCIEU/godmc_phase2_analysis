@@ -1,36 +1,34 @@
 #!/bin/bash
 
-#PBS -N meta_16
-#PBS -o job_reports/meta_16-output
-#PBS -e job_reports/meta_16-error
-#PBS -t 1-962
-#PBS -l walltime=02:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -S /bin/bash
-
+#SBATCH --job-name=meta_16
+#SBATCH --nodes=1
+#SBATCH --mem=4G
+#SBATCH --ntasks=1
+#SBATCH --time=0-02:00:00
+#SBATCH --array=11-962%100
+#SBATCH --output=job_reports/slurm-%A_%a.out
 
 
 set -e
 
 # Need to gunzip the results_16.tgz for each cohort
+# change ARIES name to 00ARIES so that it processes first
+# Make sure Dunedin38 excluded - it is a duplicate of Dunedin26
 # Takes about 2 minutes to create each GWAMA file for each cohort
 
 
 echo "Running on ${HOSTNAME}"
 
-if [ -n "${1}" ]; then
-  echo "${1}"
-  PBS_ARRAYID=${1}
-fi
-
 i=${PBS_ARRAYID}
 
+if [ -n "${1}" ]; then
+  echo "${1}"
+  SLURM_ARRAY_TASK_ID=${1}
+fi
 
+i=${SLURM_ARRAY_TASK_ID}
 
-cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/01_meta_analysis_16
-
-
-metal="metal"
+metal="metal_bc4"
 
 cohort_dir="../data/16/"
 metal_dir="../scratch/16_${i}"
@@ -39,7 +37,7 @@ result_dir="../results/16"
 metal_in="16_${i}.in"
 
 mkdir -p ${result_dir}
-mkdir -p ${metal_dir}
+mkdir -p ${metal_dir}/scratch
 rm -f ${metal_dir}/${metal_in}
 touch ${metal_dir}/${metal_in}
 
@@ -63,11 +61,11 @@ for cohort in ${cohort_dir}*16.tar
 do
 
 	echo $cohort
-	cohortname=$(basename "$cohort" .tar)
+	cohortname="scratch/$(basename "$cohort" .tar)"
 	mkdir -p ${cohortname}_${i}
 	cd ${cohortname}_${i}
-	tar xvf ../${cohort} results/16/results_${i}.gz
-	cd ../
+	tar xvf ../../${cohort} results/16/results_${i}.gz
+	cd ../../
 	mv ${cohortname}_${i}/results/16/results_${i}.gz ${metal_dir}/${cohortname}_${i}.gz
 	rm -r ${cohortname}_${i}
 
