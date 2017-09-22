@@ -1,5 +1,31 @@
 # Phase 2 analysis
 
+RDSF location:
+
+```
+/projects/MRC-IEU/research/data/godmc/_devs/GODMC_Analysis/data
+```
+
+BC4 location:
+
+```
+/mnt/storage/private/mrcieu/research/GODMC_Analysis/
+```
+
+BC3 location:
+
+```
+/panfs/panasas01/shared-godmc/
+```
+
+SFTP server location:
+
+```
+/srv/sftponly/GoDMC/
+```
+
+---
+
 The paper is being written [here](https://drive.google.com/drive/folders/0B0vAR1k68I5fZkhpS1I3and0T2s?usp=sharing)
 
 **Current strategy**
