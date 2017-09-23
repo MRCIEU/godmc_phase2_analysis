@@ -6,9 +6,9 @@ Assume that cis-mQTLs can instrument the effects of one CpG on another. Find CpG
 Rscript creg_tcpg.r
 ```
 
-This reads the `16_clumped.rdata` results and builds the cis-trans putative associations, generating `creg_tcpg.rdata`.
+This reads the `16_clumped.rdata` results to find all top trans hits. It then sequentially reads in the meta analysis results to identify which of the trans SNPs influence other CpGs in cis. These cis-trans putative associations are stored in `creg_tcpg.rdata`.
 
-Next, to gain further evidence of possible overlap use the coloc package to estimate the likelihood that the cis and trans mQTLs for a particular SNP share the same causal variant. 
+Next, use the coloc package to estimate the likelihood that the cis and trans mQTLs for a particular SNP share the same causal variant. 
 
 ```
 sbatch coloc.sh
@@ -17,7 +17,9 @@ Rscript coloc_collate.r
 
 This generates `coloc.rdata`. 
 
-Merge the results from colocalisation analysis and construct a graph. Use Walktrap algorithm to find communities of CpGs - these are CpGs that are connected to each other by some path in the graph.
+Merge the results from colocalisation analysis and construct a graph. Only keep SNPs that are Zhou filtered, have posterior probability of colocalisation > 0.8, trans pval < 1e-14 and cis pval < 0.05 / (1e-10).
+
+Create a graph and use Walktrap algorithm to find communities of CpGs - these are CpGs that are connected to each other by some path in the graph.
 
 ```
 Rscript make_graph.r

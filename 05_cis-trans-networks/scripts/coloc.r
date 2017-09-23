@@ -91,7 +91,6 @@ coloc_wrapper <- function(creg, tcpg, creg_chunk, tcpg_chunk)
 }
 
 
-load("../../results/16/16_clumped.rdata")
 load("../results/creg_tcpg.rdata")
 
 args <- commandArgs(T)

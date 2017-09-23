@@ -19,6 +19,8 @@ length(wc)
 mem <- membership(wc)
 save(resdat, gr, wc, mem, file="../results/graph.rdata")
 
+q()
+
 cpg <- rbind(
 	data_frame(cpg=resdat$creg, chr=resdat$creg_chr, pos=resdat$creg_pos),
 	data_frame(cpg=resdat$tcpg, chr=resdat$tcpg_chr, pos=resdat$tcpg_pos)
