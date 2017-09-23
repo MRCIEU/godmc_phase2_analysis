@@ -13,7 +13,7 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 	)
 	system(cmd)
 	fn <- paste0(pval_file, ".jma.cojo")
-	if(!file.exists(fn)) return(NULL)
+	if(!file.exists(fn)) return(data.frame())
 
 	res <- read.table(fn, header=TRUE,
 		colClasses=c("integer", "character", "integer", "character", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% as.tbl
@@ -39,6 +39,15 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 	return(res)
 }
 
+
+# group_by(a, Var1) %>% 
+# do({ 
+# 	x <- .
+# 	if(x$Var1 == 3)
+# 		return(data.frame())
+# 	else
+# 		return(as.tbl(x))
+# })
 
 ##
 

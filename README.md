@@ -143,7 +143,9 @@ qsub run_metal.sh
 
 ## 03
 
-Performing clumping on the results of 01. Using a p-val threshold of 1e-4 for cis and 5e-8 for trans. Using a radius of 1Mb from CpG to denote cis/trans. To run:
+Performing clumping on the results of 01. Using a p-val threshold of 1e-4 for cis and 5e-8 for trans. Using a radius of 1Mb from CpG to denote cis/trans. This uses the European samples in the 1000 genomes data as an LD reference panel.
+
+To run:
 
 ```
 cd 03_clumping_16
@@ -164,20 +166,28 @@ Rscript aggregate_clumps.r
 
 to create the file `results/16/16_clumped.rdata` which contains all the clumped results
 
+To run this on bluecrystal 4 use
+
+```
+sbatch run_clumped_bc4.sh
+```
+
 
 ## 04
 
-Performing conditional analysis on the results of 01. Same p-val thresholds as in 03. Slight problem - using the STDERR method to do the meta analysis in METAL does not return total sample sizes. So until that is fixed, approximating the sample size of every SNP to 2000. I don't know how sensitive the analysis is to this. To run
+Performing conditional analysis on the results of 01. Same p-val thresholds as in 03. Using a larger reference sample (4000 samples in ALSPAC, see `make_alspac_reference_dataset.sh` on details of how to make it.)
+
+To run on bc4
 
 ```
 cd 04_conditional_16
-./run_conditional.sh <batch number>
+./run_conditional_bc4.sh <batch number>
 ```
 
 or
 
 ```
-qsub run_conditional.sh
+sbatch run_conditional_bc4.sh
 ```
 
 
