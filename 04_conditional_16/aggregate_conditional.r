@@ -12,21 +12,30 @@ names(conditional)[names(conditional) == "P-value"] <- "pval"
 
 save(conditional, file="../results/16/16_conditional.rdata")
 
-table(conditional$pval < 5e-8)
-table(conditional$pval < 5e-14)
+table(conditional$pJ < 5e-8)
+table(conditional$pJ < 5e-14)
 
-cs <- subset(conditional, pval < 5e-14)
+cs <- subset(conditional, pJ < 5e-14)
+
+a <- subset(conditional, (cis & pJ < 1e-8) | (!cis & pJ < 1e-14))
+
+b <- group_by(a, cpg, cis) %>%
+	dplyr::summarise(n=n())
+
+group_by(b, cis) %>% summarise(mean=mean(n), median=median(n))
+
+group_by(a, cpg) %>% summarise(n=n()) %>% summarise(mean=mean(n), median=median(n))
 
 table(cs$cis)
 length(unique(cs$cpg))
 
-range(cs$TotalSampleSize)
+range(cs$n)
 
-temp <- conditional[conditional$pval < 1e-14 & !conditional$cis,]
+temp <- conditional[conditional$p < 1e-14 & !conditional$cis,]
 length(unique(temp$cpg))
 table(table(temp$cpg))
 
-temp <- conditional[conditional$pval < 1e-5 & conditional$cis,]
+temp <- conditional[conditional$p < 1e-5 & conditional$cis,]
 length(unique(temp$cpg))
 table(table(temp$cpg))
 
@@ -34,9 +43,9 @@ table(table(temp$cpg))
 # Are there any trans with many hits
 trans <- subset(conditional, !cis)
 x <- names(table(trans$snp)[which.max(table(trans$snp))])
-subset(trans, snp==x)$pval
+subset(trans, snp==x)$p
 bigt <- subset(trans, snp==x)
 table(bigt$cpgchr)
 bigt %>% as.data.frame
 ls()
-subset(conditional, snp == x & cis)$pval
+subset(conditional, snp == x & cis)$p
