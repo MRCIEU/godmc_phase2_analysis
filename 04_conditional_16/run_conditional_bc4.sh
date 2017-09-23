@@ -24,11 +24,7 @@ fi
 
 i=${SLURM_ARRAY_TASK_ID}
 
-cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/04_conditional_16
-
 Rscript conditional_bc4.r ${i} ../results/16/16_${i}_conditional.rdata
-
-
 
 ####
 

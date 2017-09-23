@@ -1,4 +1,6 @@
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(data.table)
 do_conditional <- function(pval_file, bfile, pval_threshold)
 {
 
@@ -9,28 +11,31 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 		" --cojo-p ", pval_threshold,
 		" --out ", pval_file
 	)
-	system(cmd, show.output.on.console = FALSE)
+	system(cmd)
 	fn <- paste0(pval_file, ".jma.cojo")
 	if(!file.exists(fn)) return(NULL)
 
-	res <- read_tsv(fn,
-		col_types=cols(
-		  Chr = col_integer(),
-		  SNP = col_character(),
-		  bp = col_integer(),
-		  refA = col_character(),
-		  freq = col_double(),
-		  b = col_double(),
-		  se = col_double(),
-		  p = col_double(),
-		  n = col_double(),
-		  freq_geno = col_double(),
-		  bJ = col_double(),
-		  bJ_se = col_double(),
-		  pJ = col_double(),
-		  LD_r = col_double()
-		)
-	)
+	res <- read.table(fn, header=TRUE,
+		colClasses=c("integer", "character", "integer", "character", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% as.tbl
+
+	# res <- read_tsv(fn,
+	# 	col_types=cols(
+	# 	  Chr = col_integer(),
+	# 	  SNP = col_character(),
+	# 	  bp = col_integer(),
+	# 	  refA = col_character(),
+	# 	  freq = col_double(),
+	# 	  b = col_double(),
+	# 	  se = col_double(),
+	# 	  p = col_double(),
+	# 	  n = col_double(),
+	# 	  freq_geno = col_double(),
+	# 	  bJ = col_double(),
+	# 	  bJ_se = col_double(),
+	# 	  pJ = col_double(),
+	# 	  LD_r = col_double()
+	# 	)
+	# )
 	return(res)
 }
 
@@ -41,14 +46,14 @@ arguments <- commandArgs(T)
 i <- as.numeric(arguments[1])
 out <- arguments[2]
 
-bfile <- "../data/ref/eur"
+bfile <- "../data/ref/out"
 
 ##
 
 # Get cpg positions
 load("cpg_pos.rdata")
 
-a <- read_tsv(paste0("../results/16/16_", i, ".txt.gz"))
+a <- fread(paste0("zcat ../results/16/16_", i, ".txt.gz"))
 a <- a %>% separate(MarkerName, into=c("snp", "cpg"), sep="_")
 a$snp2 <- a$snp
 a <- a %>% separate(snp2, into=c("snpchr", "snppos", "snptype"), sep=":")
@@ -89,7 +94,6 @@ clumped <- group_by(a, cpg, cis) %>%
 		# Get cis/trans clumping threshold
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_conditional(fn, newbfile, thresh)
-		print(head(keep))
 		system(paste0("rm ", fn, "*"))
 		return(keep)
 	})
