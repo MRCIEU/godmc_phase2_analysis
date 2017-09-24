@@ -1,9 +1,8 @@
 #!/bin/bash
 
-#SBATCH --job-name=coloc
-#SBATCH --nodes=1 --mem=20G --time=0-20:00:00
-# #SBATCH --array=1-191
-#SBATCH --array=7,29,88,99,103,154,158
+#SBATCH --job-name=mr_ld
+#SBATCH --nodes=1 --mem=4G --time=0-20:00:00
+#SBATCH --array=1-701
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 echo "Running on ${HOSTNAME}"
@@ -16,5 +15,5 @@ fi
 
 i=${SLURM_ARRAY_TASK_ID}
 
-Rscript coloc.r ${i} 100
+Rscript mr_ld.r ${i}
 
