@@ -1,6 +1,6 @@
 library(dplyr)
 library(tidyr)
-
+library(GRanges)
 library(igraph)
 
 load("../../results/16/16_clumped.rdata")

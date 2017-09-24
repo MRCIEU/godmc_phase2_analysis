@@ -25,7 +25,19 @@ Create a graph and use Walktrap algorithm to find communities of CpGs - these ar
 Rscript make_graph.r
 ```
 
-This generates `graph.rdata`.
+This generates `graph.rdata` and `graph_unpruned.rdata`. The unpruned one has lots of creg SNPs that are close together because it's not using clumped data. This is overcome simply in graph.rdata by, for each tcpg, finding all SNPs on the same chromosome and filtering based on 1mb radius. Dramatically reduces the number.
+
+It also generates `grinfo.rdata` which summarises the clusters and is used extensively further on.
+
+It also generates the GRanges objects required for LOLA analysis
+
+
+## Enrichments using LOLA
+
+To run this first run `sbatch lola_cpg_core.sh`. After this, the other 3 lola scripts can be run.
+
+
+
 
 Next things to do:
 
@@ -41,4 +53,24 @@ library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 data(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 anno <- IlluminaHumanMethylation450kanno.ilmn12.hg19@data$Other
 ```
+
+
+
+
+## Quick summary after LOLA
+
+CpGs in communities tend to be at motifs related to cohesin - which relates to DNA organisation in the nucleosome.
+SNPs that influence CpG communities tend to be in regions to do with histone marks or RNA polymerase. 
+Pioneer transcription factors have a role in unwinding inaccessible DNA to initiate TF binding
+
+H3K9me3
+H3K4me1
+H3K36me3
+
+Use LD min/max for SNP region /panfs/panasas01/shared-godmc/1kg_reference_ph3/snpcontrolsets_selection.rdata
+For each CpG enrichment motif, what are the SNPs enriched for
+Add extended database which includes roadmap
+Look at differences across tissues for the same motif
+
+
 

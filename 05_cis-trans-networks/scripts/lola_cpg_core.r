@@ -21,7 +21,7 @@ core_tcpg <- runLOLA(community_tcpg, mqtl_cpgs, tfbsdb)
 save(core_global_cpg, core_creg, core_tcpg, file="../results/core_global_cpg.rdata")
 
 message("communities")
-core_communities_cpg <- runLOLA(userset, community_cpgs, tfbsdb, cores=5)
+core_communities_cpg <- runLOLA(community_cpgs_separate, community_cpgs, tfbsdb, cores=5)
 save(core_communities_cpg, file="../results/core_communities_cpg.rdata")
 
 core_communities_cpg_tophits <- group_by(core_communities_cpg, userSet) %>%
@@ -33,7 +33,7 @@ rm(core_communities_cpg)
 gc()
 
 message("permutations")
-core_communities_cpg_perm <- runLOLA(userset_perm, community_cpgs, tfbsdb, cores=5)
+core_communities_cpg_perm <- runLOLA(community_cpgs_separate_perm, community_cpgs, tfbsdb, cores=5)
 save(core_communities_cpg_perm, file="../results/core_communities_cpg_perm.rdata")
 
 rm(core_communities_cpg_perm)
