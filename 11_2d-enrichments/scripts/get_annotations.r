@@ -10,6 +10,8 @@ load("../data/trans_granges.rdata")
 # Read in stuff
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
 
+anno <- tfbsdb$regionAnno
+
 # Register parallel
 (no_cores <- detectCores() - 1)
 registerDoParallel(cores=no_cores)
@@ -42,4 +44,4 @@ stopCluster(cl)
 snpres <- bind_rows(snpres)
 cpgres <- bind_rows(cpgres)
 
-save(snpres, cpgres, file="../results/annotations.rdata")
+save(snpres, cpgres, anno, file="../data/annotations.rdata")

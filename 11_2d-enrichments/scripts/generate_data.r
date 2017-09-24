@@ -11,6 +11,8 @@ load("../../05_cis-trans-networks/data/snpcontrolsets_selection.rdata")
 ldinfo <- subset(f.all, select=c(SNP, min, max, nproxies))
 clumped <- inner_join(clumped, ldinfo, by=c("snp"="SNP"))
 
+save(clumped, file="../data/trans_clumped.rdata")
+
 
 temp <- subset(clumped, !duplicated(cpg))
 cpg <- GRanges(seqnames=temp$cpgchr, ranges=IRanges(temp$cpgpos, temp$cpgpos), strand="*")
