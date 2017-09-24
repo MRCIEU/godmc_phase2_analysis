@@ -1,6 +1,6 @@
 message("lola snp ext")
 library(LOLA)
-
+library(dplyr)
 
 load("../data/lola/snp_granges.rdata")
 

@@ -3,6 +3,8 @@
 message("lola cpg core")
 
 library(LOLA)
+library(dplyr)
+library(GenomicRanges)
 
 load("../data/lola/cpg_granges.rdata")
 
@@ -26,7 +28,7 @@ save(core_communities_cpg, file="../results/core_communities_cpg.rdata")
 
 core_communities_cpg_tophits <- group_by(core_communities_cpg, userSet) %>%
 	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
-	filter(fdr2 < 0.5)
+	filter(fdr2 < 0.05)
 save(core_communities_cpg_tophits, file="../results/core_communities_cpg_tophits.rdata")
 
 rm(core_communities_cpg)

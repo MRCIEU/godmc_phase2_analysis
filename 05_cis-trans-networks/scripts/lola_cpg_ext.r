@@ -1,12 +1,9 @@
-# 1. Filter communities so that there are no correlated CpGs due to physical proximity
-
 message("lola cpg ext")
-
 library(LOLA)
+library(dplyr)
 
 load("../data/lola/cpg_granges.rdata")
 
-# Read in stuff
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
 
 message("global")

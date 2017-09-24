@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=lola_cpg_core
+#SBATCH --job-name=cpg_core
 #SBATCH --nodes=1 --mem=120G --ntasks=5 --time=0-20:00:00
 #SBATCH --output=job_reports/slurm-%A.out
 

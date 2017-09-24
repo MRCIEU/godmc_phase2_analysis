@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=lola_snp_core
+#SBATCH --job-name=snp_core
 #SBATCH --nodes=1 --mem=120G --ntasks=5 --time=0-20:00:00
 #SBATCH --output=job_reports/slurm-%A.out
 
