@@ -1,11 +1,11 @@
 #!/bin/bash
 
-#SBATCH --job-name=lola
+#SBATCH --job-name=lola_snp_core
 #SBATCH --nodes=1 --mem=120G --ntasks=5 --time=0-20:00:00
 #SBATCH --output=job_reports/slurm-%A.out
 
 echo "Running on ${HOSTNAME}"
 module add R/3.2.3-foss-2016a
 
-Rscript lola.r
+Rscript lola_snp_core.r
 

@@ -204,6 +204,6 @@ community_snps <- GRanges(seqnames=grinfo2$snpchr, ranges=IRanges(grinfo2$min, g
 names(community_snps) <- grinfo2$snp
 
 
-save(mqtl_snps, community_snps, file="../data/lola/cpg_granges.rdata")
+save(mqtl_snps, community_snps, file="../data/lola/snp_granges.rdata")
 
 
