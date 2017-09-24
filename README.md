@@ -21,8 +21,17 @@ BC3 location:
 SFTP server location:
 
 ```
-/srv/sftponly/GoDMC/
+/srv/sftponly/GoDMC/shared
 ```
+
+Note that the meta analysis, clumped and conditional analysis results from section 16 have now been uploaded to the SFTP server. These are stored in `/srv/sftponly/GoDMC/shared/16.tar`. To incorporate into your repository:
+
+1. Update repository with `git pull` and navigate to the `results/` folder
+2. Delete or `mv 16/ 16_old`
+2. SFTP into server `sftp username@filetrn-scmv-d0.epi.bris.ac.uk`
+3. Download the results `get shared/16.tar`
+4. Untar `tar xvf 16.tar`
+5. If you type `git status` it should not show any staged changes. Main files in here are `16_clumped.rdata`, `16_conditional.rdata` and the meta analysis results `16_*.txt.gz`
 
 ---
 
