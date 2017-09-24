@@ -17,7 +17,7 @@ Rscript coloc_collate.r
 
 This generates `coloc.rdata`. 
 
-Merge the results from colocalisation analysis and construct a graph. Only keep SNPs that are Zhou filtered, have posterior probability of colocalisation > 0.8, trans pval < 1e-14 and cis pval < 0.05 / (1e-10).
+Merge the results from colocalisation analysis and construct a graph. Only keep SNPs that are Zhou filtered, have posterior probability of colocalisation > 0.8, trans pval < 1e-14 and cis pval < 1e-10.
 
 Create a graph and use Walktrap algorithm to find communities of CpGs - these are CpGs that are connected to each other by some path in the graph.
 

@@ -173,6 +173,16 @@ sbatch run_clumped_bc4.sh
 ```
 
 
+Note: Get annotations for 450k CpGs
+
+```r
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+data(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+anno <- IlluminaHumanMethylation450kanno.ilmn12.hg19@data$Other
+```
+
+
+
 ## 04
 
 Performing conditional analysis on the results of 01. Same p-val thresholds as in 03. Using a larger reference sample (4000 samples in ALSPAC, see `make_alspac_reference_dataset.sh` on details of how to make it.)

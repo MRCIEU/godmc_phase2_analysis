@@ -75,7 +75,9 @@ args <- commandArgs(T)
 jid <- as.numeric(args[1])
 num <- as.numeric(args[2])
 
-out <- paste0("../results/coloc", jid, ".rdata")
+dir.create("../results/coloc/", show=FALSE)
+
+out <- paste0("../results/coloc/coloc", jid, ".rdata")
 
 if(file.exists(out)) q()
 

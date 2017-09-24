@@ -1,6 +1,6 @@
 library(data.table)
 
-fn <- read.csv("../data/gwas/00info.csv")
+fn <- read.csv("../../data/gwas/00info.csv")
 
 
 get_dat <- function(fn, i)
@@ -33,7 +33,7 @@ res2 <- subset(clumped,
 )
 
 
-snp_1kg <- fread("eur.bim.orig")
+snp_1kg <- fread("../data/eur.bim.orig")
 
 snp_1kg$c1 <- nchar(snp_1kg$V5)
 snp_1kg$c2 <- nchar(snp_1kg$V6)
@@ -48,22 +48,25 @@ dir.create("../data/extracted/", recursive = TRUE)
 write.table(res1$V2, file="../data/extracted/mqtl_conditional.txt", row=F, col=F, qu=F)
 write.table(res2$V2, file="../data/extracted/mqtl_clumped.txt", row=F, col=F, qu=F)
 
-
-for(i in 1:nrow(fn))
+library(doParallel)
+(no_cores <- detectCores() - 1)
+registerDoParallel(cores=no_cores)
+cl <- makeCluster(no_cores, type="FORK")
+result <- parLapply(cl, 1:nrow(fn), function(i)
 {
-	message(i, ": ", fn$id[i])
 	get_dat(fn, i)
-}
+})
+stopCluster(cl)
 
 for(i in 1:nrow(fn))
 {
 	message(i, ": ", fn$id[i])
-	cmd <- paste0("awk -v var='", fn$id[i], "' '{ print var, $1, $2, $3, $4, $5, $6, $7, $8}' ", "../data/filtered_gwas_mqtl_", fn$id[i], ".txt > ../filtered_gwas_mqtl2_", fn$id[i], ".txt")
-	# system(cmd)
-	cmd <- paste0("mv filtered_gwas_mqtl2_", fn$id[i], ".txt filtered_gwas_mqtl_", fn$id[i], ".txt")
+	cmd <- paste0("awk -v var='", fn$id[i], "' '{ print var, $1, $2, $3, $4, $5, $6, $7, $8}' ", "../data/extracted/filtered_gwas_mqtl_", fn$id[i], ".txt > ../data/extracted/filtered_gwas_mqtl2_", fn$id[i], ".txt")
+	system(cmd)
+	cmd <- paste0("mv ../data/extracted/filtered_gwas_mqtl2_", fn$id[i], ".txt ../data/extracted/filtered_gwas_mqtl_", fn$id[i], ".txt")
 	system(cmd)
 }
 
-cmd <- "cat filtered_gwas_mqtl* | gzip -c > filtered_gwas_mqtl.txt.gz"
+cmd <- "cat ../data/extracted/filtered_gwas_mqtl_[0-9]* | gzip -c > ../results/filtered_gwas_mqtl.txt.gz"
 system(cmd)
 
