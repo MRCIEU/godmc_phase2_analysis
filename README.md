@@ -50,11 +50,21 @@ The paper structure is currently written in the Main document in the shared goog
 
 There is a task list [here](https://docs.google.com/spreadsheets/d/1VihsoQhCNYwY07g-Asjgr6p9PBnQ44PQqhCSgzYm5mQ/edit?usp=sharing).
 
+
+There is google doc for cohort descriptions/acknowledgements/funding which you can find here:
+https://docs.google.com/document/d/1T5Tk_87WhUMkDP4weiFK_2KXtIqqlQvPVITpfhZ5HAI/edit#
+
 Information required from cohorts:
 
-1. Informed consent information
-2. Ethical approval information
-3. Authorships
+1. Cohort description/recruitment incl. references
+2. Genotype/methylation measurements
+3. Informed consent information
+4. Ethical approval information
+5. Acknowledgements
+6. Funding
+
+We still need to set up doc for authorship:
+1. Authorships
 
 
 QC section for supplementary information:
