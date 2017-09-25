@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=mr_ld
-#SBATCH --nodes=1 --mem=4G --time=0-20:00:00
+#SBATCH --nodes=1 --mem=4G --time=0-40:00:00
 #SBATCH --array=1-701
 #SBATCH --output=job_reports/slurm-%A_%a.out
 

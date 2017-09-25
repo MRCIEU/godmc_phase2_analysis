@@ -1,8 +1,9 @@
 #!/bin/bash
 
 #SBATCH --job-name=meta17
-#SBATCH --array=255
-#SBATCH --nodes=1 --mem=25G --time=0-12:00:00
+#SBATCH --array=1-300%50
+#SBATCH --nodes=1 --mem=25G --time=0-24:00:00
+#SBATCH --output=job_reports/slurm-%A_%a.out
 
 set -e
 
@@ -31,7 +32,7 @@ fi
 i=${SLURM_ARRAY_TASK_ID}
 
 
-cd /mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/02_meta_analysis_17
+# cd /mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/02_meta_analysis_17
 
 cohort_dir="../data/17/"
 metal_dir="../scratch/17_${i}"
@@ -91,10 +92,10 @@ echo "ANALYZE RANDOM" >> ${metal_dir}/${metal_in}
 echo "CLEAR" >> ${metal_dir}/${metal_in}
 echo "QUIT" >> ${metal_dir}/${metal_in}
 
-cp metal ${metal_dir}
+cp metal_bc4 ${metal_dir}
 cd ${metal_dir}
 
-./metal ${metal_in}
+./metal_bc4 ${metal_in}
 mv 17_${i}1.txt 17_${i}.txt
 gzip 17_${i}.txt
 cd -

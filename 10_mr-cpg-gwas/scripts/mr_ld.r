@@ -5,23 +5,11 @@ library(MendelianRandomization)
 library(dplyr)
 library(data.table)
 
-fn <- read.csv("../../data/gwas/00info.csv")
-load("../data/conditional.rdata")
-extnom <- paste0("zcat ../data/extracted/filtered_gwas_mqtl_conditional_", fn$id, ".txt.gz")
-
-args <- commandArgs(T)
-jid <- as.numeric(args[1])
-jid <- 1
-
-dir.create("../results/mr_ld", show=FALSE)
-out <- paste0("../results/mr_ld/out_", jid, ".rdata")
-
-ext <- fread(extnom[jid])
-names(ext) <- c("snp", "effect_allele.outcome", "other_allele.outcome", "eaf.outcome", "beta.outcome", "se.outcome", "pval.outcome", "sample_size.outcome")
-ext$id.outcome <- jid
-ext$outcome <- fn$trait[jid]
-
-bfile <- "../../data/ref/condsnps.txt"
+convert_to_chrpos <- function(snp, snp_1kg=snp_1kg)
+{
+	index <- match(snp, snp_1kg$V2)
+	return(snp_1kg$snp[index])
+}
 
 get_ld_matrix <- function(snps, bfile, cpg, jid)
 {
@@ -43,6 +31,40 @@ get_ld_matrix <- function(snps, bfile, cpg, jid)
 	return(rmat)
 }
 
+fn <- read.csv("../../data/gwas/00info.csv")
+load("../data/conditional.rdata")
+load("../data/snp_1kg.rdata")
+extnom <- paste0("zcat ../data/extracted/filtered_gwas_mqtl_conditional_", fn$id, ".txt.gz")
+
+args <- commandArgs(T)
+jid <- as.numeric(args[1])
+
+dir.create("../results/mr_ld", show=FALSE)
+out <- paste0("../results/mr_ld/out_", jid, ".rdata")
+
+ext <- fread(extnom[jid])
+names(ext) <- c("snp", "effect_allele.outcome", "other_allele.outcome", "eaf.outcome", "beta.outcome", "se.outcome", "pval.outcome", "sample_size.outcome")
+
+ext <- subset(ext, snp %in% snp_1kg$V2)
+ext$SNP <- convert_to_chrpos(ext$snp, snp_1kg)
+
+ext$id.outcome <- jid
+ext$outcome <- fn$trait[jid]
+
+bfileo <- "../../data/ref/condsnps.txt"
+bfile <- out
+
+write.table(unique(ext$SNP), file=paste0(out, ".snplist"), row=F, col=F, qu=F)
+cmd <- paste0(
+"plink ",
+" --bfile ", bfileo,
+" --extract ", paste0(out, ".snplist"),
+" --make-bed ", 
+" --out ", out
+)
+system(cmd)
+
+
 ## TESTING
 # x <- subset(conditional, exposure == "cg00052772")
 
@@ -51,20 +73,20 @@ res <- group_by(conditional, exposure) %>%
 		x <- .
 		message(x$exposure[1], " : ", nrow(x))
 		maxsnp <- nrow(x)
-		out <- subset(ext, snp %in% x$snp)
+		ext_out <- subset(ext, snp %in% x$snp)
 
-		if(nrow(out) <= 1)
+		if(nrow(ext_out) <= 1)
 		{
 			message("Not enough extracted")
 			return(data.frame())
 		}
 
-		# Convert SNPs in out
-		x <- subset(x, snp %in% out$snp)
-		index <- match(out$snp, x$snp)
-		stopifnot(all(out$snp == x$snp[index]))
-		out$SNP <- x$SNP[index]
-		dat <- try(harmonise_data(x, out))
+		# Convert SNPs in ext_out
+		# x <- subset(x, snp %in% ext_out$snp)
+		# index <- match(ext_out$snp, x$snp)
+		# stopifnot(all(ext_out$snp == x$snp[index]))
+		# ext_out$SNP <- x$SNP[index]
+		dat <- try(harmonise_data(x, ext_out))
 
 		if(class(dat) == "try-error")
 			return(data.frame())
@@ -115,4 +137,6 @@ res <- group_by(conditional, exposure) %>%
 		return(res)
 	})
 
+system(paste0("rm ", out, ".*"))
 save(res, file=out)
+
