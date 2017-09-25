@@ -24,8 +24,7 @@ mat <- matrix(0, nrow(anno), nrow(anno))
 registerDoParallel(cores=no_cores)
 pcl <- makeCluster(no_cores, type="FORK")
 
-# mat <- parLapply(pcl, 1:length(an), function(i)
-mat <- parLapply(pcl, 1:100, function(i)
+mat <- parLapply(pcl, 1:length(an), function(i)
 {
 	snps <- unique(subset(snpres, anno == an[i])$snp)
 	cl <- subset(clumped, snp %in% snps)
