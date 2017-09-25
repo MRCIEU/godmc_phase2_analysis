@@ -8,9 +8,6 @@ length(unique(f.all$SNP))
 #[1] 10085072
  
 table(f.all$mQTL)
-
-  FALSE    TRUE 
-9885229  199843 
  
 #  FALSE    TRUE 
 #9885229  199843 
@@ -104,29 +101,62 @@ length(which(!is.na(df.out2$pval)))
 chr<-paste("chr",i,sep="")
 f.all.chr<-f.all[f.all$snpchr==chr,]
 m<-match(df.out2$snp,f.all.chr$snppos)
-f.all2<-f.all.chr[m,c("snppos","ihs","fst","xpehhchb","xpehhyri")]
+f.all2<-f.all.chr[m,c("snppos","ihs","fst","xpehhchb","xpehhyri","sds")]
 
 w<-which(is.na(f.all2$ihs))
 f.all2$ihs[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/mqtl_ihs/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 w<-which(is.na(f.all2$fst))
 f.all2$fst[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/mqtl_fst/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 w<-which(is.na(f.all2$xpehhyri))
 f.all2$xpehhyri[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/mqtl_xpehhchb/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 w<-which(is.na(f.all2$xpehhchb))
 f.all2$xpehhchb[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/mqtl_xpehhyri/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
-f.all2$annot<-paste(f.all2$ihs,f.all2$fst,f.all2$xpehhchb,f.all2$xpehhyri,sep="")
+w<-which(is.na(f.all2$sds))
+f.all2$sds[w]<-0
+df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
+write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/mqtl_sds/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
+
+f.all2$annot<-paste(f.all2$ihs,f.all2$fst,f.all2$xpehhchb,f.all2$xpehhyri,f.all2$sds,sep="")
+
+path="/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/annotation/"
+p<-paste("chr",i,sep="")
+r<-read.table(paste(path,"chr",i,sep=""))
+m<-match(r$V1,f.all2$snppos)
+f.all2<-f.all2[m,]
+f.all2$snppos<-r$V1
+w<-which(is.na(m))
+
+y<-nchar(f.all2$annot)
+m<-max(nchar(f.all2$annot))
+m<-which(y==m)
+f.all2$annot[w]<-f.all2$annot[m[1]]
 
 write.table(data.frame(f.all2$snppos,f.all2$annot),paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/annotation_selection/chr",i,sep=""),sep=" ",col.names=F,row.names=F,quote=F)
 
@@ -138,6 +168,7 @@ df.out$pval[w]<-1
 
 o<-order(df.out$pval)
 df.out2<-df.out[o,]
+
  
 bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered.bim")
 bim<-bim[bim$V1==i,]
@@ -151,29 +182,62 @@ length(which(!is.na(df.out2$pval)))
 chr<-paste("chr",i,sep="")
 f.all.chr<-f.all[f.all$snpchr==chr,]
 m<-match(df.out2$snp,f.all.chr$snppos)
-f.all2<-f.all.chr[m,c("snppos","ihs","fst","xpehhchb","xpehhyri")]
+f.all2<-f.all.chr[m,c("snppos","ihs","fst","xpehhchb","xpehhyri","sds")]
 
 w<-which(is.na(f.all2$ihs))
 f.all2$ihs[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/transmqtl_ihs/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 w<-which(is.na(f.all2$fst))
 f.all2$fst[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/transmqtl_fst/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 w<-which(is.na(f.all2$xpehhyri))
 f.all2$xpehhyri[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/transmqtl_xpehhchb/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
 w<-which(is.na(f.all2$xpehhchb))
 f.all2$xpehhchb[w]<-0
 df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
 write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/transmqtl_xpehhyri/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
 
-f.all2$annot<-paste(f.all2$ihs,f.all2$fst,f.all2$xpehhchb,f.all2$xpehhyri,sep="")
+w<-which(is.na(f.all2$sds))
+f.all2$sds[w]<-0
+df.out3<-df.out2[-w,]
+
+o<-order(df.out3$snp)
+df.out3<-df.out3[o,]
+write.table(df.out3,paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/pval/transmqtl_sds/chr",i,sep=""),sep=" ",quote=F,col.names=F,row.names=F)
+
+f.all2$annot<-paste(f.all2$ihs,f.all2$fst,f.all2$xpehhchb,f.all2$xpehhyri,f.all2$sds,sep="")
+
+path="/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/annotation/"
+p<-paste("chr",i,sep="")
+r<-read.table(paste(path,"chr",i,sep=""))
+m<-match(r$V1,f.all2$snppos)
+f.all2<-f.all2[m,]
+f.all2$snppos<-r$V1
+w<-which(is.na(m))
+
+y<-nchar(f.all2$annot)
+m<-max(nchar(f.all2$annot))
+m<-which(y==m)
+f.all2$annot[w]<-f.all2$annot[m[1]]
 
 write.table(data.frame(f.all2$snppos,f.all2$annot),paste("/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/annotation_selection_trans/chr",i,sep=""),sep=" ",col.names=F,row.names=F,quote=F)
 

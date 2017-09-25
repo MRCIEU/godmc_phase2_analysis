@@ -125,11 +125,35 @@ table(r4$xpehhyri)
 # 0       1 
 #7592627   56181
 
+r5<-read_delim("/panfs/panasas01/shared-godmc/1kg_reference_ph3/selection_results/SDS_UK10K_n3195_release_Sep_19_2016.tab.gz",delim=" ")
+names(r5)[4:5]<-c("sds_score","sds_pval")
+w1<-(which(r5$sds_pval>2))
+#[1] 44361
+test<-r5[w1,]
+
+min(test$sds_score)
+#2.384468
+max(test$sds_score)
+#[1] 10.00023
+
+mean(test$sds_score)
+#[1] 2.835383
+test<-r5[-w1,]
+mean(test$sds_score)
+#[1] -0.02781859
+
+w1<-which(r5$sds_pval>2)
+w2<-which(r5$sds_pval<2)
+r5$sds[w2]<-0
+r5$sds[w1]<-1
+
+table(r5$sds)
 
 m<-match(f.all$SNP,r$snpID)
 m2<-match(f.all$SNP,r2$snpID)
 m3<-match(f.all$SNP,r3$snpID)
 m4<-match(f.all$SNP,r4$snpID)
-f.all<-data.frame(f.all,r[m,c("iHS_score","iHS_pval","ihs")],r2[m2,c("Fst_score","fst_pval","fst")],r3[m3,c("xpehhchb_score","xpehhchb_pval","xpehhchb")],r4[m4,c("xpehhyri_score","xpehhyri_pval","xpehhyri")])
+m5<-match(f.all$SNP,r5$snpID)
 
+f.all<-data.frame(f.all,r[m,c("iHS_score","iHS_pval","ihs")],r2[m2,c("Fst_score","fst_pval","fst")],r3[m3,c("xpehhchb_score","xpehhchb_pval","xpehhchb")],r4[m4,c("xpehhyri_score","xpehhyri_pval","xpehhyri")],r5[m5,c("sds_score","sds_pval","sds")])
 save(f.all,file="../results/enrichments/snpcontrolsets_selection.rdata")
