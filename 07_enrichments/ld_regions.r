@@ -1,6 +1,15 @@
 library(tidyverse)
 library(dplyr)
 library(meffil)
+library(data.table)
+library(ggplot2)
+library(GenomicAlignments)
+library(Rsamtools)
+library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+library("BSgenome.Hsapiens.UCSC.hg19")
+library("GenomicFeatures")
+
+
 
 #FUNCTION from MATT -really fast!
 genomic.nearest <- function(positions, intervals) {
@@ -316,5 +325,36 @@ save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
  
 }
 
+load("../results/enrichments/snpcontrolsets.rdata")
+
+p<-paste("chr",i,sep="")
+r<-read.table(paste(path,"chr",i,".orig",sep=""))
+names(r)<-c("pos","maf","tss")
+r$strand<-"+"
+r$chr<-p
+r_dt=as.data.table(r)
+r_dt[,snpstart_pre:=ifelse(strand=="-",pos-500,pos-499),]
+r_dt[,snpend_pre:=ifelse(strand=="-",pos+500,pos+501),]
+
+#collapse overlaps
+gr_range = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(snpstart_pre,snpend_pre)))
+gr_cpg = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(pos,pos)))
+
+overlap=as.data.table(findOverlaps(gr_cpg, gr_range))
+overlap_red=overlap[,list(subjectHit=min(subjectHits),NsubjectHits=.N),by=queryHits]
+
+r_dt[,snpstart:=start(gr_range[overlap_red$subjectHit])]
+r_dt[,snpend:=end(gr_range[overlap_red$subjectHit])]
+r_dt[,NsubjectHits:=overlap_red$NsubjectHits]
+
+hg19_gr=with(r_dt, GRanges(seqnames = Rle(chr), IRanges(start=snpstart, end=snpend),strand=Rle(strand),ID=pos))
+
+seq_hg19=getSeq(BSgenome.Hsapiens.UCSC.hg19,hg19_gr)
+
+#check that center of seqeunce is always CpG (should be only the non CG probes and those that got merged into another region ~ 3000 )
+#Illumina450_dt[NsubjectHits==1&subseq(seq_Illumina450,start=500,end=501)!="CG"]
+
+r_dt[,GC_freq:=letterFrequency(seq_hg19, "CG", as.prob=T),]
+r_dt[,CpG_freq:=dinucleotideFrequency(seq_hg19, step=2, as.prob=T)[,"CG"],]
 
 
