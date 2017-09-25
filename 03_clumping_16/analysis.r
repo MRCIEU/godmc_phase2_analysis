@@ -3,6 +3,7 @@ library(ggthemes)
 library(meffil)
 library(dplyr)
 library(gridExtra)
+library(stringr)
 
 load("../results/16/16_clumped.rdata")
 
@@ -92,14 +93,108 @@ exp_cis <- ntest_cis * 1e-4
 exp_trans <- ntest_trans * 1e-14
 exp_cis
 exp_trans
+
 ###
 cohort_dir="/panfs/panasas01/shared-godmc/results/01/"
 results_dir="/projects/MRC-IEU/groups/godmc/sftp/GoDMC/"
-ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizes.txt")
+ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizeslambda.txt")
+names(ss)<-c("study","nsamples16","lambda16")
 ss[,1]<-gsub("_16","",ss[,1])
 ss[,1]<-gsub("00_ARIES","ARIES",ss[,1])
-w<-which(ss[,1]%in%c("DunedinAge38","PREDO"))
-ss<-ss[-w,]
+w<-which(ss[,1]%in%c("DunedinAge38"))
+if(length(w)>0){
+ss<-ss[-w,]}
+
+ss$study_paper<-ss$study
+ss$study_paper<-gsub("InterAct","EPIC_Norfolk",ss$study_paper)
+ss$study_paper<-gsub("MARS_omni","MARS",ss$study_paper)
+ss$study_paper<-gsub("Project_MinE_s27","MinE",ss$study_paper)
+ss$study_paper<-gsub("as_cc","EGC_asthma",ss$study_paper)
+ss$study_paper<-gsub("ccg","EGC_CTG",ss$study_paper)
+
+
+
+ss4<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizeslambda4.txt")
+names(ss4)<-c("study","nsamples04","lambda04")
+ss4[,1]<-gsub("_04","",ss4[,1])
+ss4[,1]<-gsub("00_ARIES","ARIES",ss[,1])
+w<-which(ss4[,1]%in%c("DunedinAge38"))
+if(length(w)>0){
+ss4<-ss4[-w,]}
+
+
+###
+ss$nsamples01<-NA
+ss$nsnp<-NA
+ss$ncpg<-NA
+ss$covariates<-NA
+ss$males<-NA
+ss$age<-NA
+
+
+for (i in 1:nrow(ss)){
+cat(ss[i,1],"\n")
+load(paste0(cohort_dir,ss[i,1],"_01/results/01/cohort_descriptives.RData"))
+ss$nsamples01[i]<-cohort_summary$mqtl_sample_size
+ss$nsnp[i]<-cohort_summary$n_snp
+ss$ncpg[i]<-cohort_summary$n_CpGs
+ss$covariates[i]<-paste(cohort_summary$covariates,collapse=",")
+ss$covariates[i]<-gsub("_numeric","",ss$covariates[i])
+ss$covariates[i]<-gsub("_factor","",ss$covariates[i])
+ss$cellcounts[i]<-paste(cohort_summary$predicted_cellcounts,collapse=",")
+ss$predicted_cellcounts_type[i]<-cohort_summary$predicted_cellcounts_type
+ss$males[i]<-round(cohort_summary$mqtl_n_males/cohort_summary$mqtl_sample_size,2)
+ss$age[i]<-paste(round(cohort_summary$mqtl_mean_age,2)," (",round(cohort_summary$mqtl_min_age,2),"-",round(cohort_summary$mqtl_max_age,2),")",sep="")
+
+if(cohort_summary$predicted_cellcounts_type=="NULL" & cohort_summary$predicted_cellcounts=="NULL")
+{
+ss$cellcounts[i]<-paste("Bcell,CD4T,CD8T,Eos,Mono,Neu,NK",sep="")
+ss$predicted_cellcounts_type[i]<-"houseman"
+
+}
+}
+
+m<-match(ss[,1],ss4[,1])
+ss<-data.frame(ss,ss4[m,])
+
+write.table(ss,"../images/descriptives.phase2.txt",sep="\t",quote=F,row.names=F,col.names=T)
+#check samplesize differences between script 01 and 16
+diff<-(ss$n-ss$nsamples01)
+which(diff>0)
+
+#total number of samples
+sum(ss$n)
+#[1] 28073
+
+
+p1<-ggplot(ss,aes(x=nsamples01,y=nsnp/1000000))+
+geom_point(aes(colour=factor(ss$study_paper),size=ss$nsamples01)) +
+labs(x="Cohort N",y="N SNPs*1000000",size="N",colour="Study") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(plot=p1, file="../images/SNPsbyNcohort.pdf", width=7, height=7)
+
+p2<-ggplot(ss,aes(x=nsamples01,y=ncpg/100000))+
+geom_point(aes(colour=factor(ss$study_paper),size=ss$nsamples01)) +
+labs(x="Cohort N",y="N CpGs*100000",size="N",colour="Study") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(plot=p2, file="../images/CpGsbyNcohort.pdf", width=7, height=7)
+
+##
+p3<-ggplot(ss,aes(x=nsamples16,y=lambda16))+
+geom_point(aes(colour=factor(ss$study_paper),size=ss$nsamples16)) +
+labs(x="Cohort N",y="lambda",size="N",colour="Study") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(plot=p3, file="../images/lambda_cisadj_byNcohort.pdf", width=7, height=7)
+
+
+p4<-ggplot(ss,aes(x=nsamples04,y=lambda04))+
+geom_point(aes(colour=factor(ss$study_paper),size=ss$nsamples04)) +
+labs(x="Cohort N",y="lambda",size="N",colour="Study") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(plot=p4, file="../images/lambdabyNcohort.pdf", width=7, height=7)
+
+##
+
 
 
 y<-meffil.get.features("450k")
@@ -321,6 +416,28 @@ theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
 labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
 ggsave(plot=p1, file="../images/mqtl_counts_thresholds_MRE.pdf", width=7, height=7)
 
+###
+temp4 <- subset(clumped, pval < 1e-14)
+#b <- str_count(temp4$Direction, "\\?")
+temp4$studycount<-temp4$HetDf+1
+p1<-ggplot(temp4, aes(x=studycount)) + 
+geom_histogram(binwidth=1)
+ggsave(plot=p1, file="../images/nstudiesbydirection.pdf", width=7, height=7)
+
+dim(temp4)
+#[1] 288797     29
+length(which(temp4$studycount<10))
+#[1] 15372
+length(which(temp4$studycount<5))
+#[1] 4096
+length(which(temp4$TotalSampleSize<10000))
+#[1] 22159
+length(which(temp4$TotalSampleSize<5000))
+#[1] 6024
+length(which(temp4$studycount<5&temp4$TotalSampleSize<5000))
+#[1] 3989
+length(which(temp4$studycount<5&temp4$TotalSampleSize<10000))
+#[1] 4096
 
 ## Overlaps between fixed and random
 
