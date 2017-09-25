@@ -25,8 +25,6 @@ for(i in 1:100)
 	}
 }
 
-res$p1 <- melt(mat)$value
-
 ord <- apply(res[,-c(1:2)], 1, function(x)
 {
 	n <- length(x)
@@ -34,6 +32,12 @@ ord <- apply(res[,-c(1:2)], 1, function(x)
 	x1 <- x[c(2:mid, 1, (mid+1):n)]
 	order(x1, decreasing=TRUE)[mid] / n
 })
+
+res$ord <- ord
+
+sig <- subset(res, ord == 0.01)
+
+pl <- function(x)
 
 res <- data.frame(snp=res$Var1, cpg=res$Var2, count=res$value, emp_p=ord)
 # Check columns are correct
