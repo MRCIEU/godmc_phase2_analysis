@@ -27,11 +27,14 @@
 
 #cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/01_meta_analysis_16
 
-cohort_dir="/projects/MRC-IEU/groups/godmc/meta-analysis/input"
+#cohort_dir="/projects/MRC-IEU/groups/godmc/meta-analysis/input"
+cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
 result_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/mstat"
 
 metal_dir="../scratch/16_${i}"
-cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
+#cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
+
+
 library(getmstatistic)  # for calculating M statistics
 library(gridExtra)       # for generating tables
 
@@ -94,7 +97,9 @@ a14.cis.out<-a14.cis.out[o,]
 
 l<-list.files(path=cohort_dir)
 w<-which(l%in%c("ARIES_16"))
-l<-l[-w]
+
+if(length(w)>0){
+l<-l[-w]}
 
 l2<-list.files(paste(cohort_dir,"/",l[1],"/results/16/",sep=""))
 study<-gsub("_16","",l)
