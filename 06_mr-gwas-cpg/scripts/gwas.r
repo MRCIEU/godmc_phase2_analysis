@@ -4,7 +4,7 @@ library(data.table)
 library(TwoSampleMR)
 library(parallel)
 
-setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/scripts/")
+# setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/scripts/")
 
 load("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/snps_gwas.rdata")
 a <- subset(gwas, mr_keep.exposure == TRUE)
@@ -25,7 +25,7 @@ last <- min(jid * num, nrow(param))
 
 param <- param[first:last, ]
 
-out <- paste0("../results/out", jid, ".rdata")
+out <- paste0("../results/out/out", jid, ".rdata")
 outtemp <- paste0(out, ".temp")
 
 if(file.exists(out)) q()

@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=gwasmr
 #SBATCH --nodes=1 --mem=25G --time=0-20:00:00
-#SBATCH --array=1-481
+#SBATCH --array=1-481%50
 
 echo "Running on ${HOSTNAME}"
 module add R/3.2.3-foss-2016a
