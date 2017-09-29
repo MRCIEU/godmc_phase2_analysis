@@ -20,7 +20,7 @@ snpres <- subset(snpres, anno %in% an)
 
 mat <- matrix(0, nrow(anno), nrow(anno))
 
-(no_cores <- detectCores() - 1)
+(no_cores <- 28)
 registerDoParallel(cores=no_cores)
 pcl <- makeCluster(no_cores, type="FORK")
 
