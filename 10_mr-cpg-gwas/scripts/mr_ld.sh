@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name=mr_ld
-#SBATCH --nodes=1 --mem=4G --time=0-40:00:00
-#SBATCH --array=1-701
+#SBATCH --nodes=1 --mem=40G --ntasks=10 --time=0-40:00:00
+#SBATCH --array=1-701%20
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 echo "Running on ${HOSTNAME}"
