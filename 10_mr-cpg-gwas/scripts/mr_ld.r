@@ -40,14 +40,16 @@ out <- paste0("../results/mr_ld/out_", jid, ".rdata")
 if(file.exists(out)) q()
 
 
-
+message("Loading data")
 fn <- read.csv("../../data/gwas/00info.csv")
 load("../data/conditional.rdata")
 load("../data/snp_1kg.rdata")
-extnom <- paste0("zcat ../data/extracted/filtered_gwas_mqtl_conditional_", fn$id, ".txt.gz")
+extnom <- paste0("../data/extracted/filtered_gwas_mqtl_conditional_", fn$id, ".txt")
 
+message("Reading gwas")
 ext <- fread(extnom[jid])
 names(ext) <- c("snp", "effect_allele.outcome", "other_allele.outcome", "eaf.outcome", "beta.outcome", "se.outcome", "pval.outcome", "sample_size.outcome")
+
 
 ext <- subset(ext, snp %in% snp_1kg$V2)
 ext$SNP <- convert_to_chrpos(ext$snp, snp_1kg)
@@ -64,7 +66,7 @@ cpgcount <- subset(cpgcount, n != 1)
 
 nsplit <- 100
 splits <- split(1:nrow(cpgcount), 1:nsplit)
-splits[[nsplit]] <- NULL
+# splits[[nsplit]] <- NULL
 
 
 outsplit <- paste0(out, ".", 1:length(splits))
@@ -75,8 +77,10 @@ if(length(a) > 0)
 	a <- a[length(a)]
 	load(outsplit[a])
 	start <- a+1
+	message("Resuming from ", start)
 } else {
 	start <- 1
+	message("Starting at 1")
 }
 
 
@@ -110,7 +114,7 @@ for(j in start:nsplit)
 	message("Length cpg ", length(keepcpg))
 	# exposures <- subset(cpgcount, exposure %in% keepcpg)
 
-	res <- parLapply(cl, keepcpg, function(i)
+	resnew <- parLapply(cl, keepcpg, function(i)
 	{
 		x <- subset(conditional, exposure == i)
 
@@ -155,6 +159,8 @@ for(j in start:nsplit)
 		if(!is.null(egger) & class(ivw) != "try-error" & class(egger) != "try-error")
 		{
 			res <- data.frame(
+				cpg=i,
+				outcome=jid,
 				method=c("IVW", "Egger"),
 				Estimate=c(ivw@Estimate, egger@Estimate),
 				StdError=c(ivw@StdError, egger@StdError.Est),
@@ -165,6 +171,8 @@ for(j in start:nsplit)
 			)
 		} else if(class(ivw) != "try-error") {
 			res <- data.frame(
+				cpg=i,
+				outcome=jid,
 				method=c("IVW"),
 				Estimate=c(ivw@Estimate),
 				StdError=c(ivw@StdError),
@@ -179,13 +187,20 @@ for(j in start:nsplit)
 		return(res)
 	}) %>% bind_rows
 
+
+
 	if(j == nsplit)
 	{
 		save(res, file=out)
 		system(paste0("rm -f ", out, ".*"))
+	} else if(j != 1) {
+		res <- rbind(res, resnew)
+		save(res, file=outsplit[j])
 	} else {
+		res <- resnew
 		save(res, file=outsplit[j])
 	}
+
 	if(j != 1)
 	{
 		system(paste0("rm -f ", outsplit[j-1]))

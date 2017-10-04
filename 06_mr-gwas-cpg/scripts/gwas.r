@@ -43,11 +43,24 @@ m <- list()
 for(i in i1:nrow(param))
 {
 	message(i, " of ", nrow(param))
-	fn <- paste0("zcat ../../results/17/17_", param$chunk[i], ".txt.gz")
+	fn <- paste0("../../results/17/17_", param$chunk[i], ".txt.gz")
 	if(fn != curr)
 	{
+
+		message("Extracting")
+		snplist <- unique(a$id)
+		outlist <- paste0("../scratch/temp", param$chunk[i], "_", jid, ".snplist")
+		fnn <- paste0("../scratch/temp", param$chunk[i], "_", jid)
+		write.table(snplist, file=outlist, row=F, col=F, qu=F)
+		cmd <- paste0("zfgrep -f ", outlist, " ", fn, " > ", fnn)
+		system(cmd)
 		message("Reading")
-		b <- fread(fn)
+		b <- fread(fnn)
+		unlink(fnn)
+		unlink(outlist)
+		nom <- as.character(unlist(read.table(fn, nrows=1)))
+		names(b) <- nom
+		b$Pvalue <- as.numeric(b$Pvalue)
 		b <- separate(b, MarkerName, c("snp", "cpg"), "_")
 		curr <- fn
 	} else {
