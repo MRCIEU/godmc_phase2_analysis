@@ -43,16 +43,16 @@ if(file.exists(out)) q()
 message("Loading data")
 fn <- read.csv("../../data/gwas/00info.csv")
 load("../data/conditional.rdata")
-load("../data/snp_1kg.rdata")
-extnom <- paste0("../data/extracted/filtered_gwas_mqtl_conditional_", fn$id, ".txt")
+# load("../data/snp_1kg.rdata")
+extnom <- paste0("../data/extracted/filtered_gwas_mqtl_conditional_ready_", fn$id[jid], ".rdata")
 
 message("Reading gwas")
-ext <- fread(extnom[jid])
-names(ext) <- c("snp", "effect_allele.outcome", "other_allele.outcome", "eaf.outcome", "beta.outcome", "se.outcome", "pval.outcome", "sample_size.outcome")
+load(extnom)
+# names(ext) <- c("snp", "effect_allele.outcome", "other_allele.outcome", "eaf.outcome", "beta.outcome", "se.outcome", "pval.outcome", "sample_size.outcome")
 
 
-ext <- subset(ext, snp %in% snp_1kg$V2)
-ext$SNP <- convert_to_chrpos(ext$snp, snp_1kg)
+# ext <- subset(ext, snp %in% snp_1kg$V2)
+# ext$SNP <- convert_to_chrpos(ext$snp, snp_1kg)
 
 
 conditional <- subset(conditional, SNP %in% ext$SNP)

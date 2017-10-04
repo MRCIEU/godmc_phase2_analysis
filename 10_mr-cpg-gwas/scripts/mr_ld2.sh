@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=mr_ld2
 #SBATCH --nodes=1 --mem=2G --ntasks=1 --time=0-12:00:00
-#SBATCH --array=1-10
+#SBATCH --array=1-999
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 echo "Running on ${HOSTNAME}"
