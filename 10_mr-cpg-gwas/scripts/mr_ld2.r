@@ -17,12 +17,12 @@ main <- function()
 
 	message("Reading gwas")
 	fn <- read.csv("../../data/gwas/00info.csv")
-	extnom <- paste0("../data/extracted/filtered_gwas_mqtl_conditional_ready_", fn$id[param$gwas], ".rdata")
 
 	nsplit <- 10
 	param <- expand.grid(split=1:10, gwas=1:nrow(fn))
 	param <- param[jid,]
 	print(param)
+	extnom <- paste0("../data/extracted/filtered_gwas_mqtl_conditional_ready_", fn$id[param$gwas], ".rdata")
 	load(extnom)
 
 	message("Loading conditional")
