@@ -33,10 +33,12 @@ metal="metal_bc4"
 cohort_dir="../data/16/"
 metal_dir="../scratch/16_${i}"
 result_dir="../results/16"
+new_cohort_dir="../data/16_flipped"
 
 metal_in="16_${i}.in"
 
 mkdir -p ${result_dir}
+mkdir -p ${new_cohort_dir}
 mkdir -p ${metal_dir}/scratch
 rm -f ${metal_dir}/${metal_in}
 touch ${metal_dir}/${metal_in}
@@ -59,14 +61,20 @@ echo "" >> ${metal_dir}/${metal_in}
 
 for cohort in ${cohort_dir}*16.tar
 do
-
 	echo $cohort
+	cohortname1="$(basename "$cohort" .tar)"
+	mkdir -p ${new_cohort_dir}/${cohortname1}
 	cohortname="scratch/$(basename "$cohort" .tar)"
 	mkdir -p ${cohortname}_${i}
 	cd ${cohortname}_${i}
 	tar xvf ../../${cohort} results/16/results_${i}.gz
 	cd ../../
-	mv ${cohortname}_${i}/results/16/results_${i}.gz ${metal_dir}/${cohortname}_${i}.gz
+	gunzip ${cohortname}_${i}/results/16/results_${i}.gz
+	Rscript flip_alleles.r \
+		${cohortname}_${i}/results/16/results_${i} \
+		${new_cohort_dir}/${cohortname1}/results_${i}.gz
+	rm ${cohortname}_${i}/results/16/results_${i}
+	cp ${new_cohort_dir}/${cohortname1}/results_${i}.gz ${metal_dir}/${cohortname}_${i}.gz
 	rm -r ${cohortname}_${i}
 
 	echo "PROCESS ${cohortname}_${i}.gz" >> ${metal_dir}/${metal_in}
