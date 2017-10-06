@@ -1,0 +1,41 @@
+# L1000 overlaps with trans mQTL
+
+Suppose that a trans mQTL signifies the change of gene expression at the SNP leading to the change of gene expression at the CpG. We can test empirically by looking at perturbation experiments that see the global gene expression changes that arise due to a particular gene expression being perturbed.
+
+The L1000 platform provides such a resource
+
+[https://www.biorxiv.org/content/early/2017/05/10/136168](https://www.biorxiv.org/content/early/2017/05/10/136168)
+
+Website:
+
+[https://clue.io/](https://clue.io/)
+
+GEO repository:
+
+[https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE70138](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE70138)
+
+This document describes the GEO repository
+
+[https://docs.google.com/document/d/1q2gciWRhVCAAnlvF2iRLuJ7whrGP6QjpsCMq1yWz7dU/edit#](https://docs.google.com/document/d/1q2gciWRhVCAAnlvF2iRLuJ7whrGP6QjpsCMq1yWz7dU/edit#)
+
+We are interested in the following file:
+
+```
+GSE70138_Broad_LINCS_Level5_COMPZ_n118050x12328_2017-03-06.gctx.gz
+```
+
+Description of the results
+
+> Q: What are features (rows) in the data matrix? Posed differently, what is the gene space accessible by L1000?
+A: In L1000 datasets, features are genes and the matrix values correspond to their raw, normalized, or differential expression values, depending on which level of data is being used. L1000 reports on 12,328 unique genes; 978 of these are the landmark genes, which are directly measured. The remaining 11,350 are computationally inferred. 9,196 of these 11,350 genes are inferred with high fidelity, and together with the 978 landmarks comprise the Best INFerred Genes (BING) feature space, containing 10,174 genes total. We term the entire space of 12,328 genes as All Inferred Genes (AIG; see figure below).
+>
+> The unique identifier for each row is the Entrez ID for the gene.
+>
+> Note that earlier releases used Affymetrix-based identifiers. That is no longer necessary as data and inference is benchmarked against RNA-Seq datasets. Hence we use NCBI gene entrez gene identifiers (id and symbol).
+>
+> Because we now map to gene symbols, the number of inferred features in the current matrices provided is 12,328 (unique genes) and not 22,268 (which used to be the count based on earlier Affymetrix probe sets)
+
+The gctx format can be accessed using the cmapR R package
+
+[https://github.com/cmap/cmapR](https://github.com/cmap/cmapR)
+
