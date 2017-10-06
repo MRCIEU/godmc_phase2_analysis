@@ -31,7 +31,7 @@ rsq_thresh <- as.numeric(arguments[5])
 kb_thresh <- as.numeric(arguments[6])
 
 #bfile <- "/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur"
-bfile <- "data/eur"
+bfile <- "../data/ref/eur"
 ##
 
 # Get cpg positions
