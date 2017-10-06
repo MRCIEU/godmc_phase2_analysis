@@ -39,3 +39,30 @@ The gctx format can be accessed using the cmapR R package
 
 [https://github.com/cmap/cmapR](https://github.com/cmap/cmapR)
 
+
+## Annotate SNP-CpG pairs
+
+1. Use biomaRt to get entrez gene IDs and their ranges
+2. Use CpG position to find if it lands within a gene range
+3. Use LD mapping for each SNP (positions that span SNPs with LD >= 0.8) to find range for each SNP and find overlaps with gene ranges
+4. For each SNP-CpG pair enumerate all possible combinations of SNP genes and CpG genes
+
+To run this:
+
+```
+Rscript annotate_positions.r
+```
+
+## Find L1000 perturbations that overlap with SNP-CpG genes
+
+...
+
+
+## Test for significance
+
+Permute the SNP-CpG list, then re-annotate
+
+
+
+
+
