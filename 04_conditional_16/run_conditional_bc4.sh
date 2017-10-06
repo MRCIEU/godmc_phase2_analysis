@@ -24,7 +24,7 @@ fi
 
 i=${SLURM_ARRAY_TASK_ID}
 
-Rscript conditional_bc4.r ${i} ../results/16/16_${i}_conditional.rdata
+Rscript conditional.r ${i} ../results/16/16_${i}_conditional.rdata
 
 ####
 
