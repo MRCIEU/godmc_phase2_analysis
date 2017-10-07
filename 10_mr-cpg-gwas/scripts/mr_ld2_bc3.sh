@@ -3,7 +3,7 @@
 #PBS -N mr_ld2
 #PBS -o job_reports/mr_ld2-output
 #PBS -e job_reports/mr_ld2-error
-#PBS -t 3941-4040
+#PBS -t 1-7010
 #PBS -l walltime=12:00:00
 #PBS -l nodes=1:ppn=1
 #PBS -S /bin/bash
