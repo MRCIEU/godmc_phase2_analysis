@@ -1,6 +1,7 @@
 library(dplyr)
 library(tidyr)
 library(doParallel)
+library(data.table)
 
 load("../../results/16/16_clumped.rdata")
 # load("../../data/misc/naeem.rdata")
@@ -25,7 +26,7 @@ cl <- makeCluster(no_cores, type="FORK")
 result <- parLapply(cl, 1:962, function(i)
 {
 	message(i)
-	load("../../03_clumping_16/cpg_pos.rdata")
+	load("../../data/misc/cpg_pos.rdata")
 	a <- fread(paste0("zcat ../../results/16/16_", i, ".txt.gz"))
 	a$Pvalue <- as.numeric(a$Pvalue)
 	a <- a %>% separate(MarkerName, into=c("snp", "cpg"), sep="_")

@@ -15,5 +15,5 @@ fi
 
 i=${SLURM_ARRAY_TASK_ID}
 
-Rscript coloc.r ${i} 2714
+Rscript coloc.r ${i} 1860
 
