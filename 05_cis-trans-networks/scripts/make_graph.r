@@ -15,14 +15,14 @@ resdat <- inner_join(dat, res, by=c("creg"="exposure", "tcpg"="outcome")) %>%
 	filter(creg_pval < 1e-10, tcpg_pval < 1e-14)
 dim(resdat)
 
-gr <- graph_from_data_frame(resdat, directed=TRUE)
+# gr <- graph_from_data_frame(resdat, directed=TRUE)
 # plot(gr)
-wc <- cluster_walktrap(gr, steps=20)
-class(wc)
-length(wc)
+# wc <- cluster_walktrap(gr, steps=20)
+# class(wc)
+# length(wc)
 
-mem <- membership(wc)
-save(resdat, gr, wc, mem, file="../results/graph_unpruned.rdata")
+# mem <- membership(wc)
+save(resdat, file="../results/graph_unpruned.rdata")
 
 
 ## PRUNE THE GRAPH
@@ -37,15 +37,19 @@ table(dat$tcpg_count)
 table(dat$creg_count)
 
 
+# Are there any creg-tcpg which are also tcpg-creg?
 i1 <- paste(dat$creg, dat$tcpg)
 i2 <- paste(dat$tcpg, dat$creg)
 sum(i1 %in% i2)
 sum(i2 %in% i1)
 
-subset(dat, i1 %in% i2)
+# Remove them
+dim(dat)
+dat <- subset(dat, ! i1 %in% i2)
+dim(dat)
 
 # Remove tcpg if it's 5mb within sentinal cpg
-dat <- dplyr::mutate(dat, ngroup_by(dat, creg, tcpg_chr) %>%
+dat <- dplyr::group_by(dat, creg, tcpg_chr) %>%
 	arrange(desc(tcpg_count), tcpg_pval) %>%
 	do({
 		x <- .
@@ -70,7 +74,7 @@ dat <- dplyr::mutate(dat, ngroup_by(dat, creg, tcpg_chr) %>%
 # 		})
 
 
-dat <- group_by(dat2, tcpg, creg_chr) %>%
+dat <- group_by(dat, tcpg, creg_chr) %>%
 	arrange(desc(creg_count), creg_pval) %>%
 	do({
 		x <- .
@@ -84,9 +88,9 @@ dat <- group_by(dat2, tcpg, creg_chr) %>%
 
 # gr2 <- graph_from_data_frame(dat2, directed=TRUE)
 # gr3 <- graph_from_data_frame(dat3, directed=TRUE)
-gr <- graph_from_data_frame(dat4, directed=TRUE)
+gr <- graph_from_data_frame(dat, directed=TRUE)
 
-wc <- cluster_walktrap(gr4, steps=20)
+wc <- cluster_walktrap(gr, steps=20)
 
 # # Simplifying doesn't work:
 # gr2a <- igraph::simplify(gr2)
@@ -108,8 +112,8 @@ save(dat, gr, wc, mem, file="../results/graph.rdata")
 #######
 
 temp <- bind_rows(
-	data_frame(cpg=dat2$creg, snp=dat2$snp, type="creg"),
-	data_frame(cpg=dat2$tcpg, snp=dat2$snp, type="tcpg")) %>% 
+	data_frame(cpg=dat$creg, snp=dat$snp, type="creg"),
+	data_frame(cpg=dat$tcpg, snp=dat$snp, type="tcpg")) %>% 
 filter(!duplicated(paste(cpg, type)))
 temp$id <- 1:nrow(temp)
 
@@ -129,7 +133,7 @@ gc()
 
 ####### FORMAT FOR GRANGES
 
-
+load("../results/graph.rdata")
 grinfo <- data_frame(
 	cpg=c(dat$creg, dat$tcpg),
 	chr=c(dat$creg_chr, dat$tcpg_chr),
@@ -156,7 +160,7 @@ save(grinfo, file="../data/grinfo.rdata")
 
 
 load("../../results/16/16_clumped.rdata")
-clumped1 <- subset(clumped1, cpg %in% zhou & pval < 1e-14)
+clumped1 <- subset(clumped, pval < 1e-14)
 clumped1 <- subset(clumped1, !duplicated(cpg))
 
 universe1 <- data_frame(chr=clumped1$cpgchr, start=clumped1$cpgpos, end=clumped1$cpgpos, cpg=clumped1$cpg, pval=clumped1$pval, cis=clumped1$cis)
@@ -172,10 +176,10 @@ community_cpgs_separate_perm <- lapply(split(universe3, universe3$ID), function(
 }) %>% GRangesList
 
 
-community_creg <- with(subset(dat2, !duplicated(creg)), GRanges(seqnames=creg_chr, ranges=IRanges(creg_pos, creg_pos), strand="+"))
-names(community_creg) <- subset(dat2, !duplicated(creg))$creg
-community_tcpg <- with(subset(dat2, !duplicated(tcpg)), GRanges(seqnames=tcpg_chr, ranges=IRanges(tcpg_pos, tcpg_pos), strand="+"))
-names(community_tcpg) <- subset(dat2, !duplicated(tcpg))$tcpg
+community_creg <- with(subset(dat, !duplicated(creg)), GRanges(seqnames=creg_chr, ranges=IRanges(creg_pos, creg_pos), strand="+"))
+names(community_creg) <- subset(dat, !duplicated(creg))$creg
+community_tcpg <- with(subset(dat, !duplicated(tcpg)), GRanges(seqnames=tcpg_chr, ranges=IRanges(tcpg_pos, tcpg_pos), strand="+"))
+names(community_tcpg) <- subset(dat, !duplicated(tcpg))$tcpg
 
 
 mqtl_cpgs <- GRanges(seqnames=universe1$chr, ranges=IRanges(universe1$start, universe1$end), strand="*")
@@ -189,7 +193,7 @@ save(mqtl_cpgs, community_cpgs, community_cpgs_separate, community_cpgs_separate
 ### SNP GRANGES
 
 
-clumped1 <- subset(clumped, cpg %in% zhou & pval < 1e-8)
+clumped1 <- subset(clumped, pval < 1e-8)
 grinfo2 <- subset(grinfo, !duplicated(snp))
 
 temp1 <- inner_join(clumped1, ldinfo, by=c("snp"="SNP"))

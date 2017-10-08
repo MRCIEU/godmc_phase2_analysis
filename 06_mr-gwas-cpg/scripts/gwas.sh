@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=gwasmr
 #SBATCH --nodes=1 --mem=10G --time=0-20:00:00
-#SBATCH --array=286-481
+#SBATCH --array=9,201
 #SBATCH --output=job_reports/slurm-%A_%a.out
 # #SBATCH --partition=mrcieu
 
