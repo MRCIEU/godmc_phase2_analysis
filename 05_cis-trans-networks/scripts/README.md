@@ -32,18 +32,31 @@ It also generates `grinfo.rdata` which summarises the clusters and is used exten
 It also generates the GRanges objects required for LOLA analysis
 
 
+## Gene set enrichment analysis using GSEA and MSigDB
+
+This uses 6 databases of annotations. For each community it tests for enrichment/overlaps. Then it permutes the community-CpG matchings 1000 times to get null distributions. 
+
+```
+sbatch graph_annotations.sh
+```
+
+
 ## Enrichments using LOLA
 
 To run this first run `sbatch lola_cpg_core.sh`. After this, the other 3 lola scripts can be run.
+
+```
+sbatch lola_cpg_ext.sh
+sbatch lola_snp_core.sh
+sbatch lola_snp_ext.sh
+```
 
 
 
 
 Next things to do:
 
-1. Is there enrichment of the genes within a community for GO terms etc?
-2. If a CpG associates with a trait does that make other CpGs in the community more likely to associate with that trait?
-
+1. If a CpG associates with a trait does that make other CpGs in the community more likely to associate with that trait?
 
 
 Get annotations for 450k CpGs
@@ -53,8 +66,6 @@ library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 data(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 anno <- IlluminaHumanMethylation450kanno.ilmn12.hg19@data$Other
 ```
-
-
 
 
 ## Quick summary after LOLA

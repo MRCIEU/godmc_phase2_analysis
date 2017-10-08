@@ -48,8 +48,9 @@ suppressPackageStartupMessages(library(mygene, quietly = TRUE))
 args <- commandArgs(T)
 jid <- as.numeric(args[1])
 
-out1 <- paste0("../results/annot", jid, ".rdata")
-out2 <- paste0("../results/annot_perm", jid, ".rdata")
+dir.create("../results/annotations", show=F)
+out1 <- paste0("../results/annotations/annot", jid, ".rdata")
+out2 <- paste0("../results/annotations/annot_perm", jid, ".rdata")
 if(all(file.exists(c(out1, out2)))) q()
 
 load("../data/entrez_genes.rdata")
@@ -62,6 +63,8 @@ wc <- data.frame(cpg=names(wc), membership=as.numeric(wc), stringsAsFactors = FA
 count <- table(wc$membership)
 keep <- as.numeric(names(count)[count >= 10])
 wc <- subset(wc, membership %in% keep)
+
+message("Number of large communities: ", length(unique(wc$membership)))
 
 memlist <- unique(sort(wc$membership))
 mem <- memlist[jid]
