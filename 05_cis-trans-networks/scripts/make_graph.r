@@ -48,17 +48,43 @@ dim(dat)
 dat <- subset(dat, ! i1 %in% i2)
 dim(dat)
 
-# Remove tcpg if it's 5mb within sentinal cpg
-dat <- dplyr::group_by(dat, creg, tcpg_chr) %>%
-	arrange(desc(tcpg_count), tcpg_pval) %>%
+# For each tcpg-creg chromosome
+# Get the most connected creg and its most connected tcpg = sentinel
+# Remove every cpg pair with the creg and tcpg are both within 2.5mb of sentinel
+# Repeat with the next top CpG
+dat <- dplyr::group_by(dat, creg_chr, tcpg_chr) %>%
+	arrange(desc(creg_count), desc(tcpg_count)) %>%
 	do({
 		x <- .
 		if(nrow(x) == 1) return(x)
-		y <- x[(abs(x$tcpg_pos - x$tcpg_pos[1]) - 2500000) > 0, ]
-		x <- rbind(x[1,], y)
+		l <- list()
+		i <- 1
+		while(nrow(x) > 0)
+		{
+			l[[i]] <- x[1,]
+			i <- i + 1
+			message(i, " : ", nrow(x))
+			index <- (abs(x$creg_pos - x$creg_pos[1]) - 2500000) > 0 &
+				(abs(x$tcpg_pos - x$tcpg_pos[1]) - 2500000) > 0
+			x <- x[index, ]
+		}
+		x <- bind_rows(l)
 		return(x)
-		})
+	})
 
+
+
+
+# Remove tcpg if it's 5mb within sentinal cpg
+# dat <- dplyr::group_by(dat, creg, tcpg_chr) %>%
+# 	arrange(desc(tcpg_count), tcpg_pval) %>%
+# 	do({
+# 		x <- .
+# 		if(nrow(x) == 1) return(x)
+# 		y <- x[(abs(x$tcpg_pos - x$tcpg_pos[1]) - 2500000) > 0, ]
+# 		x <- rbind(x[1,], y)
+# 		return(x)
+# 		})
 
 # clumped <- subset(clumped, cis & pval < 1e-10 & cpg %in% dat2$creg)
 # dat3 <- group_by(dat2, tcpg, creg_chr) %>%
@@ -74,15 +100,16 @@ dat <- dplyr::group_by(dat, creg, tcpg_chr) %>%
 # 		})
 
 
-dat <- group_by(dat, tcpg, creg_chr) %>%
-	arrange(desc(creg_count), creg_pval) %>%
-	do({
-		x <- .
-		if(nrow(x) == 1) return(x)
-		y <- x[(abs(x$creg_pos - x$creg_pos[1]) - 1000000) > 0, ]
-		x <- rbind(x[1,], y)
-		return(x)
-		})
+# dat <- group_by(dat, tcpg, creg_chr) %>%
+# 	arrange(desc(creg_count), creg_pval) %>%
+# 	do({
+# 		x <- .
+# 		if(nrow(x) == 1) return(x)
+# 		y <- x[(abs(x$creg_pos - x$creg_pos[1]) - 1000000) > 0, ]
+# 		x <- rbind(x[1,], y)
+# 		return(x)
+# 		})
+
 
 
 
