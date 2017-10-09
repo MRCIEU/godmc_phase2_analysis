@@ -4,7 +4,7 @@ library(data.table)
 library(TwoSampleMR)
 library(parallel)
 
-setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/scripts/")
+# setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/scripts/")
 
 load("/mnt/storage/home/gh13047/repo/godmc_phase2_analysis/06_mr-gwas-cpg/results/tophits.rdata")
 

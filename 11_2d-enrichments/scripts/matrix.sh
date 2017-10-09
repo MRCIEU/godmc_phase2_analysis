@@ -1,8 +1,12 @@
 #!/bin/bash
 
 #SBATCH --job-name=2d
-#SBATCH --nodes=1 --mem=60G --ntasks=28 --time=0-20:00:00
-#SBATCH --array=101-1000%10
+#SBATCH --nodes=1 
+#SBATCH --mem=60G
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=28
+#SBATCH --time=0-20:00:00
+#SBATCH --array=0-500%20
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 echo "Running on ${HOSTNAME}"
