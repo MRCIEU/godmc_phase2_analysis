@@ -11,6 +11,8 @@ param <- subset(param, param$fn %in% paste0("../results/mr_ld2/",fnr))
 
 dir.create("../results/mr_ld", show=F)
 param$out <- paste0("../results/mr_ld/out_", param$gwas, ".rdata")
+param <- subset(param, !file.exists(out))
+
 group_by(param, gwas) %>%
 	do({
 		x <- .
