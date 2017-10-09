@@ -1,7 +1,7 @@
 library(dplyr)
 
-setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/results")
-nom <- list.files(pattern="*.rdata$")
+# setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/results")
+nom <- paste0("../results/out/", list.files("../results/out", pattern="*.rdata$"))
 
 l <- list()
 for(i in 1:length(nom))
