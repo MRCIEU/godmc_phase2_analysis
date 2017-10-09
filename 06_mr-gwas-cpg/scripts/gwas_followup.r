@@ -6,7 +6,7 @@ library(parallel)
 
 # setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/scripts/")
 
-load("/mnt/storage/home/gh13047/repo/godmc_phase2_analysis/06_mr-gwas-cpg/results/tophits.rdata")
+load("../results/tophits.rdata")
 
 load("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/snps_gwas.rdata")
 a <- subset(gwas, mr_keep.exposure == TRUE)
@@ -29,10 +29,14 @@ last <- min(jid * num, nrow(param))
 
 param <- param[first:last, ]
 
-out <- paste0("../results/out_followup", jid, ".rdata")
+out <- paste0("../results/out/out_followup", jid, ".rdata")
 outtemp <- paste0(out, ".temp")
 
-if(file.exists(out)) q()
+if(file.exists(out)) 
+{
+	message("Already exists")
+	q()
+}
 
 if(file.exists(outtemp))
 {
@@ -49,13 +53,25 @@ for(i in i1:nrow(param))
 	message(i, " of ", nrow(param))
 	if(param$gwas[i] %in% res$exposure)
 	{
-		fn <- paste0("zcat ../../results/17/17_", param$chunk[i], ".txt.gz")
+		fn <- paste0("../../results/17/17_", param$chunk[i], ".txt.gz")
 		if(fn != curr)
 		{
+
+			message("Extracting")
+			snplist <- unique(a$id)
+			outlist <- paste0("../scratch/tempf", param$chunk[i], "_", jid, ".snplist")
+			fnn <- paste0("../scratch/tempf", param$chunk[i], "_", jid)
+			write.table(snplist, file=outlist, row=F, col=F, qu=F)
+			cmd <- paste0("zfgrep -f ", outlist, " ", fn, " > ", fnn)
+			system(cmd)
 			message("Reading")
-			b <- fread(fn)
+			b <- fread(fnn)
+			unlink(fnn)
+			unlink(outlist)
+			nom <- as.character(unlist(read.table(fn, nrows=1)))
+			names(b) <- nom
+			b$Pvalue <- as.numeric(b$Pvalue)
 			b <- separate(b, MarkerName, c("snp", "cpg"), "_")
-			b <- subset(b, cpg %in% res$outcome)
 			curr <- fn
 		} else {
 			message("Same cpg file")
@@ -84,7 +100,9 @@ for(i in i1:nrow(param))
 			message("Harmonising")
 			dat <- suppressMessages(harmonise_data(exposure, outcome, action=2))
 			dat$code <- paste(dat$exposure, dat$outcome)
+			message(nrow(dat))
 			dat <- subset(dat, code %in% res$code)
+			message(nrow(dat))
 			if(nrow(dat) > 0)
 			{
 				message("Analysing")
