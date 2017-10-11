@@ -40,6 +40,14 @@ The gctx format can be accessed using the cmapR R package
 [https://github.com/cmap/cmapR](https://github.com/cmap/cmapR)
 
 
+---
+
+There is also another similar experiment using shRNA (small-hairpin). There are only ~50 CRISPR modified genes in the first dataset, but in the shRNA dataset there are ~5000 modified genes.
+
+[https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE92742](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE92742)
+
+Focus on this first, using distant mQTLs (where the SNP and CpG are on different chromosomes).
+
 ## Annotate SNP-CpG pairs
 
 1. Use biomaRt to get entrez gene IDs and their ranges
@@ -61,8 +69,6 @@ Rscript annotate_positions.r
 ## Test for significance
 
 Permute the SNP-CpG list, then re-annotate
-
-
 
 
 
