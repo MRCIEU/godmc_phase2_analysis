@@ -21,6 +21,7 @@ temp <- subset(clumped, !duplicated(cpg))
 cpgs <- GRanges(seqnames=temp$cpgchr, ranges=IRanges(temp$cpgpos, temp$cpgpos), strand="*")
 names(cpgs) <- temp$cpg
 
+save(snps, cpgs, file="../data/clumped_granges.rdata")
 
 # Generate GRanges object of genes
 ensembl <- useMart("ensembl",dataset="hsapiens_gene_ensembl")
@@ -51,14 +52,26 @@ mqtl <- merge(mqtl, cpg_gene, all=TRUE)
 mqtl <- as_data_frame(mqtl)
 a <- apply(mqtl, 1, function(x) any(is.na(x)))
 mqtl <- subset(mqtl, !a)
+mqtl <- subset(mqtl, snp_hgnc_symbol != "" & cpg_hgnc_symbol != "")
 mqtl <- group_by(mqtl, cpg, snp) %>%
 	do({
 		x <- .
 		y <- expand.grid(
-			snp_ensembl_gene_id = unique(x$snp_ensembl_gene_id),
-			cpg_ensembl_gene_id = unique(x$cpg_ensembl_gene_id)
+			# snp_ensembl_gene_id = unique(x$snp_ensembl_gene_id),
+			# cpg_ensembl_gene_id = unique(x$cpg_ensembl_gene_id),
+			snp_hgnc_symbol = unique(x$snp_hgnc_symbol),
+			cpg_hgnc_symbol = unique(x$cpg_hgnc_symbol)
 		)
 		return(y)
 	})
 
 save(mqtl, file="../data/mqtl.rdata")
+
+code1 <- paste(mqtl$snp, mqtl$cpg)
+code2 <- paste(clumped$snp, clumped$cpg)
+
+trans_mqtl <- subset(mqtl, code1 %in% code2[clumped$pval < 1e-14 & !clumped$cis])
+save(trans_mqtl, file="../data/trans_mqtl.rdata")
+
+distant_mqtl <- subset(mqtl, code1 %in% code2[clumped$pval < 1e-14 & clumped$cpgchr != clumped$snpchr])
+save(distant_mqtl, file="../data/distant_mqtl.rdata")
