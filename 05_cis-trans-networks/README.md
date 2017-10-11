@@ -32,6 +32,18 @@ It also generates `grinfo.rdata` which summarises the clusters and is used exten
 It also generates the GRanges objects required for LOLA analysis
 
 
+## Are the CpGs that share causal variants correlated?
+
+We can use ARIES data to estimate the correlations between the CpGs that share causal variants.
+
+Run permutations of CpG pairs to obtain a null. Correlate the correlation value against the Wald ratio value. Though, note that this doesn't necessarily expect a large correlation because we don't assume that CpG1 causes CpG2.
+
+```
+Rscript community_correlations.r
+```
+
+
+
 ## Gene set enrichment analysis using GSEA and MSigDB
 
 This uses 6 databases of annotations. For each community it tests for enrichment/overlaps. Then it permutes the community-CpG matchings 1000 times to get null distributions. 
