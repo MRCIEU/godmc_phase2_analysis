@@ -20,7 +20,7 @@
 - transmQTL
 - mQTL
 
-addcg_cpgfrq.R will add 
+`addcg_cpgfrq.R` will add 
 
 - GCcontent
 - CpGcontent
