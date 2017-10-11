@@ -73,7 +73,15 @@ dat <- dplyr::group_by(dat, creg_chr, tcpg_chr) %>%
 	})
 
 
+# There are different top SNPs for each creg-tcpg
+# This shouldn't matter because creg-tcpg are retained because of shared causal variant
+# Need to choose a sentinel SNP for each creg-tcpg cluster
 
+dat <- group_by(dat, creg, snp) %>%
+	mutate(creg_snp_count=n())
+dat <- group_by(dat, creg) %>%
+	arrange(desc(creg_snp_count)) %>%
+	mutate(snp_orig=snp, snp=snp[1])
 
 # Remove tcpg if it's 5mb within sentinal cpg
 # dat <- dplyr::group_by(dat, creg, tcpg_chr) %>%

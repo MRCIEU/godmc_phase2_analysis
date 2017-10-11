@@ -1,6 +1,6 @@
 library(dplyr)
 
-fn <- paste0("../results/annot_perm", 1:252, ".rdata")
+fn <- paste0("../results/annotations/annot_perm", 1:57, ".rdata")
 l <- list()
 for(i in fn)
 {
@@ -25,7 +25,7 @@ save(perms, file="../results/annot_perms.rdata")
 
 
 
-fn <- paste0("../results/annot", 1:252, ".rdata")
+fn <- paste0("../results/annotations/annot", 1:57, ".rdata")
 l <- list()
 for(i in fn)
 {
