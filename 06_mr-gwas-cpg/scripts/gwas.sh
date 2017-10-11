@@ -1,10 +1,9 @@
 #!/bin/bash
 
-#SBATCH --job-name=gwasmr
-#SBATCH --nodes=1 --mem=10G --time=0-20:00:00
-#SBATCH --array=1-481
+#SBATCH --job-name=gwas
+#SBATCH --nodes=1 --mem=10G --time=0-40:00:00
+#SBATCH --array=1-942
 #SBATCH --output=job_reports/slurm-%A_%a.out
-# #SBATCH --partition=mrcieu
 
 echo "Running on ${HOSTNAME}"
 module add R/3.2.3-foss-2016a
@@ -16,5 +15,5 @@ fi
 
 i=${SLURM_ARRAY_TASK_ID}
 
-Rscript gwas.r ${i} 1000
+Rscript gwas.r ${i} 500 1e-5
 
