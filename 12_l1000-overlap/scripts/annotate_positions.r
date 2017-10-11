@@ -75,3 +75,32 @@ save(trans_mqtl, file="../data/trans_mqtl.rdata")
 
 distant_mqtl <- subset(mqtl, code1 %in% code2[clumped$pval < 1e-14 & clumped$cpgchr != clumped$snpchr])
 save(distant_mqtl, file="../data/distant_mqtl.rdata")
+
+
+## Permutation sets
+nperm <- 10
+
+for(i in 1:nperm)
+{
+	message(i)
+	perm <- subset(clumped, pval < 1e-14 & cpgchr != snpchr, select=c(snp, cpg))
+	perm$cpg <- sample(perm$cpg)
+	perm <- merge(perm, snp_gene, all=TRUE)
+	perm <- merge(perm, cpg_gene, all=TRUE)
+	perm <- as_data_frame(perm)
+	a <- apply(perm, 1, function(x) any(is.na(x)))
+	perm <- subset(perm, !a)
+	perm <- subset(perm, snp_hgnc_symbol != "" & cpg_hgnc_symbol != "")
+	perm <- group_by(perm, cpg, snp) %>%
+		do({
+			x <- .
+			y <- expand.grid(
+				# snp_ensembl_gene_id = unique(x$snp_ensembl_gene_id),
+				# cpg_ensembl_gene_id = unique(x$cpg_ensembl_gene_id),
+				snp_hgnc_symbol = unique(x$snp_hgnc_symbol),
+				cpg_hgnc_symbol = unique(x$cpg_hgnc_symbol)
+			)
+			return(y)
+		})
+	save(perm, file=paste0("../data/distant_perm", i, ".rdata"))
+}
