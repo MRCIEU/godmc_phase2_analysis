@@ -123,10 +123,10 @@ threshold <- as.numeric(args[3])
 first <- (jid - 1) * num + 1
 last <- min(jid * num, nrow(param))
 param <- param[first:last, ]
-out <- paste0("../results/out/out", jid, ".rdata")
+outfn <- paste0("../results/out/out", jid, ".rdata")
 outfu <- paste0("../results/out/out_fu", jid, ".rdata")
-outtemp <- paste0(out, ".temp")
-if(file.exists(out)) 
+outtemp <- paste0(outfn, ".temp")
+if(file.exists(outfn)) 
 {
 	message("Already exists")
 	q()
@@ -139,46 +139,52 @@ if(file.exists(outtemp))
 } else {
 	i1 <- 1
 	j1 <- 1
+	m <- list()
+	mf <- list()
 }
 
 ##############
 
 curr <- "0"
-m <- list()
-mf <- list()
-for(i in i1:nrow(param))
+if(i1 > nrow(param))
 {
-	message(i, " of ", nrow(param))
-	fn <- paste0("../../results/17/17_", param$chunk[i], ".txt.gz")
-	if(fn != curr)
+	message("Complete")
+} else {
+	for(i in i1:nrow(param))
 	{
-		b <- extract_from_17(fn, unique(a$id))
-		curr <- fn
-	} else {
-		message("Same cpg file")
-	}
-	out <- do_mr(a, b, param$gwas[i], param$chunk[i])
-	m[[i]] <- out$mres
-
-	if(!is.null(out$mres))
-	{
-		sig <- subset(out$mres, pval < threshold)
-		if(nrow(sig) > 0)
+		message(i, " of ", nrow(param))
+		fn <- paste0("../../results/17/17_", param$chunk[i], ".txt.gz")
+		if(fn != curr)
 		{
-			code <- paste(sig$id.exposure, sig$id.outcome)
-			mf[[j1]] <- mr_followup(
-				subset(out$dat, paste(id.exposure, id.outcome) %in% code), 
-				param$chunk[i],
-				0.05/300000
-			)
-			j1 <- j1 + 1
-		} 
+			b <- extract_from_17(fn, unique(a$id))
+			curr <- fn
+		} else {
+			message("Same cpg file")
+		}
+		out <- do_mr(a, b, param$gwas[i], param$chunk[i])
+		m[[i]] <- out$mres
+	
+		if(!is.null(out$mres))
+		{
+			sig <- subset(out$mres, pval < threshold)
+			if(nrow(sig) > 0)
+			{
+				code <- paste(sig$id.exposure, sig$id.outcome)
+				mf[[j1]] <- mr_followup(
+					subset(out$dat, paste(id.exposure, id.outcome) %in% code), 
+					param$chunk[i],
+					0.05/300000
+				)
+				j1 <- j1 + 1
+			} 
+		}
+		save(m, mf, file=outtemp)
 	}
-	save(m, mf, file=outtemp)
 }
 
 res <- bind_rows(m)
 res_fu <- bind_rows(mf)
-save(res, file=out)
+save(res, file=outfn)
 save(res_fu, file=outfu)
 unlink(outtemp)
+
