@@ -1,28 +1,5 @@
 
-#extract results files
-##results_dir="/projects/MRC-IEU/groups/godmc/meta-analysis/input"
-#results_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
-#cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/16/"
-
-#metal_in="16_${i}.in"
-#cd $results_dir
-
-#for cohort in ${cohort_dir}*16.tar
-#do
-
-#	echo $cohort
-#	cohortname=$(basename "$cohort" .tar)
-#	echo $cohortname
-#	mkdir -p $cohort_dir/${cohortname}
-#	cd $cohort_dir/${cohortname}
-#for i in `seq 1 25`; 
-#do
-#	tar -xvf ../${cohortname}.tar results/16/results_${i}.gz
-#done
-
-#mv $cohort_dir/${cohortname} $results_dir
-#done
-
+#please extract chr20 chunks first using extractchr20chunks.sh
 
 
 #cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/01_meta_analysis_16
@@ -57,6 +34,8 @@ clumped<-clumped[clumped$pval<1e-14,]
 dim(clumped)
 #[1] 288797     28
 
+
+
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
 #435391
 
@@ -80,6 +59,8 @@ a14.cis.out<-a[which(a$cis==F & a$pval<1e-14),]
 dim(a14.cis.out)
 #[1] 156857     22 cis
 # [1] 21526    29 trans
+a14.cis.out<-a14.cis.out[which(a14.cis.out$snpchr=="chr20"),]
+
 o<-order(a14.cis.out$pval)
 a14.cis.out<-a14.cis.out[o,]
 probe<-unique(a14.cis.out$cpg)
@@ -95,6 +76,10 @@ a14.cis.out<-a14.cis.out[m,]
 o<-order(as.numeric(as.character(a14.cis.out$cpgpos)))
 a14.cis.out<-a14.cis.out[o,]
 
+chunks<-unique(data.frame(a14.cis.out$chunk))
+chunks<-as.character(chunks[,1])
+write.table(chunks,"chr20_chunks.txt",sep=" ",quote=F,row.names=F,col.names=F)
+
 l<-list.files(path=cohort_dir)
 w<-which(l%in%c("ARIES_16"))
 
@@ -109,9 +94,12 @@ for (i in 1:length(l)){
 #for (i in 1:2){
 cat(i,"\n")
 
-	for (j in (1:25)){
+#	for (j in (1:25)){
 		#for (j in 1:length(l2)){
+for (chunk in 1:length(chunks)){
+j<-chunks[chunk]
 		cat(j,"\n")
+
 r<-read.table(paste(cohort_dir,"/",l[i],"/results/16/results_",j,".gz",sep=""),he=T)
 m<-which(r$MARKERNAME%in%a14.cis.out$id)
 
@@ -157,12 +145,15 @@ getmstatistic_results$M_expected_mean
 getmstatistic_results$M_expected_sd
 getmstatistic_results$M_crit_alpha_0_05
 
-save(dframe,file="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats.RData")
+save(dframe,file="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats_chr20.RData")
+
+library(ggplot2)
 
 
-
-
-
-
+p1 <- ggplot(dframe, aes(x=as.factor(study_names_in), y=beta_in)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=6)) +
+labs(x="study", y="effect size")
+ggsave(plot=p1, file="../images/effectsizechr20bystudy.pdf", width=7, height=7)
 
 

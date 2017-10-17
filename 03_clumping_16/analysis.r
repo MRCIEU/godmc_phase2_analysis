@@ -6,6 +6,7 @@ library(gridExtra)
 library(stringr)
 
 load("../results/16/16_clumped.rdata")
+clumped$rsq <- 2 * clumped$Effect^2 * clumped$Freq1 * (1 - clumped$Freq1)
 
 
 cisthresh <- c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)
@@ -101,9 +102,20 @@ ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descrip
 names(ss)<-c("study","nsamples16","lambda16")
 ss[,1]<-gsub("_16","",ss[,1])
 ss[,1]<-gsub("00_ARIES","ARIES",ss[,1])
-w<-which(ss[,1]%in%c("DunedinAge38"))
+#w<-which(ss[,1]%in%c("DunedinAge38"))
+#if(length(w)>0){
+#ss<-ss[-w,]}
+ss4<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizeslambda4.txt")
+names(ss4)<-c("study","nsamples04","lambda04")
+ss4[,1]<-gsub("_04","",ss4[,1])
+ss4[,1]<-gsub("00_ARIES","ARIES",ss4[,1])
+w<-which(ss[,1]%in%c("ccg_old"))
 if(length(w)>0){
 ss<-ss[-w,]}
+
+ss<-rbind(ss,c("SYS","NA","NA"),c("DunedinAge38","NA","NA"))
+o<-order(ss[,1])
+ss<-ss[o,]
 
 ss$study_paper<-ss$study
 ss$study_paper<-gsub("InterAct","EPIC_Norfolk",ss$study_paper)
@@ -114,11 +126,7 @@ ss$study_paper<-gsub("ccg","EGC_CTG",ss$study_paper)
 
 
 
-ss4<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortsizeslambda4.txt")
-names(ss4)<-c("study","nsamples04","lambda04")
-ss4[,1]<-gsub("_04","",ss4[,1])
-ss4[,1]<-gsub("00_ARIES","ARIES",ss[,1])
-w<-which(ss4[,1]%in%c("DunedinAge38"))
+w<-which(ss4[,1]%in%c("ccg_old","UCL_MRC_SCZ"))
 if(length(w)>0){
 ss4<-ss4[-w,]}
 
@@ -130,7 +138,6 @@ ss$ncpg<-NA
 ss$covariates<-NA
 ss$males<-NA
 ss$age<-NA
-
 
 for (i in 1:nrow(ss)){
 cat(ss[i,1],"\n")
@@ -157,7 +164,7 @@ ss$predicted_cellcounts_type[i]<-"houseman"
 m<-match(ss[,1],ss4[,1])
 ss<-data.frame(ss,ss4[m,])
 
-write.table(ss,"../images/descriptives.phase2.txt",sep="\t",quote=F,row.names=F,col.names=T)
+write.table(ss,"/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/descriptives.phase2.txt",sep="\t",quote=F,row.names=F,col.names=T)
 #check samplesize differences between script 01 and 16
 diff<-(ss$n-ss$nsamples01)
 which(diff>0)
@@ -202,16 +209,26 @@ y<-y[which(!is.na(y$chromosome)),]
 w<-which(y$chromosome=="chrY"|y$chromosome=="chrX")
 cpgs<-unique(y$name)
 sd.out<-data.frame(cpgs)
-
+mean.out<-data.frame(cpgs)
 for (i in 1:nrow(ss)){
 cat(ss[i,1],"\n")
 load(paste0(cohort_dir,ss[i,1],"_01/results/01/methylation_summary.RData"))
 m<-match(cpgs,row.names(meth_summary))
 sd<-meth_summary[m,"sd"]
-sd.out<-data.frame(sd.out,sd)}
+sd.out<-data.frame(sd.out,sd)
+mean.df<-meth_summary[m,"mean"]
+mean.out<-data.frame(mean.out,mean.df)
+
+}
 row.names(sd.out)<-cpgs
+row.names(mean.out)<-cpgs
+
 sd.out<-sd.out[,-1]
 names(sd.out)<-ss[,1]
+
+mean.out<-mean.out[,-1]
+names(mean.out)<-ss[,1]
+
 
 for (i in 1:ncol(sd.out)){
 cat(ss[i,1],"\n")
@@ -223,13 +240,47 @@ cat(ss[i,1],"\n")
 cat(length(which(is.na(sd.out[-w,i]))),"\n")
 }
 
+
+
 sdmean<-data.frame(cpgs,sd=rowMeans(sd.out, na.rm=TRUE))
+meanmean<-data.frame(cpgs,sd=rowMeans(mean.out, na.rm=TRUE))
+
+probe.rm<-which(y$chromosome=="chrY"|y$chromosome=="chrX")
+probe.rm<-unique(y[probe.rm,"name"])
+w<-which(row.names(sd.out)%in%probe.rm)
+
+studysd<-data.frame(study=ss[,1],sd=colMeans(sd.out[-w,], na.rm=TRUE))
+studymean<-data.frame(study=ss[,1],mean=colMeans(mean.out[-w,], na.rm=TRUE))
+write.table(studysd,"/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/sd.probes.txt",sep=" ",quote=F,col.names=T,row.names=F)
+write.table(studymean,"/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/mean.probes.txt",sep=" ",quote=F,col.names=T,row.names=F)
+
+#m<-match(row.names(sd.out),y$name)
+#sd.out<-data.frame(y[m,c("chromosome","position")],sd.out)
+
 m<-match(clumped$cpg,sdmean$cpgs)
 clumped<-data.frame(clumped,cpgsd=sdmean[m,2])
+m<-match(clumped$cpg,meanmean$cpgs)
+clumped<-data.frame(clumped,cpgmean=meanmean[m,2])
+
+sd.out.m<-melt(sd.out)
+names(sd.out.m)<-c("study","sd")
+p1 <- ggplot(sd.out.m, aes(x=as.factor(study), y=sd)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=6)) +
+labs(x="study", y="sd")
+ggsave(plot=p1, file="../images/sdbycohort.pdf", width=7, height=7)
+
+mean.out.m<-melt(mean.out)
+names(mean.out.m)<-c("study","mean")
+p1 <- ggplot(mean.out.m, aes(x=as.factor(study), y=mean)) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=6)) +
+labs(x="study", y="mean")
+ggsave(plot=p1, file="../images/meanbycohort.pdf", width=7, height=7)
+
 
 clumped$id<-paste(clumped$snp,clumped$cpg,sep="_")
 clumped$studycount<-0
-
 ###
 path="/panfs/panasas01/shared-godmc/counts_2017/combined"
 l<-list.files(path=path,pattern=".ge1.2.allcohorts.txt.gz")
@@ -287,8 +338,8 @@ clumped2$PvalueARE<-as.numeric(clumped2$PvalueARE)
 clumped2$PvalueMRE<-as.numeric(clumped2$PvalueMRE)
 
 w<-which(clumped2$pval<1e-14 & clumped2$PvalueMRE>1e-14)
-clumped2$mre<-"MRE + FE"
-clumped2$mre[w]<-"FE only"
+clumped2$mre<-"FE + MRE +"
+clumped2$mre[w]<-"FE + MRE - "
 
 mean(abs(clumped2$Effect))
 #[1] -0.009308104
@@ -313,8 +364,8 @@ table(clumped2$snptype)
 table(clumped2$cis)
 #FALSE   TRUE 
 # 35966 252831 
-mean(clumped2$rsq)
-#[1] 0.0425435
+####mean(clumped2$rsq)
+####[1] 0.0425435
 mean(clumped2$maf)
 #[1] 0.2382847
 mean(clumped2$cpgsd)
@@ -322,11 +373,12 @@ mean(clumped2$cpgsd)
 mean(as.numeric(clumped2$studycount))
 #[1] 6.1695
 
+levels(clumped2$mre) <- rev(levels(clumped2$mre<-factor(clumped2$mre)))
 
 p1 <- ggplot(clumped2, aes(x=as.factor(mre), y=-log10(pval))) +
 geom_boxplot() +
 theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
-labs(x="mre", y="-log10 pvalue")
+labs(x="mre", y="-log10 FE pvalue")
 
 p2 <- ggplot(clumped2, aes(x=as.factor(mre), y=-log10(PvalueMRE))) +
 geom_boxplot() +
@@ -336,7 +388,7 @@ labs(x="mre", y="-log10 MRE pvalue")
 p3 <- ggplot(clumped2, aes(x=as.factor(mre), y=abs(Effect))) +
 geom_boxplot() +
 theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
-labs(x="mre", y="abs Effect")
+labs(x="mre", y="abs FE Effect")
 
 p4<- ggplot(clumped2, aes(x=as.factor(mre), y=StdErr)) +
 geom_boxplot() +
@@ -375,10 +427,15 @@ geom_boxplot() +
 theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
 labs(x="mre", y="rsq")
 
-p11 <- ggplot(clumped2, aes(x=as.factor(mre), y=maf)) +
+#p11 <- ggplot(clumped2, aes(x=as.factor(mre), y=maf)) +
+#geom_boxplot() +
+#theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+#labs(x="mre", y="maf")
+
+p11 <- ggplot(clumped2, aes(x=as.factor(mre), y=cpgmean)) +
 geom_boxplot() +
 theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
-labs(x="mre", y="maf")
+labs(x="mre", y="cpgmean")
 
 p12 <- ggplot(clumped2, aes(x=as.factor(mre), y=cpgsd)) +
 geom_boxplot() +
@@ -386,8 +443,10 @@ theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x
 labs(x="mre", y="cpgsd")
 
 pdf("../images/mrevsfe.pdf", width=7, height=7)
+#grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,ncol=3,nrow=4)
 grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10,p11,p12,ncol=3,nrow=4)
 dev.off()
+
 
 
 
@@ -767,5 +826,7 @@ p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=co
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
 labs(x="Independent hits from conditional analysis (p < 1e-7; 1e-14)", y="mQTLs per SNP")
 ggsave(p2, file="../images/conditional_counts_snp.pdf", width=7, height=7)
+
+
 
 

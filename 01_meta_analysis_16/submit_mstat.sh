@@ -14,4 +14,6 @@ mydir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/01_meta_analysis_
 cd $mydir
 
 #R CMD BATCH mstat.control.R mstat.Rout
+
+#sh extractchr20chunks.sh
 R CMD BATCH mstat.R mstat.Rout
