@@ -5,17 +5,56 @@ no<-as.numeric(arguments[1])
 load("../results/enrichments/snpcontrolsets.rdata")
 library(ggplot2)
 
-labs <- data.frame(table(f.all$groups))
-m<-match(f.all$groups,labs[,1])
-f.all<-data.frame(f.all,Ncatgroups=as.character(labs[m,-1]))
+#labs <- data.frame(table(f.all$groups))
+#m<-match(f.all$groups,labs[,1])
+#f.all<-data.frame(f.all,Ncatgroups=as.character(labs[m,-1]))
 
-f.all$groups<-as.factor(f.all$groups)
-f.all$groups <- factor(f.all$groups, levels = f.all$groups[order(as.numeric(as.character(f.all$Ncatgroups)),decreasing=T)])
+#f.all$groups<-as.factor(f.all$groups)
+#f.all$groups <- factor(f.all$groups, levels = f.all$groups[order(as.numeric(as.character(f.all$Ncatgroups)),decreasing=T)])
+flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+w<-which(f.all$SNP%in%flip[,1])
+f.all<-f.all[-w,]
 
 f.all$MAF<-as.numeric(as.character(f.all$MAF))
 f.all$nproxies<-as.numeric(as.character(f.all$nproxies))
 f.all$tssdist<-as.numeric(as.character(f.all$tssdist))
 f.all$closest450kdistance<-as.numeric(as.character(f.all$closest450kdistance))
+
+dim(f.all[,1:3])
+#10082161
+dim(unique(f.all[,1:3]))
+#3968470
+
+
+f.all$region<-paste(f.all$snpchr,f.all$min,f.all$max,sep="_")
+o<-order(f.all$mQTL,decreasing=T)
+f.all<-f.all[o,]
+region<-unique(f.all$region)
+m<-match(region,f.all$region)
+f.all2<-f.all[m,]
+
+table(f.all$mQTL)
+
+#  FALSE    TRUE 
+#9849491  232670 
+
+table(f.all2$mQTL)
+
+#  FALSE    TRUE 
+#3788302  180168 
+
+dim(f.all[,1:3])
+#10082161
+dim(unique(f.all[,1:3]))
+#3968470
+
+dim(f.all2[,1:3])
+#3968470
+dim(unique(f.all2[,1:3]))
+#3968470
+
+f.all<-f.all2
+
 
 quantile(f.all$MAF)
 #     0%     25%     50%     75%    100% 
@@ -36,6 +75,7 @@ quantile(f.all$closest450kdistance)
 #}
 #f.all$MAFquantile <- sapply(f.all$MAF, applyquintiles(x=f.all$MAF))
 #table(df$Quintile)
+
 
 
 f.all$MAFquantile <- cut(f.all$MAF, breaks=c(quantile(f.all$MAF,probs = seq(0, 1, by = 0.20))), labels=c("0-20","20-40","40-60","60-80","80-100"), include.lowest=TRUE)
@@ -109,10 +149,10 @@ mqtllist<-list()
 
 for (i in 1:dim(t)[1]){
 cat(i,"\n")
-f.all.subgroup<-f.all[which(f.all$groups_quantiles==row.names(t)[i]&f.all$cismQTL==TRUE),]
+f.all.subgroup<-f.all[which(f.all$groups_quantiles==row.names(t)[i]&f.all$cismQTL==FALSE),]
 id<-f.all.subgroup[sample(nrow(f.all.subgroup), size=t[i,2], replace=FALSE),"SNP"]
 controllist[[i]]<-id
-w1<-which(f.all$groups_quantiles==row.names(t)[i]&f.all$mQTL==TRUE)
+w1<-which(f.all$groups_quantiles==row.names(t)[i]&f.all$cismQTL==TRUE)
 mqtllist[[i]]<-f.all$SNP[w1]
 }
 save(mqtllist,controllist,file=paste("../results/enrichments/controlslist_cis",no,".rdata",sep=""))
@@ -147,10 +187,10 @@ mqtllist<-list()
 
 for (i in 1:dim(t)[1]){
 cat(i,"\n")
-f.all.subgroup<-f.all[which(f.all$groups_quantiles==row.names(t)[i]&f.all$transmQTL==TRUE),]
+f.all.subgroup<-f.all[which(f.all$groups_quantiles==row.names(t)[i]&f.all$transmQTL==FALSE),]
 id<-f.all.subgroup[sample(nrow(f.all.subgroup), size=t[i,2], replace=FALSE),"SNP"]
 controllist[[i]]<-id
-w1<-which(f.all$groups_quantiles==row.names(t)[i]&f.all$mQTL==TRUE)
+w1<-which(f.all$groups_quantiles==row.names(t)[i]&f.all$transmQTL==TRUE)
 mqtllist[[i]]<-f.all$SNP[w1]
 }
 save(mqtllist,controllist,file=paste("../results/enrichments/controlslist_trans",no,".rdata",sep=""))

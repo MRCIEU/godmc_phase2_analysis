@@ -1,8 +1,8 @@
 #!/bin/bash
   
 #PBS -N snpset   
-#PBS -o snpset-output
-#PBS -e snpset-error
+#PBS -o snpset0-output
+#PBS -e snpset0-error
 #PBS -l walltime=12:00:00
 #PBS -l nodes=1:ppn=16
 #PBS -S /bin/bash

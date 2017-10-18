@@ -79,15 +79,17 @@ retaincpg<-retaincpg[-rm]
 #420509
  
 nrow(cl)
+#296007
 
-#342722
 cl<-cl[which(cl$cpg%in%retaincpg),]
 nrow(cl)
-#[1] 269780
+#[1] 283352
 
  
 length(unique(cl$snp))
-#[1] 199843
+#[1] 232869
+
+
 
 y<-meffil.get.features("450k")
 
@@ -244,7 +246,6 @@ cpgpos$start<-cpgpos$position
 cpgpos$end<-cpgpos$position
  
  
- 
 res<-genomic.nearest(positions=f,intervals=cpgpos)
 res<-cpgpos[res,c("name","position")]
 cpgdist<-abs(res$position-f$snppos)
@@ -276,43 +277,43 @@ f$mQTL[m]<-"TRUE"
 
 ##make categories
 
-mafcat<-cut(f$MAF,breaks=seq(0,0.5,0.05))
+#mafcat<-cut(f$MAF,breaks=seq(0,0.5,0.05))
  
-cpgdistcat<-cut(f$closest450kdistance,breaks=seq(0,10000000,10000))
-w<-which(f$closest450kdistance==0)
-cpgdistcat[w]<-levels(cpgdistcat)[1]
+#cpgdistcat<-cut(f$closest450kdistance,breaks=seq(0,10000000,10000))
+#w<-which(f$closest450kdistance==0)
+#cpgdistcat[w]<-levels(cpgdistcat)[1]
  
-proxycat<-cut(f$nproxies,breaks=seq(0,100000,10))
-w<-which(f$nproxies==0)
-proxycat[w]<-levels(proxycat)[1]
+#proxycat<-cut(f$nproxies,breaks=seq(0,100000,10))
+#w<-which(f$nproxies==0)
+#proxycat[w]<-levels(proxycat)[1]
  
-tssdistcat500<-cut(f$tssdist,breaks=seq(0,10000000,500))
-w<-which(f$tssdist==0)
-tssdistcat500[w]<-levels(tssdistcat500)[1]
+#tssdistcat500<-cut(f$tssdist,breaks=seq(0,10000000,500))
+#w<-which(f$tssdist==0)
+#tssdistcat500[w]<-levels(tssdistcat500)[1]
  
-tssdistcat2000<-cut(f$tssdist,breaks=seq(0,10000000,2000))
-w<-which(f$tssdist==0)
-tssdistcat2000[w]<-levels(tssdistcat2000)[1]
+#tssdistcat2000<-cut(f$tssdist,breaks=seq(0,10000000,2000))
+#w<-which(f$tssdist==0)
+#tssdistcat2000[w]<-levels(tssdistcat2000)[1]
  
-tssdistcat5000<-cut(f$tssdist,breaks=seq(0,10000000,5000))
-w<-which(f$tssdist==0)
-tssdistcat5000[w]<-levels(tssdistcat5000)[1]
+#tssdistcat5000<-cut(f$tssdist,breaks=seq(0,10000000,5000))
+#w<-which(f$tssdist==0)
+#tssdistcat5000[w]<-levels(tssdistcat5000)[1]
  
-tssdistcat10000<-cut(f$tssdist,breaks=seq(0,10000000,10000))
-w<-which(f$tssdist==0)
-tssdistcat10000[w]<-levels(tssdistcat10000)[1]
+#tssdistcat10000<-cut(f$tssdist,breaks=seq(0,10000000,10000))
+#w<-which(f$tssdist==0)
+#tssdistcat10000[w]<-levels(tssdistcat10000)[1]
  
-tssdistcat20000<-cut(f$tssdist,breaks=seq(0,10000000,20000))
-w<-which(f$tssdist==0)
-tssdistcat20000[w]<-levels(tssdistcat20000)[1]
+#tssdistcat20000<-cut(f$tssdist,breaks=seq(0,10000000,20000))
+#w<-which(f$tssdist==0)
+#tssdistcat20000[w]<-levels(tssdistcat20000)[1]
  
-tssdistcat100000<-cut(f$tssdist,breaks=seq(0,10000000,100000))
-w<-which(f$tssdist==0)
-tssdistcat100000[w]<-levels(tssdistcat100000)[1]
+#tssdistcat100000<-cut(f$tssdist,breaks=seq(0,10000000,100000))
+#w<-which(f$tssdist==0)
+#tssdistcat100000[w]<-levels(tssdistcat100000)[1]
  
-f<-data.frame(f,mafcat,cpgdistcat,proxycat,tssdistcat500bp=tssdistcat500,tssdistcat2kb=tssdistcat2000,tssdistcat5kb=tssdistcat5000,tssdistcat10kb=tssdistcat10000,tssdistcat20kb=tssdistcat20000,tssdistcat100kb=tssdistcat100000)
+#f<-data.frame(f,mafcat,cpgdistcat,proxycat,tssdistcat500bp=tssdistcat500,tssdistcat2kb=tssdistcat2000,tssdistcat5kb=tssdistcat5000,tssdistcat10kb=tssdistcat10000,tssdistcat20kb=tssdistcat20000,tssdistcat100kb=tssdistcat100000)
 
-f$groups<-paste(f$mafcat,f$cpgdistcat,f$nproxies,f$tssdistcat500bp)
+#f$groups<-paste(f$mafcat,f$cpgdistcat,f$nproxies,f$tssdistcat500bp)
 #f$groups2<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat500bp)
 #f$groups3<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat2kb)
 #f$groups4<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat5kb)
@@ -325,36 +326,25 @@ save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
  
 }
 
-load("../results/enrichments/snpcontrolsets.rdata")
+o<-order(cl$pval)
+cl<-cl[o,]
+m<-match(f.all$SNP,cl$SNP)
+cl.pval<-cl[m,"pval"]
 
-p<-paste("chr",i,sep="")
-r<-read.table(paste(path,"chr",i,".orig",sep=""))
-names(r)<-c("pos","maf","tss")
-r$strand<-"+"
-r$chr<-p
-r_dt=as.data.table(r)
-r_dt[,snpstart_pre:=ifelse(strand=="-",pos-500,pos-499),]
-r_dt[,snpend_pre:=ifelse(strand=="-",pos+500,pos+501),]
+cl.cis<-cl[which(cl$cis==TRUE),]
+m<-match(f.all$SNP,cl.cis$SNP)
+cl.cispval<-cl.cis[m,"pval"]
 
-#collapse overlaps
-gr_range = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(snpstart_pre,snpend_pre)))
-gr_cpg = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(pos,pos)))
+cl.trans<-cl[which(cl$cis==FALSE),]
+m<-match(f.all$SNP,cl.trans$SNP)
+cl.transpval<-cl.trans[m,"pval"]
 
-overlap=as.data.table(findOverlaps(gr_cpg, gr_range))
-overlap_red=overlap[,list(subjectHit=min(subjectHits),NsubjectHits=.N),by=queryHits]
+f.all<-data.frame(f.all,cl.pval=cl.pval,cl.cispval=cl.cispval,cl.transpval=cl.transpval)
 
-r_dt[,snpstart:=start(gr_range[overlap_red$subjectHit])]
-r_dt[,snpend:=end(gr_range[overlap_red$subjectHit])]
-r_dt[,NsubjectHits:=overlap_red$NsubjectHits]
+save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
 
-hg19_gr=with(r_dt, GRanges(seqnames = Rle(chr), IRanges(start=snpstart, end=snpend),strand=Rle(strand),ID=pos))
 
-seq_hg19=getSeq(BSgenome.Hsapiens.UCSC.hg19,hg19_gr)
 
-#check that center of seqeunce is always CpG (should be only the non CG probes and those that got merged into another region ~ 3000 )
-#Illumina450_dt[NsubjectHits==1&subseq(seq_Illumina450,start=500,end=501)!="CG"]
 
-r_dt[,GC_freq:=letterFrequency(seq_hg19, "CG", as.prob=T),]
-r_dt[,CpG_freq:=dinucleotideFrequency(seq_hg19, step=2, as.prob=T)[,"CG"],]
 
 

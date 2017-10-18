@@ -21,20 +21,22 @@ fi
 
 i=${PBS_ARRAYID}
 
-dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16"
+#dir="/panfs/panasas01/sscm/epzjlm/godmc_phase2_analysis/results/16"
+
+dir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16"
 cd $dir
 touch snpcpgpval.txt
 touch tmp.txt
 for i in `seq 1 962`;do
 echo $i
-zcat /panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_$i.txt.gz |awk 'NR>1 {print $1,$8, '$i'}' >>snpcpgpval.txt
-zcat /panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_$i.txt.gz |awk -F'[ :_]' 'NR>1 {print $1,$2,$3}' >>tmp.txt
+zcat $dir/16_$i.txt.gz |awk 'NR>1 {print $1,$8, '$i'}' >>snpcpgpval.txt
+zcat $dir/16_$i.txt.gz |awk -F'[ :_]' 'NR>1 {print $1,$2,$3}' >>tmp.txt
 done
 
 paste -d ' ' tmp.txt snpcpgpval.txt > snpcpgpval.tmp
-mv snpcpgpval.tmp /panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.txt
+mv snpcpgpval.tmp $dir/snpcpgpval.txt
 #rm /panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/tmp.txt
-gzip /panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.txt
+gzip $dir/snpcpgpval.txt
 
 for i in `seq 1 23`; do
 echo $i
