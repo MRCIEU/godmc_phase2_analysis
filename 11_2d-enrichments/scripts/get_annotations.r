@@ -13,7 +13,9 @@ tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore
 anno <- tfbsdb$regionAnno
 
 # Register parallel
-(no_cores <- detectCores() - 1)
+# (no_cores <- detectCores() - 1)
+
+no_cores <- 10
 registerDoParallel(cores=no_cores)
 cl <- makeCluster(no_cores, type="FORK")
 

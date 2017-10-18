@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=annot
 #SBATCH --nodes=1 --mem=4G --time=0-20:00:00
-#SBATCH --array=1-252
+#SBATCH --array=1-57
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 echo "Running on ${HOSTNAME}"

@@ -22,12 +22,15 @@ fi
 i=${PBS_ARRAYID}
 
 cd /panfs/panasas01/shared-godmc/godmc_phase2_analysis/03_clumping_16
-Rscript clump.r \
-	${i} \
-	../results/16/16_${i}_clumped.rdata \
-	1e-4 \
-	5e-8 \
-	0.0001 \
-	5000 \
-	1000000
+
+
+Rscript ../01_meta_analysis_16/clean_results.r ${i}
+
+Rscript clump_bc4.r \
+        ${i} \
+        ../results/16/16_${i}_clumped.rdata \
+        1e-4 \
+        5e-8 \
+        0.0001 \
+        5000 \
 

@@ -1,4 +1,6 @@
-library(tidyverse)
+library(dplyr)
+library(tidyr)
+library(data.table)
 do_conditional <- function(pval_file, bfile, pval_threshold)
 {
 
@@ -9,31 +11,43 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 		" --cojo-p ", pval_threshold,
 		" --out ", pval_file
 	)
-	system(cmd, show.output.on.console = FALSE)
+	system(cmd)
 	fn <- paste0(pval_file, ".jma.cojo")
-	if(!file.exists(fn)) return(NULL)
+	if(!file.exists(fn)) return(data.frame())
 
-	res <- read_tsv(fn,
-		col_types=cols(
-		  Chr = col_integer(),
-		  SNP = col_character(),
-		  bp = col_integer(),
-		  refA = col_character(),
-		  freq = col_double(),
-		  b = col_double(),
-		  se = col_double(),
-		  p = col_double(),
-		  n = col_double(),
-		  freq_geno = col_double(),
-		  bJ = col_double(),
-		  bJ_se = col_double(),
-		  pJ = col_double(),
-		  LD_r = col_double()
-		)
-	)
+	res <- read.table(fn, header=TRUE,
+		colClasses=c("integer", "character", "integer", "character", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric", "numeric")) %>% as.tbl
+
+	# res <- read_tsv(fn,
+	# 	col_types=cols(
+	# 	  Chr = col_integer(),
+	# 	  SNP = col_character(),
+	# 	  bp = col_integer(),
+	# 	  refA = col_character(),
+	# 	  freq = col_double(),
+	# 	  b = col_double(),
+	# 	  se = col_double(),
+	# 	  p = col_double(),
+	# 	  n = col_double(),
+	# 	  freq_geno = col_double(),
+	# 	  bJ = col_double(),
+	# 	  bJ_se = col_double(),
+	# 	  pJ = col_double(),
+	# 	  LD_r = col_double()
+	# 	)
+	# )
 	return(res)
 }
 
+
+# group_by(a, Var1) %>% 
+# do({ 
+# 	x <- .
+# 	if(x$Var1 == 3)
+# 		return(data.frame())
+# 	else
+# 		return(as.tbl(x))
+# })
 
 ##
 
@@ -41,25 +55,15 @@ arguments <- commandArgs(T)
 i <- as.numeric(arguments[1])
 out <- arguments[2]
 
-bfile <- "../data/ref/eur"
+bfile <- "../data/ref/out"
 
 ##
 
 # Get cpg positions
-load("cpg_pos.rdata")
+load(paste0("../results/16/16_cleaned_", i, ".rdata"))
 
-a <- read_tsv(paste0("../results/16/16_", i, ".txt.gz"))
-a <- a %>% separate(MarkerName, into=c("snp", "cpg"), sep="_")
-a$snp2 <- a$snp
-a <- a %>% separate(snp2, into=c("snpchr", "snppos", "snptype"), sep=":")
-a$snppos <- as.numeric(a$snppos)
-a <- inner_join(a, cpgpos, by=c("cpg"))
-a$cis <- FALSE
-cis_radius <- 1000000
-a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
-a <- subset(a, (cis & Pvalue < 1e-4) | (!cis & Pvalue < 5e-8))
 
-snplist <- unique(a$snp)
+snplist <- unique(res$snp)
 newbfile <- paste0("../scratch/refc_", i)
 write.table(snplist, file=paste0(newbfile, ".snplist"), row=FALSE, col=FALSE, qu=FALSE)
 cmd <- paste0("plink",
@@ -75,7 +79,7 @@ system(cmd)
 # e.g. 1e-8 for cis
 # e.g. 1e-14 for trans
 
-clumped <- group_by(a, cpg, cis) %>%
+clumped <- group_by(res, cpg, cis) %>%
 	do({
 		x <- .
 		# write clump file
@@ -89,7 +93,6 @@ clumped <- group_by(a, cpg, cis) %>%
 		# Get cis/trans clumping threshold
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_conditional(fn, newbfile, thresh)
-		print(head(keep))
 		system(paste0("rm ", fn, "*"))
 		return(keep)
 	})

@@ -1,13 +1,14 @@
 library(dplyr)
 
-setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/results")
-nom <- list.files(pattern="*.rdata$")
+# setwd("/mnt/storage/private/mrcieu/research/UKBIOBANK_Phenotypes_App_15825/scripts/godmc_phase2_analysis/06_mr-gwas-cpg/results")
+nom <- paste0("../results/out/", list.files("../results/out", pattern="*.rdata$"))
 
 l <- list()
 for(i in 1:length(nom))
 {
 	load(nom[i])
 	message(i)
+	res$chunk <- i
 	message("nrow: ", nrow(res))
 	message("ncpg: ", length(unique(res$outcome)))
 	message("nexp: ", length(unique(res$exposure)))
@@ -15,12 +16,12 @@ for(i in 1:length(nom))
 	if(nrow(res) > 0)
 	{
 		res$nom <- nom[i]
-		l[[i]] <- subset(res, pval < 1e-5, select=c(exposure, outcome, b, se, pval, nsnp))
+		l[[i]] <- subset(res, pval < 1e-5, select=c(exposure, outcome, b, se, pval, nsnp, chunk))
 	}
 }
 
 res <- bind_rows(l)
-save(res,file="~/repo/godmc_phase2_analysis/06_mr-gwas-cpg/results/tophits.rdata")
+save(res,file="../results/tophits.rdata")
 
 length(unique(res$exposure))
 length(unique(res$outcome))

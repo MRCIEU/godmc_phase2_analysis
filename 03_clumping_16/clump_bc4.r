@@ -29,28 +29,17 @@ cis_pval <- as.numeric(arguments[3])
 trans_pval <- as.numeric(arguments[4])
 rsq_thresh <- as.numeric(arguments[5])
 kb_thresh <- as.numeric(arguments[6])
-cis_radius <- as.numeric(arguments[7])
 
 #bfile <- "/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur"
-bfile <- "data/eur"
+bfile <- "../data/ref/eur"
 ##
 
 # Get cpg positions
-load("cpg_pos.rdata")
-
-a <- fread(paste0("zcat ../results/16/16_", i, ".txt.gz"))
-a <- a %>% separate(MarkerName, into=c("snp", "cpg"), sep="_")
-a$snp2 <- a$snp
-a <- a %>% separate(snp2, into=c("snpchr", "snppos", "snptype"), sep=":")
-a$snppos <- as.numeric(a$snppos)
-a <- inner_join(a, cpgpos, by=c("cpg"))
-a$cis <- FALSE
-a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
-
+load(paste0("../results/16/16_cleaned_", i, ".rdata"))
 
 # Make specific file for each run
 # Might improve speed / reduce IO problem?
-snplist <- unique(a$snp)
+snplist <- unique(res$snp)
 newbfile <- paste0("../scratch/ref_", i)
 write.table(snplist, file=paste0(newbfile, ".snplist"), row=FALSE, col=FALSE, qu=FALSE)
 cmd <- paste0("plink",
@@ -65,7 +54,7 @@ system(cmd)
 # Apply different thresholds to cis and trans
 
 
-clumped <- group_by(a, cpg, cis) %>%
+clumped <- group_by(res, cpg, cis) %>%
 	do({
 		x <- .
 

@@ -1,3 +1,32 @@
+`ld_regions.r` generates 
+
+../results/enrichments/snpcontrolsets.rdata
+
+- snpchr
+- min
+- max
+- nproxies
+- snppos
+- MAF
+- snptype
+- SNP
+- chromosome
+- position
+- closest450kcpg
+- closest450kdistance
+- tssdist
+- closesttss
+- cismQTL
+- transmQTL
+- mQTL
+
+`addcg_cpgfrq.R` will add 
+
+- GCcontent
+- CpGcontent
+
+../results/enrichments/snpcontrolsetsGC_CpGcontent.rdata
+
 `dat` object
 
 Each row represents an mQTL - association between a SNP and a CpG
