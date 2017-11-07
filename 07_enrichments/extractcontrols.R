@@ -1,15 +1,19 @@
 path="../results/enrichments"
 l<-list.files(path=path,pattern="controlslist")
+g<-grep("6prop",l)
+l<-l[g]
 
-cis<-grep("controlslist_cis",l)
-trans<-grep("controlslist_trans",l)
+cis<-grep("controlslist6prop_cis",l)
+trans<-grep("controlslist6prop_trans",l)
 l1<-l[-c(cis,trans)]
 
 cis<-l[cis]
 trans<-l[trans]
 
-load("../results/enrichments/snpcontrolsets.rdata")
+load("../results/enrichments/snpcontrolsetsGC_CpGcontent.rdata")
+f.all<-r.all
 ####
+
 
 controlset<-list()
 mqtlset<-NULL
@@ -31,7 +35,7 @@ dim(mqtlset)
 #[1] 232670
 dim(controlset[[1]])
 
-save(mqtlset,controlset,file="snpsetsforLOLA.RData")
+save(mqtlset,controlset,file="snpsetsforLOLA6prop.RData")
 
 ###
 
@@ -57,7 +61,7 @@ dim(mqtlset)
 #[1] 232670
 dim(controlset[[1]])
 
-save(mqtlset,controlset,file="snpsetsforLOLAcis.RData")
+save(mqtlset,controlset,file="snpsetsforLOLAcis6prop.RData")
 
 ##
 
@@ -83,7 +87,7 @@ dim(mqtlset)
 #[1] 232670
 dim(controlset[[1]])
 
-save(mqtlset,controlset,file="snpsetsforLOLAtrans.RData")
+save(mqtlset,controlset,file="snpsetsforLOLAtrans6prop.RData")
 
 
 

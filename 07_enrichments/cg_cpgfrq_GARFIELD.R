@@ -60,23 +60,34 @@ genomic.nearest <- function(positions, intervals) {
      positions$nearest
  }
 
-path="/panfs/panasas01/shared-godmc/GARFIELD/garfield-data/maftssd/"
+path="/panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/maftssd/"
 p<-paste("chr",i,sep="")
-r<-read.table(paste(path,"chr",i,".orig",sep=""))
-names(r)<-c("pos","maf","tss")
+r<-read.table(paste(path,"chr",i,sep=""))
+names(r)<-c("pos","maf","tss","nproxies")
 r$strand<-"+"
-r$chr<-p
+if (i<23) {r$chr<-p}
+if (i==23) {r$chr<-"chrX"}
+
 r_dt=as.data.table(r)
 r_dt[,snpstart_pre:=ifelse(strand=="-",pos-500,pos-499),]
 r_dt[,snpend_pre:=ifelse(strand=="-",pos+500,pos+501),]
 
+w<-which(r_dt$snpstart_pre<0)
+
+if(length(w)>0){r_dt$snpstart_pre[w]<-1
+r_dt$snpend_pre[w]<-500
+}
+
+
+
 #collapse overlaps
 gr_range = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(snpstart_pre,snpend_pre)))
-gr_cpg = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(pos,pos)))
+gr_snp = with(r_dt,GRanges(seqnames=chr,ranges=IRanges(pos,pos)))
 
-overlap=as.data.table(findOverlaps(gr_cpg, gr_range))
+overlap=as.data.table(findOverlaps(gr_snp, gr_range))
 overlap_red=overlap[,list(subjectHit=min(subjectHits),NsubjectHits=.N),by=queryHits]
 
+#
 r_dt[,snpstart:=start(gr_range[overlap_red$subjectHit])]
 r_dt[,snpend:=end(gr_range[overlap_red$subjectHit])]
 r_dt[,NsubjectHits:=overlap_red$NsubjectHits]
@@ -90,6 +101,13 @@ seq_hg19=getSeq(BSgenome.Hsapiens.UCSC.hg19,hg19_gr)
 
 r_dt[,GC_freq:=letterFrequency(seq_hg19, "CG", as.prob=T),]
 r_dt[,CpG_freq:=dinucleotideFrequency(seq_hg19, step=2, as.prob=T)[,"CG"],]
+#
+
+#collapse overlaps
+
+#check that center of seqeunce is always CpG (should be only the non CG probes and those that got merged into another region ~ 3000 )
+#Illumina450_dt[NsubjectHits==1&subseq(seq_Illumina450,start=500,end=501)!="CG"]
+
 
 r<-data.frame(r_dt)
 ##
@@ -97,8 +115,7 @@ y<-meffil.get.features("450k")
 
 if(i==23){
 j<-"X"
-cpgpos<-y[which(y$chromosome==paste0("chr",j)),]
-cpgpos$chromosome<-"chr23"}
+cpgpos<-y[which(y$chromosome==paste0("chr",j)),]}
 
 if(i<23){cpgpos<-y[which(y$chromosome==paste0("chr",i)),]}
 cpgpos$position<-as.numeric(as.character(cpgpos$position))
@@ -107,22 +124,27 @@ r$chromosome<-r$chr
 r$position<-r$pos
 cpgpos$start<-cpgpos$position
 cpgpos$end<-cpgpos$position
- 
+
 res<-genomic.nearest(positions=r,intervals=cpgpos)
 res<-cpgpos[res,c("name","position")]
 cpgdist<-abs(res$position-r$pos)
 
-r2<-data.frame(r$pos,r$maf,r$tss,r$GC_freq,r$CpG_freq,cpg450kdist=cpgdist)
+r2<-data.frame(r$pos,r$maf,r$tss,r$nproxies,r$GC_freq,r$CpG_freq,cpg450kdist=cpgdist)
 
 write.table(r2,paste(path,"chr",i,".tmp",sep=""),sep=" ",quote=F,row.names=F,col.names=F)
-}
+
 
 #for i in `seq 1 23`; do
 #echo $i
-#mv chr$i chr$i.orig
-#mv chr$i.tmp chr$i
+##mv chr$i chr$i.orig
+#mv chr$i chr$i.tmp
 #done
 
+#for i in `seq 1 23`; do
+#echo $i
+##mv chr$i chr$i.orig
+#awk '{print $1, $2,$3,$4,$5,$6}' <chr$i.tmp >chr$i
+#done
 
 #bim_dt[,isGoDMC:=ifelse(cpgID%in%data$cpgname,TRUE,FALSE),]
 
@@ -133,3 +155,4 @@ write.table(r2,paste(path,"chr",i,".tmp",sep=""),sep=" ",quote=F,row.names=F,col
 #ggplot(Illumina450_dt,aes(x=CpG_freq,col=isGoDMC))+geom_density()
 #ggplot(Illumina450_dt,aes(x=CpG_freq))+geom_density()
 #dev.off()
+

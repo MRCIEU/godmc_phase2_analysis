@@ -317,13 +317,33 @@ res2<-rma(yi=M,vi=vi,mods=~relatedness,data=dframe3)
 
 
 
-#p1<-ggplot(dframe2,aes(x=samplesize,y=nsnps))+
-#geom_point(aes(colour=factor(dframe2$study_names_in),size=dframe2$samplesize)) +
-#xlab("Cohort N") +
-#ylab("N SNPs") +
-#theme(axis.text.x = element_text(face = "bold"))
-#ggsave(p1,file="../images/SNPsbyNcohort.pdf",width=8,height=6)
+p1<-ggplot(dframe3,aes(x=bmi,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("average BMI") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/MvaluebyBMI.pdf",width=8,height=6)
 
+p1<-ggplot(dframe3,aes(x=maf,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("average MAF") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/Mvaluebymaf.pdf",width=8,height=6)
+
+p1<-ggplot(dframe3,aes(x=nsnps,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("nSNPs") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/Mvaluebynsnps.pdf",width=8,height=6)
+
+p1<-ggplot(dframe3,aes(x=sd.probe,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("average SD across all probes") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/Mvaluebysd.pdf",width=8,height=6)
 
 # Sort getmstatistic_results dataframe by M statistics
 dframe$study_names_in<-gsub("00_ARIES","ARIES",dframe$study_names_in)

@@ -5,7 +5,32 @@ library(dplyr)
 library(gridExtra)
 library(stringr)
 
-load("../results/16/16_clumped.rdata")
+load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped.rdata")
+max(clumped[which(clumped$cis==TRUE),"pval"])
+#1e-4
+max(clumped[which(clumped$cis==FALSE),"pval"])
+#5e-8
+
+flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+w<-which(clumped$snp%in%flip[,1])
+clumped<-clumped[-w,]
+
+retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
+ 
+#exclusion probes from TwinsUK
+excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_exclusion_probes.txt",he=T)
+#42446
+rm<-which(retaincpg%in%excl[,1])
+#14882
+retaincpg<-retaincpg[-rm]
+#420509
+ 
+clumped<-clumped[which(clumped$cpg%in%retaincpg),]
+nrow(clumped)
+
+
+
+
 clumped$rsq <- 2 * clumped$Effect^2 * clumped$Freq1 * (1 - clumped$Freq1)
 
 
@@ -456,7 +481,7 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 38 cohorts")
 ggsave(plot=p1, file="../images/mqtl_counts_thresholds_FE.pdf", width=7, height=7)
 
 p1 <- ggplot(mqtl_countsr, aes(x=as.factor(-log10(thresh)), y=count)) +
@@ -464,7 +489,7 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 38 cohorts")
 ggsave(plot=p1, file="../images/mqtl_counts_thresholds_ARE.pdf", width=7, height=7)
 
 p1 <- ggplot(mqtl_countsrm, aes(x=as.factor(-log10(thresh)), y=count)) +
@@ -472,7 +497,7 @@ geom_bar(stat="identity") +
 geom_text(aes(label=count, y=count+10000), size=3) +
 facet_grid(. ~ cis, space="free_x", scale="free_x") +
 theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
-labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 23 cohorts")
+labs(x="-log10 p threshold", y="Clumped mQTLs from meta analysis of 38 cohorts")
 ggsave(plot=p1, file="../images/mqtl_counts_thresholds_MRE.pdf", width=7, height=7)
 
 ###
