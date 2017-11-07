@@ -67,7 +67,8 @@ geom_point(aes(colour=nom)) +
 facet_grid(. ~ chr, scale="free", space="free") +
 ylim(c(0, -log10(min(ressig2$pval)))) +
 scale_colour_brewer(type="qual", palette="Set3") +
-theme(legend.position="bottom")
+theme(legend.position="bottom") +
+theme(axis.text.x=element_blank()) 
 ggsave(plot=p1, file="../images/ressig2_manhattan.pdf", width=15, height=8)
 
 

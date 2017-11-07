@@ -4,6 +4,16 @@ library(matrixStats)
 load("../data/trans_clumped.rdata")
 load("../data/annotations.rdata")
 
+# There is one set of counts for the real mQTLs, and ~1000 for the permuted SNP-CpG pairs.
+# There are 2504 annotations
+# There are 2504^2 possible pairs of annotations
+# 
+
+
+# Only counts that are far away from the distribution are going to be significant after multiple testing, so can afford to get rid of any rows for which the target
+
+## Real = 0; else perm
+
 load_permutations <- function()
 {
 	load("../results/matrix/m0.rdata")
@@ -17,7 +27,7 @@ load_permutations <- function()
 	avail <- list.files("../results/matrix")
 	avail <- avail[avail != "m0.rdata"]
 
-	for(i in avail)
+	for(i in avail[1:100])
 	{
 		message(i)
 		load(paste0("../results/matrix/", i))
@@ -27,26 +37,113 @@ load_permutations <- function()
 	return(res)
 }
 
+get_ranks <- function(res, y)
+{
+	message("Subsetting vars")
+	vars <- res[,1:2]
+	res <- res[,-c(1:2)]
+	res <- as.matrix(res)
+
+	if(y != 0)
+	{
+		message("Testing for permutation ", y)
+		res[,1] <- res[,y+1]
+		res <- res[,-c(y+1)]
+	} else {
+		message("Running real")
+	}
+
+	message("Starting with ", nrow(res), " rows")
+
+	# round 1 : remove row if real value is replicated
+	message("Removing replicated")
+	ind <- sapply(1:nrow(res), function(x)
+	{
+		! res[x,1] %in% res[x,-c(1)]
+	})
+
+	res2 <- res[ind,]
+	message(nrow(res2), " rows remaining")
+
+
+	# Get ranks amongst remaining
+	message("Getting ranks")
+	ran <- sapply(1:nrow(res2), function(x)
+	{
+		rank(res2[x,])[1]
+	})
+
+	# Get distance when rank is highest
+	ress3 <- as.matrix(res2[ran == 1 | ran == ncol(res2),])
+
+	message(nrow(ress3), " rows left with top rank")
+
+	message("Getting distances")
+	dif <- apply(ress3[,-1], 1, summary) %>% t %>% as.data.frame
+	dif$val <- ress3[,1]
+
+	dif$dif <- dif$val - dif$Max
+	dif$dif[dif$dif < 0] <- dif$Min[dif$dif < 0] - dif$val[dif$dif < 0]
+	dif$sds <- rowSds(ress3[,-1])
+	dif$sddif <- abs(dif$val - dif$Mean) / dif$sds
+
+	message("Removing invariants")
+	# How often is everything invariant except real
+	temp <- subset(dif, sds == 0)
+	# What is the value of real and permutations when everything is invariant
+	table(temp$val, temp$Mean)
+
+	ind2 <- dif$sds == 0
+	message(sum(ind2), " invariants")
+	dif2 <- dif[!ind2, ]
+
+	vars2 <- vars[ind,1:2]
+	vars3 <- vars2[ran == 1 | ran == ncol(res2), ]
+	vars4 <- vars3[!ind2,]
+
+	difres <- cbind(vars4, dif2)
+	return(difres)
+}
+
+args <- commandArgs(T)
+y <- as.numeric(args[1])
+
 res <- load_permutations()
 
-# There is one set of counts for the real mQTLs, and ~1000 for the permuted SNP-CpG pairs.
-# There are 2504 annotations
-# There are 2504^2 possible pairs of annotations
-# 
+difres <- get_ranks(res, y)
+
+save(difres, file=paste0("../results/difres/difres", y, ".rdata"))
 
 
-# Only counts that are far away from the distribution are going to be significant after multiple testing, so can afford to get rid of any rows for which the target
-
-## Real = 0; else perm
-
-y <- 0
 
 
-# round 1 : remove if replicated
 
-vars <- res[,1:2]
-res <- res[,-c(1:2)]
-res <- as.matrix(res)
+
+
+p <- function(n)
+{
+	library(ggplot2)
+	a <- data.frame(val=as.numeric(sig[n, -c(1,2,ncol(sig), ncol(sig)-1)]), what=c("Real", rep("Perm", ncol(sig)-5)))
+	p1 <- ggplot(a, aes(x=val)) +
+	geom_histogram() +
+	geom_vline(data=subset(a, what=="Real"), aes(xintercept=val))
+	return(p1)
+}
+
+
+sig <- subset(res2, dif > 200)
+save(sig, file="../results/matrix_sig.rdata")
+
+
+
+
+
+
+## Assume normal distribution
+
+vars$value <- res[,1]
+vars$m <- rowMeans(res[,-1])
+vars$s <- rowSds(res[,-1])
 
 sp <- split(1:nrow(res), as.factor(vars[,2]))
 for(i in 1:length(sp))
@@ -57,26 +154,6 @@ for(i in 1:length(sp))
 	save(mat, lab, file=paste0("../data/matrix/m", i, ".rdata"))
 }
 
-
-
-ind <- sapply(1:nrow(res), function(x)
-{
-	! res[x,y+1] %in% res[x,-c(y+1)]
-})
-
-res2 <- res[ind,]
-
-ran <- sapply(1:nrow(res2), function(x)
-{
-	rank(res2[x,])[y+1]
-})
-
-vars$value <- res[,1]
-# vars$rank[ind] <- ran
-vars$m <- rowMeans(res[,-1])
-vars$s <- rowSds(res[,-1])
-
-
 for(i in 1:ncol(res))
 {
 	message(i)
@@ -85,56 +162,26 @@ for(i in 1:ncol(res))
 	vars[[paste0("p", i)]] <- pmin(p1, p2)
 }
 
-
-
-
-p1 <- pnorm(res[,2], vars$m, vars$s, low=TRUE)
-p2 <- pnorm(res[,2], vars$m, vars$s, low=FALSE)
-vars$p1 <- pmin(p1, p2)
-
-p1 <- pnorm(res[,3], vars$m, vars$s, low=TRUE)
-p2 <- pnorm(res[,3], vars$m, vars$s, low=FALSE)
-vars$p2 <- pmin(p1, p2)
-
-p1 <- pnorm(res[,4], vars$m, vars$s, low=TRUE)
-p2 <- pnorm(res[,4], vars$m, vars$s, low=FALSE)
-vars$p3 <- pmin(p1, p2)
-
-p1 <- pnorm(res[,5], vars$m, vars$s, low=TRUE)
-p2 <- pnorm(res[,5], vars$m, vars$s, low=FALSE)
-vars$p4 <- pmin(p1, p2)
-
 save(vars, file="../results/matrix_vars.rdata")
+
+
+
 
 ##
 
-a <- rep(0, 774)
-for(i in 1:774)
+a <- rep(0, ncol(vars)-5)
+for(i in 1:length(a))
 {
-	a[i] <- sum(vars[,6+i] < 1e-9)
+	a[i] <- sum(vars[,5+i] < 1e-9)
 }
 
 sort(a)
 
-b <- vars[vars[,7] < 1e-9, ]
+b <- vars[vars[,6] < 1e-9, ]
+annos <- unique(c(b$Var1, b$Var2))
 
 
-
-vars2 <- vars
-vars2$value <- res[,2]
-
-vars2$p1 <- pnorm(vars2$value, vars2$m, vars2$s, low=TRUE)
-vars2$p2 <- pnorm(vars2$value, vars2$m, vars2$s, low=FALSE)
-vars2$p <- pmin(vars2$p1, vars2$p2)
-sum(vars2$p < 1e-8)
-min(vars2$p)
-
-
-a <- subset(vars, p < 1e-9)
-
-annos <- unique(c(a$Var1, a$Var2))
-
-vars$score <- -log10(vars$p)
+vars$score <- -log10(vars$p1)
 vars$score[vars$value < vars$m] <- vars$score[vars$value < vars$m] * -1
 
 m <- tidyr::spread(subset(vars, select=c(Var1, Var2, score)), Var1, score)
