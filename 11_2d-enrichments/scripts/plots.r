@@ -16,10 +16,22 @@ anno$antibody[is.na(anno$antibody) & anno$collection == "ucsc_features"] <- anno
 
 anno$antibody[anno$collection == "sheffield_dnase"] <- NA
 
-difres$snpanno <- anno$antibody[difres$Var1]
-difres$cpganno <- anno$antibody[difres$Var2]
+anno$antibody2 <- sapply(strsplit(as.character(anno$antibody), split="_"), function(x) x[1])
+anno$antibody2 <- sapply(strsplit(as.character(anno$antibody2), split=" "), function(x) x[1])
+anno$antibody2 <- sapply(strsplit(as.character(anno$antibody2), split="\\("), function(x) x[1])
+anno$antibody2 <- gsub("eGFP-", "", anno$antibody2)
 
-temp <- subset(difres, sddif > 25, select=c(snpanno, cpganno, sddif))
+
+difres$snpanno <- anno$antibody2[difres$Var1]
+difres$cpganno <- anno$antibody2[difres$Var2]
+difres$sddif2 <- difres$sddif
+difres$sddif2[difres$val < difres$Mean] <- difres$sddif2[difres$val < difres$Mean] * -1
+
+summary(difres$sddif2)
+# hist(difres$sddif2)
+# All values that are 'depleted' are not significant
+
+temp <- subset(difres, sddif > 22, select=c(snpanno, cpganno, sddif))
 temp <- subset(temp, !is.na(snpanno) & !is.na(cpganno))
 temp <- cSplit(temp, "snpanno", sep = ";", direction = "long")
 temp <- cSplit(temp, "cpganno", sep = ";", direction = "long")
@@ -27,11 +39,11 @@ temp <- group_by(temp, cpganno, snpanno) %>%
  	summarise(sddif = mean(sddif), count=n())
 
 
-temp2 <- subset(temp, !snpanno %in% cpganno)
-a <- gvisSankey(temp2[,c("snpanno", "cpganno", "sddif")])
-plot(a)
+# temp2 <- subset(temp, !snpanno %in% cpganno)
+# a <- gvisSankey(temp2[,c("snpanno", "cpganno", "sddif")])
+# plot(a)
 
-temp2 <- group_by(temp2, snpanno) %>%
+# temp2 <- group_by(temp2, snpanno) %>%
 
 
 snpl <- data.frame(snpanno=unique(temp$snpanno))
@@ -40,21 +52,33 @@ snpl$snpid <- 1:nrow(snpl)
 cpgl <- data.frame(cpganno=unique(temp$cpganno))
 cpgl$cpgid <- 1:nrow(cpgl)
 
+
 temp <- merge(temp, cpgl)
 temp <- merge(temp, snpl)
+
 
 dw <- matrix(0, nrow(snpl), nrow(cpgl))
 dw[as.matrix(temp[,c("snpid", "cpgid")])] <- temp[,"sddif"]
 
 rownames(dw) <- snpl$snpanno
 colnames(dw) <- cpgl$cpganno
-subset(temp, snpanno == "Endothelial")
 # heatmap(dw)
 
-pdf("../images/bipartite1.pdf")
-plotweb(dw,method="normal", text.rot=90)
-dev.off()
+dw2 <- dw
+dw2[dw2 == 0] <- NA
+ii <- cut(t(dw2), breaks = seq(min(dw2, na.rm=T), max(dw2, na.rm=T), len = 100), 
+          include.lowest = TRUE)
+col <- colorRampPalette(c("lightblue", "blue"))(99)[ii]
+# col <- grey((dw[index] - min(dw[index])) / max(dw[index] - min(dw[index])))
 
+
+pdf("../images/bipartite1.pdf", width=12, height=6)
+plotweb(dw, text.rot=90,
+	col.interaction=col, bor.col.interaction=col,
+	y.width.low=0.03,
+	y.width.high=0.03
+)
+dev.off()
 
 l <- list()
 for(i in 1:100)
