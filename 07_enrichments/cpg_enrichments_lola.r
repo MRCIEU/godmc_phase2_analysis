@@ -11,6 +11,13 @@ library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 library("BSgenome.Hsapiens.UCSC.hg19")
 theme_set(theme_bw())
 
+#r<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19/roadmap_epigenomics/index.tmp",he=T)
+#table(r$dataType)
+
+#  dnase histone 
+#    131     979 
+
+
 ##load cell type conversion and colors
 cellType_conversions=fread("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments/CellTypes.tsv",drop="collection")
 colors=fread("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments/color.tsv")
@@ -23,15 +30,22 @@ colors=fread("/data/groups/lab_bock/jklughammer/gitRepos/otherProjects/GoDMC/LOL
 
 ##load regiondb
 regionDB0 <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
+#cistrome_cistrome  codex encode_tfbs ucsc_features cistrome_epigenome  encode_segmentation sheffield_dnase
 
+#
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped.rdata")
 max(clumped[which(clumped$cis==TRUE),"pval"])
 #1e-4
 max(clumped[which(clumped$cis==FALSE),"pval"])
 #5e-8
 
+
 flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
 w<-which(clumped$snp%in%flip[,1])
+clumped<-clumped[-w,]
+
+indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+w<-which(clumped$snp%in%indels[,1]) #129
 clumped<-clumped[-w,]
 
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
@@ -46,6 +60,8 @@ retaincpg<-retaincpg[-rm]
  
 clumped<-clumped[which(clumped$cpg%in%retaincpg),]
 nrow(clumped)
+
+clumped<-clumped[which(clumped$pval<1e-14),]
 
 #head(dat)
 #  cpgchr    cpgpos    cpgname snpchr    snppos              snpname
@@ -84,11 +100,7 @@ nrow(clumped)
 #5 Mon,Mac0,Mac1,Mac2,Neu,MK,MK,EP,EP,Ery,Ery,FoeT,nCD4,tCD4,aCD4,naCD4,nCD8,tCD8
 #6                                                                           <NA>
 
-
-
-
 data=as.data.table(clumped)
-
 
 #get 450k locations
 Illumina450=IlluminaHumanMethylation450kanno.ilmn12.hg19@data$Locations
@@ -195,7 +207,7 @@ plotLOLA=function(locResults_all,plot_pref,height=35,width=18){
 produceLOLA_plots_intern = function(grs,plot_pref,height=35,width=18,recreate=FALSE){
 
   #run LOLA cpgs
-  simpleCache(cacheName=paste0(plot_pref,"_cpgs"),instruction="runLOLA(fg_cpg, bg_cpg, regionDB, cores=5)",cacheDir=getwd(),recreate=recreate,assignToVariable="locResults_cpgs",buildEnvir=c(fg_cpg=grs$fg_cpg,bg_cpg=grs$bg$cpg))
+  simpleCache(cacheName=paste0(plot_pref,"_cpgs"),instruction="runLOLA(fg_cpg, bg_cpg, regionDB0, cores=5)",cacheDir=getwd(),recreate=recreate,assignToVariable="locResults_cpgs",buildEnvir=c(fg_cpg=grs$fg_cpg,bg_cpg=grs$bg$cpg))
    
   #combine and process
   locResults_all=locResults_cpgs
@@ -214,12 +226,38 @@ data[,cpgchr:=gsub("23","X",cpgchr),]
 #data[,cpg_change:=ifelse(all(mqtl_effect>0),"mqtl_effect>0",ifelse(all(mqtl_effect<0),"mqtl_effect<0","ambivalent")),by=c("cpgchr","cpgstart","cpgend")]
 
 ####run with internal background
-grs_mqtl_effect=create_grs(data=data,selector=c("cpg_change=='mqtl_effect>0'","cpg_change=='mqtl_effect<0'","cpg_change=='ambivalent'","snp_change=='mqtl_effect>0'","snp_change=='mqtl_effect<0'","snp_change=='ambivalent'"))
-produceLOLA_plots_intern(grs=grs_mqtl_effect,plot_pref="mqtl_effect",height=35,width=18)
+#grs_mqtl_effect=create_grs(data=data,selector=c("cpg_change=='mqtl_effect>0'","cpg_change=='mqtl_effect<0'","cpg_change=='ambivalent'","snp_change=='mqtl_effect>0'","snp_change=='mqtl_effect<0'","snp_change=='ambivalent'"))
+#produceLOLA_plots_intern(grs=grs_mqtl_effect,plot_pref="mqtl_effect",height=35,width=18)
+
 
 data[,cpg_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("cpgchr","cpgstart","cpgend")]
 grs_cis=create_grs(data=data,selector=c("cpg_cis=='TRUE'","cpg_cis=='FALSE'","cpg_cis=='ambivalent'"))
-produceLOLA_plots_intern(grs=grs_cis,plot_pref="cis",height=35,width=18,recreate=TRUE)
+
+table(data$cpg_cis)
+
+#ambivalent      FALSE       TRUE 
+#     58803       4917     219215 
+
+w<-which(data$cpg_cis=="FALSE")
+dim(unique(data[w,"cpg"]))
+#[1] 4125    1
+
+w<-which(data$cpg_cis=="TRUE")
+dim(unique(data[w,"cpg"]))
+#[1] 162607      1
+
+w<-which(data$cpg_cis=="ambivalent")
+dim(unique(data[w,"cpg"]))
+#[1] 29742     1
+
+table(data$cis)
+
+# FALSE   TRUE 
+# 24276 258659
+
+
+
+#produceLOLA_plots_intern(grs=grs_cis,plot_pref="cis",height=35,width=18,recreate=TRUE)
 
 
 ####run with external background for CpGs
@@ -234,10 +272,16 @@ Illumina450_dt[,CpG_freq:=dinucleotideFrequency(seq_Illumina450, step=2, as.prob
 Illumina450_dt[,isGoDMC:=ifelse(cpgID%in%data$cpg,TRUE,FALSE),]
 Illumina450_dt<-Illumina450_dt[Illumina450_dt$cpgID%in%retaincpg,]
 
+df<-unique(data.frame(cpg=data$cpg,cpg_cis=data$cpg_cis))
+m<-match(Illumina450_dt$cpgID,data$cpg,)
+df<-data[m,"cpg_cis"]
+Illumina450_dt$cpg_cis<-df
+
 Illumina450_dt$GC_freqquantile<-cut(Illumina450_dt$GC_freq, breaks=c(quantile(Illumina450_dt$GC_freq,probs = seq(0, 1, by = 0.20))), labels=c("0-20","20-40","40-60","60-80","80-100"), include.lowest=TRUE)
 Illumina450_dt$CpG_freqquantile<-cut(Illumina450_dt$CpG_freq, breaks=c(quantile(Illumina450_dt$CpG_freq,probs = seq(0, 1, by = 0.20))), labels=c("0-20","20-40","40-60","60-80","80-100"), include.lowest=TRUE)
 Illumina450_dt$quantiles<-paste(Illumina450_dt$CpG_freqquantile,Illumina450_dt$GC_freqquantile)
 
+#ALL
 t<-table(Illumina450_dt$quantiles,Illumina450_dt$isGoDMC)
 w<-which(t[,2]<5)
 pr<-data.frame(t[-w,1]/t[-w,2])
@@ -289,34 +333,67 @@ cpg_bg_gr_matched=unique(c(Illumina450_bg_matched,GoDMC_cpg_gr))
 lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB0, cores=5)
 lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
 plotLOLA(locResults_all=lola_res0_matched,plot_pref="cpg_corebg_matched",height=10,width=18)
+save(lola_res0_matched,lola_res0,file="../results/lola_core_mqtlcpg.rdata")
+
+##ambivalent/FALSE/TRUE
+
+w<-which(is.na(Illumina450_dt$cpg_cis))
+Illumina450_dt$cpg_cis[w]<-"0bg"
+n<-names(table(Illumina450_dt$cpg_cis))[-1]
+
+t<-table(Illumina450_dt$quantiles,Illumina450_dt$cpg_cis)
+bg.matched.subset<-list()
+
+for (j in 1:length(n)){
+cat(n[j],"\n")
+w<-which(t[,(j+1)]<5)
+pr<-data.frame(t[-w,1]/t[-w,2])
+m<-min(pr)*t[,2]
+
+controllist<-list()
+
+
+for (i in 1:dim(t)[1]){
+cat(i,"\n")
+if(t[i,1]>5&t[i,2]>0){
+subgroup<-Illumina450_dt[which(Illumina450_dt$quantiles==row.names(t)[i]&Illumina450_dt$isGoDMC==FALSE),]
+id<-subgroup[sample(nrow(subgroup), size=round(m[i],0), replace=FALSE),"cpgID"]
+controllist[[i]]<-id
+}}
+
+
+
+bg.matched.subset[[j]]<-do.call("rbind",controllist)
+data_subset<-data[which(data$cpg_cis==n[j]),]
+GoDMC_cpg_gr=unique(with(data_subset,GRanges(seqnames = Rle(cpgchr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
+length(GoDMC_cpg_gr)
+
+
+cpg_bg_gr_matched=unique(c(bg.matched.subset[[j]],GoDMC_cpg_gr))
+lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB0, cores=5)
+lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
+plotLOLA(locResults_all=lola_res0_matched,plot_pref=paste0("cpg_corebg_matched_cis",n),height=10,width=18)
+
+save(lola_res0_matched,file=paste0("../results/lola_core_mqtlcpg_cis",n,".rdata"))
+
+}
+
+
+
 
 ###
 regionDB <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
+#jaspar_motifs  roadmap_epigenomics
 
 lola_res=runLOLA(GoDMC_cpg_gr, Illumina450_bg, regionDB, cores=5)
-
 lola_res<-rbind(lola_res0,lola_res)
 lola_res$logOddsRatio<-log(lola_res$oddsRatio)
 plotLOLA(locResults_all=lola_res,plot_pref="cpg_extbg",height=10,width=18)
 lola_res[userSet==1,][order(maxRnk, decreasing=FALSE),][1:10,]
+save(lola_res0_matched,lola_res0,file="../results/lola_ext_mqtlcpg.rdata")
 
 ###
 #
 
 
-#use gc and CpG matched background --> not really possible because half of all cpgs are GoDMC CpGs
-Illumina450_dt_forbg=Illumina450_dt[order(GC_freq, CpG_freq)]
-Illumina450_dt_forbg[,rank:=1:nrow(Illumina450_dt_forbg),]
-bg_rank=Illumina450_dt_forbg[isGoDMC==FALSE]$rank
-fg_rank=Illumina450_dt_forbg[isGoDMC==TRUE]$rank
 
-#This takes really long
-for (i in c(1:nrow(Illumina450_dt_forbg))){
-  if (Illumina450_dt_forbg[i]$isGoDMC==TRUE){
-    min_idx=which.min(abs(bg_rank-Illumina450_dt_forbg[i]$rank))
-    Illumina450_dt_forbg[i,matched_index:=bg_rank[min_idx]]
-    bg_rank=bg_rank[min_idx:length(bg_rank)]
-  }else{
-    Illumina450_dt_forbg[i,matched_index:=as.integer(0)]
-  } 
-}

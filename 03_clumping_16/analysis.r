@@ -15,6 +15,30 @@ flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/f
 w<-which(clumped$snp%in%flip[,1])
 clumped<-clumped[-w,]
 
+w1<-which(clumped$snptype=="INDEL")
+w2<-which(clumped$snptype=="SNP")
+mean(clumped$HetISq[w1])
+#[1] 45.66107
+mean(clumped$HetISq[w2])
+#[1] [1] 45.39092
+
+
+indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+w<-which(clumped$snp%in%indels[,1]) #129
+indels<-data.frame(clumped[w,])
+mean(indels$HetISq)
+#[1] 58.1876
+
+clumped<-clumped[-w,]
+
+w1<-which(clumped$snptype=="INDEL")
+w2<-which(clumped$snptype=="SNP")
+mean(clumped$HetISq[w1])
+#[1] 45.58455
+mean(clumped$HetISq[w2])
+#[1] 45.39092
+
+
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  
 #exclusion probes from TwinsUK
@@ -109,7 +133,7 @@ n_independent_regions_cis <- n_independent_regions / (n_bases / cis_window)
 n_independent_regions_trans <- n_independent_regions - n_independent_regions_cis
 
 #number of analysed CpGs - all probe on 450k array
-ncpg <- ncpg
+ncpg <- retaincpg
 
 ntest_cis <- ncpg * n_independent_regions_cis
 ntest_trans <- ncpg * n_independent_regions_trans
@@ -224,6 +248,13 @@ geom_point(aes(colour=factor(ss$study_paper),size=ss$nsamples04)) +
 labs(x="Cohort N",y="lambda",size="N",colour="Study") +
 theme(axis.text.x = element_text(face = "bold"))
 ggsave(plot=p4, file="../images/lambdabyNcohort.pdf", width=7, height=7)
+
+p5<-ggplot(clumped,aes(x=(clumped$HetDf+1)))+
+geom_histogram(binwidth=1)
+ggsave(plot=p5, file="../images/numberofstudiesbymqtl.pdf", width=7, height=7)
+
+
+
 
 ##
 
