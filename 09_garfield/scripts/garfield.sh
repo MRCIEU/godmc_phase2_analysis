@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Parts that will stay the same throughout all clinical traits
-DATADIR=/mnt/data1/programs/GARFIELD/garfield-data
+DATADIR=/mnt/data1/programs/garfield-v2/garfield-data
 ANNODIR=/mnt/data1/goDMC_Phase2/godmc_phase2_analysis/09_garfield/annotation/
-GARFIELDDIR=/mnt/data1/programs/GARFIELD/garfield/
+GARFIELDDIR=/mnt/data1/programs/garfield-v2/
 
 PRUNETAGSDIR=$DATADIR/tags/r01
 CLUMPTAGSDIR=$DATADIR/tags/r08
