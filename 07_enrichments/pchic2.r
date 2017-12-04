@@ -152,9 +152,9 @@ data <- list(snp_in_promoter, cpg_in_promoter)
 
 library(ggplot2)
 
-plotdata <- data.frame(data=c(rep("clumped", nrow(clumped)), rep("pchic", nrow(pchic)), rep("snp_in_promoter", nrow(snp_in_promoter)), rep("cpg_in_promoter", nrow(cpg_in_promoter))), distance=c(clumped$cpgpos - clumped$snppos, pchic$dist, snp_in_promoter$dist, cpg_in_promoter$dist))
-pdf("../results/enrichments/densityplot.pdf")
-ggplot(plotdata, aes(distance, fill=data, alpha=0.5)) + geom_density(color=NA) + guides(alpha=F) + xlim(-1000000, 1000000) + theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme(legend.key = element_blank(), strip.background = element_rect(colour=NA, fill=NA), panel.border=element_blank(), panel.spacing = unit(2, "lines"))
+plotdata <- data.frame(data=c(rep(paste("clumped (median distance = ", round(median(abs(clumped$cpgpos - clumped$snppos))), ")"), nrow(clumped)), rep(paste0("pchic (median distance = ", round(median(abs(pchic$dist), na.rm=T)), ")"), nrow(pchic)), rep(paste0("snp_in_promoter (median distance = ", round(median(abs(snp_in_promoter$dist))), ")"), nrow(snp_in_promoter)), rep(paste0("cpg_in_promoter (median distance = ", round(median(abs(cpg_in_promoter$dist))), ")"), nrow(cpg_in_promoter))), distance=c(clumped$cpgpos - clumped$snppos, pchic$dist, snp_in_promoter$dist, cpg_in_promoter$dist))
+pdf("../results/enrichments/densityplot.pdf", width=10, height=4)
+ggplot(plotdata, aes(distance, fill=data, alpha=0.5)) + geom_density(color=NA) + scale_fill_manual(values=c("#4477AA", "#117733", "#DDCC77", "#CC6677")) + guides(alpha=F) + xlim(-1000000, 1000000) + theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme(legend.key = element_blank(), strip.background = element_rect(colour=NA, fill=NA), panel.border=element_blank(), panel.spacing = unit(2, "lines"))
 dev.off()
 
 pdf("../results/enrichments/snp_in_promoter.pdf")
