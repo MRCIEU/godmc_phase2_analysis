@@ -4,7 +4,18 @@ library(tidyverse)
 cis_radius<-as.numeric(1000000)
 
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/04_conditional_16/cpg_pos.rdata")
-r<-read.table("GlycaemicTraits_SNPs_38cohorts.txt",sep="\t",he=T)
+#r<-read.table("GlycaemicTraits_SNPs_38cohorts.txt",sep="\t",he=T)
+
+r2.all<-data.frame()
+for (CHR in 1:23){
+cat(CHR,"\n")
+f<-file.info(paste0("chr",CHR))$size
+
+if(f>0){
+
+r<-read.table(paste0("chr",CHR),sep="\t",he=F)
+h<-read.table("header.txt",he=T)
+names(r)<-names(h)
 nrow(r) #23970
 
 r <- r %>% separate(MarkerName, into=c("snp", "cpg"), sep="_")
@@ -54,6 +65,9 @@ r2<-r[which(r$cis==TRUE),]
 dim(r2) #18040
 length(unique(r2$snp))
 #[1] 792
+r2.all<-rbind(r2.all,r2)
 
-write.table(r2,"GlycaemicTraits_SNPs_cis_38cohorts.txt",sep="\t",col.names=T,row.names=F,quote=F)
+}}
+write.table(r2.all,"GlycaemicTraits_SNPs_cis_38cohorts17.txt",sep="\t",col.names=T,row.names=F,quote=F)
+
 

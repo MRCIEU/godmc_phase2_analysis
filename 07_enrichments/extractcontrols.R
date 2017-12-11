@@ -10,8 +10,8 @@ l1<-l[-c(cis,trans)]
 cis<-l[cis]
 trans<-l[trans]
 
-load("../results/enrichments/snpcontrolsetsGC_CpGcontent.rdata")
-f.all<-r.all
+load("../results/enrichments/snpcontrolsets_selection.rdata")
+
 ####
 
 
@@ -32,8 +32,17 @@ cat(i,"\n")
 mqtlset<-f.all[which(f.all$SNP%in%mqtlset),]
 
 dim(mqtlset)
-#[1] 232670
-dim(controlset[[1]])
+#[1] 232602
+#232602
+table(mqtlset$snp_cis)
+
+#ambivalent      FALSE       TRUE 
+#      2842      13516     216244 
+
+table(controlset[[i]]$snp_cis)
+
+#ambivalent      FALSE       TRUE 
+#         0          0          0 
 
 save(mqtlset,controlset,file="snpsetsforLOLA6prop.RData")
 
@@ -50,8 +59,7 @@ mqtlset<-unique(c(mqtlset,unlist(mqtllist)))
 snp<-unlist(controllist)
 controlset[[i]]<-f.all[which(f.all$SNP%in%snp),]
 table(controlset[[1]][,"mQTL"])
-table(controlset[[1]][,"cismQTL"])
-table(controlset[[1]][,"transmQTL"])
+table(controlset[[1]][,"snp_cis"])
 cat(i,"\n")
 }
 
@@ -60,6 +68,14 @@ mqtlset<-f.all[which(f.all$SNP%in%mqtlset),]
 dim(mqtlset)
 #[1] 232670
 dim(controlset[[1]])
+
+table(mqtlset$snp_cis)
+
+#ambivalent      FALSE       TRUE 
+#         0          0     216244 
+
+#ambivalent      FALSE       TRUE 
+#         0          0       8227 
 
 save(mqtlset,controlset,file="snpsetsforLOLAcis6prop.RData")
 

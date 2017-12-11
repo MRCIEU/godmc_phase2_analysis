@@ -1,6 +1,6 @@
 library(tidyverse)
-load("../results/enrichments/snpcontrolsets.rdata")
-
+load("../results/enrichments/snpcontrolsetsGC_CpGcontent.rdata")
+f.all<-r.all
 r<-read_delim("/panfs/panasas01/shared-godmc/1kg_reference_ph3/selection_results/iHS_CEU.whole_genome.pvalues.gz",delim=" ")
 names(r)[4:5]<-c("iHS_score","iHS_pval")
 #[1] 7291078       5
@@ -162,6 +162,8 @@ r5$sds[w2]<-0
 r5$sds[w1]<-1
 
 table(r5$sds)
+#      0       1 
+#4390870   44361 
 
 bed<-data.frame(chr=paste("chr",r5$chromosome,sep=""),start=r5$position,stop=r5$position,score=r5$sds_score,pval=r5$sds_pval,sds=r5$sds)
 bed<-bed[which(bed$sds==1),]
@@ -178,13 +180,13 @@ f.all<-data.frame(f.all,r[m,c("iHS_score","iHS_pval","ihs")],r2[m2,c("Fst_score"
 save(f.all,file="../results/enrichments/snpcontrolsets_selection.rdata")
 
 ihs<-f.all[which(f.all$ihs==1),c("snpchr","min","max")]
-write.table(unique(ihs),"./regionDB/hg19/selection_region/regions/ihs.bed",sep="\t",quote=F,row.names=F,col.names=F)
+write.table(unique(ihs),"./regionDB/hg19/selection/regions/ihs.bed",sep="\t",quote=F,row.names=F,col.names=F)
 fst<-f.all[which(f.all$fst==1),c("snpchr","min","max")]
-write.table(unique(fst),"./regionDB/hg19/selection_region/regions/fst.bed",sep="\t",quote=F,row.names=F,col.names=F)
+write.table(unique(fst),"./regionDB/hg19/selection/regions/fst.bed",sep="\t",quote=F,row.names=F,col.names=F)
 xpehhchb<-f.all[which(f.all$xpehhchb==1),c("snpchr","min","max")]
-write.table(unique(xpehhchb),"./regionDB/hg19/selection_region/regions/xpehhchb.bed",sep="\t",quote=F,row.names=F,col.names=F)
+write.table(unique(xpehhchb),"./regionDB/hg19/selection/regions/xpehhchb.bed",sep="\t",quote=F,row.names=F,col.names=F)
 xpehhyri<-f.all[which(f.all$xpehhyri==1),c("snpchr","min","max")]
-write.table(unique(xpehhyri),"./regionDB/hg19/selection_region/regions/xpehhyri.bed",sep="\t",quote=F,row.names=F,col.names=F)
+write.table(unique(xpehhyri),"./regionDB/hg19/selection/regions/xpehhyri.bed",sep="\t",quote=F,row.names=F,col.names=F)
 sds<-f.all[which(f.all$sds==1),c("snpchr","min","max")]
-write.table(unique(sds),"./regionDB/hg19/selection_region/regions/sds.bed",sep="\t",quote=F,row.names=F,col.names=F)
+write.table(unique(sds),"./regionDB/hg19/selection/regions/sds.bed",sep="\t",quote=F,row.names=F,col.names=F)
 

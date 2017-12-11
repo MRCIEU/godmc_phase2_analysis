@@ -11,22 +11,12 @@ library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 library("BSgenome.Hsapiens.UCSC.hg19")
 theme_set(theme_bw())
 
-#r<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19/roadmap_epigenomics/index.tmp",he=T)
-#table(r$dataType)
-
-#  dnase histone 
-#    131     979 
-
 
 ##load cell type conversion and colors
 cellType_conversions=fread("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments/CellTypes.tsv",drop="collection")
 colors=fread("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments/color.tsv")
 
 setwd("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments")
-
-##load cell type conversion and colors
-cellType_conversions=fread("/data/groups/lab_bock/jklughammer/gitRepos/otherProjects/GoDMC/LOLA_annot/CellTypes.tsv",drop="collection")
-colors=fread("/data/groups/lab_bock/jklughammer/gitRepos/otherProjects/GoDMC/LOLA_annot/color.tsv")
 
 ##load regiondb
 regionDB0 <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
@@ -61,7 +51,9 @@ retaincpg<-retaincpg[-rm]
 clumped<-clumped[which(clumped$cpg%in%retaincpg),]
 nrow(clumped)
 
-clumped<-clumped[which(clumped$pval<1e-14),]
+clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
+
+#clumped<-clumped[which(clumped$pval<1e-14),]
 
 #head(dat)
 #  cpgchr    cpgpos    cpgname snpchr    snppos              snpname
@@ -140,7 +132,7 @@ process_LOLA = function (LOLA_res, collections=c("codex","encode_tfbs"),cellType
   LOLA_res=LOLA_res[!is.na(userSet)]
   
   LOLA_res=LOLA_res[collection%in%collections]
-  #changed form exp() to 10^ to accomodate change in LOLA  	
+  #changed form exp() to 10^ to accomodate change in LOLA   
   LOLA_res[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
   LOLA_res[,mlog10p.adjust:=-log10(p.adjust),]
   
@@ -223,6 +215,7 @@ data=merge(data,Illumina450_sub,by="cpg",all.x=TRUE)
 table(data[,ill_pos==cpgpos,])
 
 data[,cpgchr:=gsub("23","X",cpgchr),]
+data[,cpgchr:=gsub("24","Y",cpgchr),]
 #data[,cpg_change:=ifelse(all(mqtl_effect>0),"mqtl_effect>0",ifelse(all(mqtl_effect<0),"mqtl_effect<0","ambivalent")),by=c("cpgchr","cpgstart","cpgend")]
 
 ####run with internal background
@@ -238,24 +231,32 @@ table(data$cpg_cis)
 #ambivalent      FALSE       TRUE 
 #     58803       4917     219215 
 
+#filtered p<1e-14
+#ambivalent      FALSE       TRUE 
+#     51782       5421     197134 
+
+#ambivalent      FALSE       TRUE 
+#     54062       5076     210619
+
 w<-which(data$cpg_cis=="FALSE")
 dim(unique(data[w,"cpg"]))
-#[1] 4125    1
+#[1] 4260    1
 
 w<-which(data$cpg_cis=="TRUE")
 dim(unique(data[w,"cpg"]))
-#[1] 162607      1
+#[1] 157633      1
 
 w<-which(data$cpg_cis=="ambivalent")
 dim(unique(data[w,"cpg"]))
-#[1] 29742     1
+#[1] 27910     1
 
 table(data$cis)
 
 # FALSE   TRUE 
 # 24276 258659
 
-
+#FALSE   TRUE 
+# 22913 246844 
 
 #produceLOLA_plots_intern(grs=grs_cis,plot_pref="cis",height=35,width=18,recreate=TRUE)
 
@@ -291,7 +292,7 @@ controllist<-list()
 for (i in 1:dim(t)[1]){
 cat(i,"\n")
 if(t[i,1]>5&t[i,2]>0){
-subgroup<-Illumina450_dt[which(Illumina450_dt$quantiles==row.names(t)[i]&Illumina450_dt$isGoDMC==FALSE),]
+subgroup<-Illumina450_dt[which(Illumina450_dt$quantiles==row.names(t)[i]&Illumina450_dt$isGoDMC==FALSE& Illumina450_dt$chr!="chrY"),]
 id<-subgroup[sample(nrow(subgroup), size=round(m[i],0), replace=FALSE),"cpgID"]
 controllist[[i]]<-id
 }}
@@ -299,6 +300,8 @@ controllist[[i]]<-id
 bg.matched<-do.call("rbind",controllist)
 Illumina450_bg_matched<-Illumina450_dt[which(Illumina450_dt$cpgID%in%bg.matched$cpgID),]
 Illumina450_godmc<-Illumina450_dt[which(Illumina450_dt$cpgID%in%data$cpg),]
+
+
 bg_matched<-rbind(Illumina450_bg_matched,Illumina450_godmc)
 
 GoDMC_cpg_gr=unique(with(data,GRanges(seqnames = Rle(cpgchr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
@@ -321,15 +324,17 @@ dev.off()
 
 #use all for background
 Illumina450_bg=unique(with(Illumina450_dt,GRanges(seqnames = Rle(chr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
+
 lola_res0=runLOLA(GoDMC_cpg_gr, Illumina450_bg, regionDB0, cores=5)
 lola_res0$logOddsRatio<-log(lola_res0$oddsRatio)
-
 plotLOLA(locResults_all=lola_res0,plot_pref="cpg_core450kbg",height=10,width=18)
 
 #Illumina450_bg_matched=unique(with(Illumina450_bg_matched,GRanges(seqnames = Rle(chr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
 #lola_res0_matched=runLOLA(GoDMC_cpg_gr, Illumina450_bg, regionDB0, cores=5)
+Illumina450_bg_matched=unique(with(Illumina450_bg_matched,GRanges(seqnames = Rle(chr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
 
 cpg_bg_gr_matched=unique(c(Illumina450_bg_matched,GoDMC_cpg_gr))
+
 lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB0, cores=5)
 lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
 plotLOLA(locResults_all=lola_res0_matched,plot_pref="cpg_corebg_matched",height=10,width=18)
@@ -343,6 +348,9 @@ n<-names(table(Illumina450_dt$cpg_cis))[-1]
 
 t<-table(Illumina450_dt$quantiles,Illumina450_dt$cpg_cis)
 bg.matched.subset<-list()
+Illumina450_bg_matchedcis<-list()
+res_all<-list()
+l<-list()
 
 for (j in 1:length(n)){
 cat(n[j],"\n")
@@ -361,39 +369,147 @@ id<-subgroup[sample(nrow(subgroup), size=round(m[i],0), replace=FALSE),"cpgID"]
 controllist[[i]]<-id
 }}
 
-
-
 bg.matched.subset[[j]]<-do.call("rbind",controllist)
+Illumina450_bg_matchedcis[[j]]<-Illumina450_dt[which(Illumina450_dt$cpgID%in%bg.matched.subset[[j]]$cpgID),]
+Illumina450_bg_matchedcis[[j]]<-unique(with(Illumina450_bg_matchedcis[[j]],GRanges(seqnames = Rle(chr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
 data_subset<-data[which(data$cpg_cis==n[j]),]
 GoDMC_cpg_gr=unique(with(data_subset,GRanges(seqnames = Rle(cpgchr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
-length(GoDMC_cpg_gr)
+l[[j]]<-length(GoDMC_cpg_gr)
 
 
-cpg_bg_gr_matched=unique(c(bg.matched.subset[[j]],GoDMC_cpg_gr))
+cpg_bg_gr_matched=unique(c(Illumina450_bg_matchedcis[[j]],GoDMC_cpg_gr))
 lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB0, cores=5)
 lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
-plotLOLA(locResults_all=lola_res0_matched,plot_pref=paste0("cpg_corebg_matched_cis",n),height=10,width=18)
-
-save(lola_res0_matched,file=paste0("../results/lola_core_mqtlcpg_cis",n,".rdata"))
+lola_res0_matched$userSet<-j
+res_all<-rbind(res_all,lola_res0_matched)
 
 }
+w<-which(res_all$userSet==1)
+res_all$userSet[w]<-paste0(n[1]," (", l[1]," regions)")
+w<-which(res_all$userSet==2)
+res_all$userSet[w]<-paste0("trans_only (", l[2]," regions)")
+w<-which(res_all$userSet==3)
+res_all$userSet[w]<-paste0("cis_only (", l[3]," regions)")
 
 
+plotLOLA(locResults_all=res_all,plot_pref="cpg_corebg_matched_cis",height=10,width=18)
 
+save(res_all,file="../results/lola_core_mqtlcpg_cis.rdata")
+
+
+res_all2<-res_all[which(res_all$collection%in%c("codex","encode_tfbs")),]
+length(unique(res_all2$antibody))
+#[1] 262
+res_all2$antibody<-gsub("_.*","",res_all2$antibody)
+length(unique(res_all2$antibody))
+#[1] 228
+m<-match(res_all2$cellType,cellType_conversions$cellType)
+res_all2<-data.table(data.frame(res_all2,cellType_conversions[m,]))
+length(unique(res_all2$cellType_corr))
+#27
+length(unique(res_all2$Tissue))
+#26
+t1<-table(res_all2$Tissue)
+dim(res_all2)
+#[1] 2634   32
+
+res_all2<-res_all2[which(res_all2$logOddsRatio!="-Inf"),]
+res_all2[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
+res_all2<-res_all2[which(res_all2$p.adjust<0.001),]
+dim(res_all2)
+#[1] 1038   33
+t2<-table(res_all2$Tissue)
+data.frame(t1,t2)
+
+#             Var1 Freq         Var1.1 Freq.1
+#1           Blood 1362          Blood    516
+#2    Blood vessel   51   Blood vessel     27
+#3            Bone    9           Bone      5
+#4           Brain   78          Brain     37
+#5      Cerebellum    3     Cerebellum      2
+#6          Cervix  195         Cervix     58
+#7  Choroid plexus    3 Choroid plexus      2
+#8           Colon   21          Colon     11
+#9        Endoderm    6       Endoderm      3
+#10    Endometrium   24    Endometrium      6
+#11            ESC  240            ESC     84
+#12      Esophagus    3      Esophagus      2
+#13            Eye    3            Eye      2
+#14        Gingiva    3        Gingiva      2
+#15          Heart    6          Heart      4
+#16         Kidney   36         Kidney     15
+#17          Liver  228          Liver     86
+#18           Lung  141           Lung     67
+#19          Mamma  129          Mamma     65
+#20         Muscle   12         Muscle      4
+#21       Pancreas   12       Pancreas      6
+#22       Placenta    3       Placenta      2
+#23         Retina    3         Retina      2
+#24           Skin   51           Skin     27
+#25    Spinal cord    3    Spinal cord      2
+#26         Testis    9         Testis      1
+
+
+res_all2[userSet=="trans_only (3855 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
+res_all2[userSet=="ambivalent (10886 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
+res_all2[userSet=="ambivalent (10886 regions)",][antibody=="CTCF"][collection=="encode_tfbs"|collection=="codex", ][1:15,]
+res_all2[userSet=="ambivalent (10886 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] 
+dim(unique(res_all2[userSet=="ambivalent (10886 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
+#19
+dim(unique(res_all2[userSet=="ambivalent (10886 regions)",][antibody=="Rad21",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
+#7
+dim(unique(res_all2[userSet=="ambivalent (10886 regions)",][antibody=="SMC3",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
+#5
+
+amb<-unique(res_all2[userSet=="ambivalent (10886 regions)",][collection=="encode_tfbs"|collection=="codex"])
+df<-unique(data.frame(amb$antibody,amb$cellType_corr))
+df<-data.frame(table(df[,1]))
+dim(df) #127
+dim(df[df$Freq>3,]) #10
+
+df<-unique(data.frame(amb$antibody,amb$Tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #127
+dim(df[df$Freq>3,]) #9
+
+df<-data.frame(table(res_all2$Tissue))
+#516/1038
+or<-ddply(amb,~antibody,summarise,mean=mean(oddsRatio))
+mean(or$mean)
+#1.335355
+
+trans<-unique(res_all2[userSet=="trans_only (3855 regions)",][collection=="encode_tfbs"|collection=="codex"])
+df<-unique(data.frame(trans$antibody,trans$cellType_corr))
+df<-data.frame(table(df[,1]))
+dim(df) #168
+dim(df[df$Freq>3,]) #36
+or<-ddply(trans,~antibody,summarise,mean=mean(oddsRatio))
+mean(or$mean)
+#[1]  1.54232
+
+df<-unique(data.frame(trans$antibody,trans$Tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #168
+dim(df[df$Freq>3,]) #19
+
+cis<-unique(res_all2[userSet=="cis_only (106926 regions)",][collection=="encode_tfbs"|collection=="codex"])
+df<-unique(data.frame(cis$antibody,cis$cellType_corr))
+df<-data.frame(table(df[,1]))
+dim(df) #17
+dim(df[df$Freq>3,]) #0
+
+df<-unique(data.frame(cis$antibody,cis$Tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #17
+dim(df[df$Freq>3,]) #0
+
+or<-ddply(cis,~antibody,summarise,mean=mean(oddsRatio))
+mean(or$mean)
+#1.376712
 
 ###
-regionDB <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
-#jaspar_motifs  roadmap_epigenomics
-
-lola_res=runLOLA(GoDMC_cpg_gr, Illumina450_bg, regionDB, cores=5)
-lola_res<-rbind(lola_res0,lola_res)
-lola_res$logOddsRatio<-log(lola_res$oddsRatio)
-plotLOLA(locResults_all=lola_res,plot_pref="cpg_extbg",height=10,width=18)
-lola_res[userSet==1,][order(maxRnk, decreasing=FALSE),][1:10,]
-save(lola_res0_matched,lola_res0,file="../results/lola_ext_mqtlcpg.rdata")
 
 ###
 #
-
 
 

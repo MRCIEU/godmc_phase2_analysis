@@ -53,6 +53,8 @@ dframe2$info<-NA
 dframe2$ccmethod<-NA
 dframe2$bmi<-NA
 dframe2$height<-NA
+dframe2$sd_bmi<-NA
+dframe2$sd_height<-NA
 
 
 for (i in 1:nrow(dframe2)){
@@ -76,11 +78,18 @@ dframe2$ccmethod[i]<-ccmethod
 
 if(length(which(names(cohort_summary)%in%c("mean_BMI")))==1){
 bmi<-cohort_summary$mean_BMI
-dframe2$bmi[i]<-bmi}
+dframe2$bmi[i]<-bmi
+
+sd_bmi<-cohort_summary$sd_BMI
+dframe2$sd_bmi[i]<-sd_bmi
+}
 
 if(length(which(names(cohort_summary)%in%c("mean_Height")))==1){
 height<-cohort_summary$mean_Height
 dframe2$height[i]<-height
+sd_height<-cohort_summary$sd_Height
+dframe2$sd_height[i]<-sd_height
+
 }
 
 }
@@ -331,8 +340,19 @@ rma(yi=M,vi=vi,mods=~norm.method,data=dframe3)
 #norm.methodmethylumi    0.4298  0.3890   1.1047  0.2693  -0.3327  1.1923   
 #norm.methodSWAN         0.3394  0.3890   0.8723  0.3830  -0.4231  1.1019   
 
+rma(yi=M,vi=vi,mods=~sd_bmi,data=dframe3)
+rma(yi=M,vi=vi,mods=~sd_height,data=dframe3)
 
 rma(yi=M,vi=vi,mods=~nsnps+maf+bmi,data=dframe3)
+rma(yi=M,vi=vi,mods=~nsnps+maf+bmi+sd_bmi,data=dframe3)
+rma(yi=M,vi=vi,mods=~nsnps+maf+bmi+sd_bmi,data=dframe3)
+
+cor.test(dframe3$sd_bmi,dframe3$sd.probe)
+#p-value = 0.08813
+cor.test(dframe3$sd_bmi,dframe3$bmi)
+#      cor 
+#0.5942808 
+#t = 3.4658, df = 22, p-value = 0.002197
 rma(yi=M,vi=vi,mods=~nsnps+maf+bmi+ancestry,data=dframe3)
 
 

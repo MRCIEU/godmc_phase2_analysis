@@ -1,0 +1,17 @@
+library(TwoSampleMR)
+toggle_dev("elastic")
+a <- available_outcomes()
+snps<- scan("~/Downloads/rsid.txt",what="character")
+snps
+b <- extract_outcome_data(a, 2)
+b <- extract_outcome_data(a[1], 2)
+a1<- split(a, 1:100)
+a1
+b <- extract_outcome_data(snps, 2)
+b <- extract_outcome_data(snps, 2,proxies=FALSE)
+head(b)
+mean(b$pval.outcome)
+hist(b$pval.outcome)
+min(b$pval.outcome)
+hist(b$pval.outcome, break=100)
+hist(b$pval.outcome, breaks=100)
