@@ -53,6 +53,8 @@ dframe2$info<-NA
 dframe2$ccmethod<-NA
 dframe2$bmi<-NA
 dframe2$height<-NA
+dframe2$sd_bmi<-NA
+dframe2$sd_height<-NA
 
 
 for (i in 1:nrow(dframe2)){
@@ -76,11 +78,18 @@ dframe2$ccmethod[i]<-ccmethod
 
 if(length(which(names(cohort_summary)%in%c("mean_BMI")))==1){
 bmi<-cohort_summary$mean_BMI
-dframe2$bmi[i]<-bmi}
+dframe2$bmi[i]<-bmi
+
+sd_bmi<-cohort_summary$sd_BMI
+dframe2$sd_bmi[i]<-sd_bmi
+}
 
 if(length(which(names(cohort_summary)%in%c("mean_Height")))==1){
 height<-cohort_summary$mean_Height
 dframe2$height[i]<-height
+sd_height<-cohort_summary$sd_Height
+dframe2$sd_height[i]<-sd_height
+
 }
 
 }
@@ -143,6 +152,14 @@ dframe2$sd.probe<-sd.p[m,-1]
 mean.p<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/mean.probes.txt",sep=" ",he=T)
 m<-match(dframe2$study_names_in,mean.p[,1])
 dframe2$mean.probe<-mean.p[m,-1]
+
+norm.method<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortnormalizationmethod.txt",sep="\t",he=T)
+m<-match(dframe2$study_names_in,norm.method[,1])
+dframe2$norm.method<-norm.method[m,-1]
+w<-which(dframe2$norm.method%in%c("BMIQ","CPACOR","Dasen","glm","methylumi","SWAN"))
+dframe2$norm.method_fn<-as.character(dframe2$norm.method)
+dframe2$norm.method_fn[w]<-"Other"
+dframe2$norm.method_fn<-as.factor(dframe2$norm.method_fn)
 
 dframe2$chip<-as.factor(dframe2$chip)
 dframe2$nsnps<-as.numeric(dframe2$nsnps)
@@ -302,7 +319,40 @@ rma(yi=M,vi=vi,mods=~bmi,data=dframe3)
 #intrcpt    1.9751  0.6119   3.2277  0.0012   0.7757   3.1744  **
 #bmi      -0.0800  0.0243  -3.2869  0.0010  -0.1277  -0.0323  **
 
+
+#Model Results:
+
+#                     estimate      se     zval    pval    ci.lb   ci.ub   
+#intrcpt               -0.0398  0.1862  -0.2136  0.8309  -0.4046  0.3251   
+#norm.method_fnFN      -0.0630  0.1996  -0.3154  0.7524  -0.4542  0.3283   
+#norm.method_fnOther    0.2019  0.2065   0.9777  0.3282  -0.2029  0.6067   
+
+rma(yi=M,vi=vi,mods=~norm.method,data=dframe3)
+#Model Results:
+
+#                      estimate      se     zval    pval    ci.lb   ci.ub   
+#intrcpt                -0.0398  0.1945  -0.2044  0.8381  -0.4210  0.3415   
+#norm.methodBMIQ         0.3426  0.3890   0.8806  0.3785  -0.4199  1.1051   
+#norm.methodCPACOR      -0.0179  0.2751  -0.0652  0.9480  -0.5571  0.5212   
+#norm.methodDasen        0.2515  0.2461   1.0221  0.3067  -0.2308  0.7337   
+#norm.methodFN          -0.0630  0.2086  -0.3018  0.7628  -0.4718  0.3459   
+#norm.methodglm          0.1547  0.3076   0.5030  0.6150  -0.4481  0.7575   
+#norm.methodmethylumi    0.4298  0.3890   1.1047  0.2693  -0.3327  1.1923   
+#norm.methodSWAN         0.3394  0.3890   0.8723  0.3830  -0.4231  1.1019   
+
+rma(yi=M,vi=vi,mods=~sd_bmi,data=dframe3)
+rma(yi=M,vi=vi,mods=~sd_height,data=dframe3)
+
 rma(yi=M,vi=vi,mods=~nsnps+maf+bmi,data=dframe3)
+rma(yi=M,vi=vi,mods=~nsnps+maf+bmi+sd_bmi,data=dframe3)
+rma(yi=M,vi=vi,mods=~nsnps+maf+bmi+sd_bmi,data=dframe3)
+
+cor.test(dframe3$sd_bmi,dframe3$sd.probe)
+#p-value = 0.08813
+cor.test(dframe3$sd_bmi,dframe3$bmi)
+#      cor 
+#0.5942808 
+#t = 3.4658, df = 22, p-value = 0.002197
 rma(yi=M,vi=vi,mods=~nsnps+maf+bmi+ancestry,data=dframe3)
 
 
@@ -317,13 +367,33 @@ res2<-rma(yi=M,vi=vi,mods=~relatedness,data=dframe3)
 
 
 
-#p1<-ggplot(dframe2,aes(x=samplesize,y=nsnps))+
-#geom_point(aes(colour=factor(dframe2$study_names_in),size=dframe2$samplesize)) +
-#xlab("Cohort N") +
-#ylab("N SNPs") +
-#theme(axis.text.x = element_text(face = "bold"))
-#ggsave(p1,file="../images/SNPsbyNcohort.pdf",width=8,height=6)
+p1<-ggplot(dframe3,aes(x=bmi,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("average BMI") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/MvaluebyBMI.pdf",width=8,height=6)
 
+p1<-ggplot(dframe3,aes(x=maf,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("average MAF") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/Mvaluebymaf.pdf",width=8,height=6)
+
+p1<-ggplot(dframe3,aes(x=nsnps,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("nSNPs") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/Mvaluebynsnps.pdf",width=8,height=6)
+
+p1<-ggplot(dframe3,aes(x=sd.probe,y=M))+
+geom_point(aes(colour=factor(dframe3$study_names_in),size=dframe3$samplesize)) +
+xlab("average SD across all probes") +
+ylab("M Statistic") +
+theme(axis.text.x = element_text(face = "bold"))
+ggsave(p1,file="../images/Mvaluebysd.pdf",width=8,height=6)
 
 # Sort getmstatistic_results dataframe by M statistics
 dframe$study_names_in<-gsub("00_ARIES","ARIES",dframe$study_names_in)

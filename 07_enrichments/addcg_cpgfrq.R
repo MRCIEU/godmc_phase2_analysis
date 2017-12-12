@@ -29,7 +29,6 @@ r_dt=as.data.table(r)
 #r_dt[,snpend_pre:=ifelse(strand=="-",snppos+500,snppos+501),]
 
 #collapse overlaps
-
 gr_range = with(r_dt,GRanges(seqnames=snpchr,ranges=IRanges(min,max)))
 gr_snp = with(r_dt,GRanges(seqnames=snpchr,ranges=IRanges(snppos,snppos)))
 overlap=as.data.table(findOverlaps(gr_snp, gr_range))

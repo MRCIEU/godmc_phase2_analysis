@@ -9,8 +9,6 @@ library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 library("BSgenome.Hsapiens.UCSC.hg19")
 library("GenomicFeatures")
 
-
-
 #FUNCTION from MATT -really fast!
 genomic.nearest <- function(positions, intervals) {
      stopifnot(all(c("chromosome","start","end") %in% colnames(intervals)))
@@ -85,11 +83,75 @@ cl<-cl[which(cl$cpg%in%retaincpg),]
 nrow(cl)
 #[1] 283352
 
- 
 length(unique(cl$snp))
 #[1] 232869
 
+#remove snps
+flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+w<-which(cl$snp%in%flip[,1])
+length(w) #295
+if(length(w)>0){
+cl<-cl[-w,]}
 
+indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+w<-which(cl$snp%in%indels[,1]) #123
+length(w)
+if(length(w)>0){
+cl<-cl[-w,]}
+
+length(unique(cl$snp))
+#Filter on pvalue
+w1<-which(cl$cis==FALSE & cl$pval > 1e-14)
+length(w1) #1369
+w2<-which(cl$cis==TRUE & cl$pval > 1e-8)
+length(w2) #11827
+
+length(unique(cl$snp))
+#[1] 232602
+#
+data<-data.table(cl)
+data$cis<-as.logical(data$cis)
+data$abs_Effect<-abs(data$Effect)
+df1<-data[,snp_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("snp")]
+
+df2<-data[ , (min_pval = min(pval)), by = snp]
+
+data<-inner_join(df1,df2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"min_pval"
+data<-data.table(data)
+df3<-data[ , (min_Effect = min(Effect)), by = snp]
+df4<-data[ , (max_Effect = max(Effect)), by = snp]
+df<-data.table(rbind(df3,df4))
+
+maxAbsObs <- function(x) x[which.max(abs(x))]
+df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
+data<-inner_join(data,df2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"max_abs_Effect"
+data$mQTL<-TRUE
+
+cl.snp<-unique(data.frame(mqtlsnp=data$snp,mQTL=data$mQTL,snp_cis=data$snp_cis,min_pval=data$min_pval,max_abs_Effect=data$max_abs_Effect))
+dim(cl.snp)
+length(unique(cl.snp$snp))
+#232602
+
+#df[df$snp%in%c("chr22:17413443:SNP"),]
+#                      snp        cpg Allele1 Allele2  Freq1 FreqSE     Effect
+#82549  chr22:17413443:SNP cg07155303       a       g 0.2696 0.0218 -0.5893469
+#213900 chr22:17413443:SNP cg20353484       a       g 0.2696 0.0214  0.7049247
+#          StdErr pval                              Direction HetISq HetChiSq
+#82549  0.0097220    0 -------?-?-----------??---?-??--------   89.9 298.1886
+#213900 0.0094258    0 +++++++?+?+++++++++++??+++?+??++++++++   73.8 114.4205
+#       HetDf   HetPVal EffectARE StdErrARE PvalueARE     tausq StdErrMRE
+#82549     30 6.021e-46 -0.584350 0.0317516 1.225e-75 0.0266777 0.0966331
+#213900    30 8.649e-12  0.685634 0.0195257 0.000e+00 0.0078936 0.0359500
+#       PvalueMRE TotalSampleSize snpchr   snppos snptype cpgchr   cpgpos  cis
+#82549  1.069e-09           23216  chr22 17413443     SNP  chr22 17489367 TRUE
+#213900 0.000e+00           23216  chr22 17413443     SNP  chr22 17488875 TRUE
+#       chunk abs_Effect snp_cis min_pval max_abs_Effect
+#82549    276  0.5893469    TRUE        0      0.7049247
+#213900   726  0.7049247    TRUE        0      0.7049247
 
 y<-meffil.get.features("450k")
 
@@ -97,17 +159,17 @@ y<-meffil.get.features("450k")
 #get TSS data
 #distance to TSS
 
-tss<-read.table("gencode.v26.annotation.gtf.gz",skip=5,sep="\t")
+tss<-read.table("gencode.v27lift37.annotation.gtf.gz",skip=5,sep="\t")
 names(tss)[1:5]<-c("chromosome","source","type","start","end")
 
 table(tss$type)
 
 
-
-#       CDS           exon           gene Selenocysteine    start_codon 
-#        710618        1194547          58219            119          83245 
+#           CDS           exon           gene Selenocysteine    start_codon 
+#        713931        1206031          60461            119          83869 
 #    stop_codon     transcript            UTR 
-#        74994         199324         283420 
+#         75703         202697         286464 
+
  
 tss<-tss[tss$type=="transcript",]
 
@@ -248,101 +310,37 @@ cpgpos$end<-cpgpos$position
  
 res<-genomic.nearest(positions=f,intervals=cpgpos)
 res<-cpgpos[res,c("name","position")]
-cpgdist<-abs(res$position-f$snppos)
+cpgdist<-res$position-f$snppos
  
 f<-data.frame(f,closest450kcpg=res$name,closest450kcpgpos=res$position,closest450kdistance=cpgdist) #16050654      72612
  
 #distance to TSS
 res<-genomic.nearest(positions=f,intervals=tss)
 res<-tss[res,]
-tssdist<-abs(res$start-f$snppos)
-f<-data.frame(f,tssdist,closesttss=res$start)
+spl<-do.call("rbind",strsplit(as.character(res$V9),split=";"))
+tssdist<-res$start-f$snppos
+genename<-gsub("gene_name ","",spl[,4])
+f<-data.frame(f,tssdist,closesttss=res$start,closestgene=genename)
 
 ###
-cl_chr.cis<-cl_chr[which(cl_chr$cis==T),]
-cl_chr.trans<-cl_chr[which(cl_chr$cis==F),]
-
-m<-which(f$SNP%in%cl_chr.cis$snp)
-f$cismQTL<-"FALSE"
-f$cismQTL[m]<-"TRUE"
- 
-m<-which(f$SNP%in%cl_chr.trans$snp)
-f$transmQTL<-"FALSE"
-f$transmQTL[m]<-"TRUE"
- 
-m<-which(f$SNP%in%unique(cl_chr$snp))
-f$mQTL<-"FALSE"
-f$mQTL[m]<-"TRUE"
-
-
-##make categories
-
-#mafcat<-cut(f$MAF,breaks=seq(0,0.5,0.05))
- 
-#cpgdistcat<-cut(f$closest450kdistance,breaks=seq(0,10000000,10000))
-#w<-which(f$closest450kdistance==0)
-#cpgdistcat[w]<-levels(cpgdistcat)[1]
- 
-#proxycat<-cut(f$nproxies,breaks=seq(0,100000,10))
-#w<-which(f$nproxies==0)
-#proxycat[w]<-levels(proxycat)[1]
- 
-#tssdistcat500<-cut(f$tssdist,breaks=seq(0,10000000,500))
-#w<-which(f$tssdist==0)
-#tssdistcat500[w]<-levels(tssdistcat500)[1]
- 
-#tssdistcat2000<-cut(f$tssdist,breaks=seq(0,10000000,2000))
-#w<-which(f$tssdist==0)
-#tssdistcat2000[w]<-levels(tssdistcat2000)[1]
- 
-#tssdistcat5000<-cut(f$tssdist,breaks=seq(0,10000000,5000))
-#w<-which(f$tssdist==0)
-#tssdistcat5000[w]<-levels(tssdistcat5000)[1]
- 
-#tssdistcat10000<-cut(f$tssdist,breaks=seq(0,10000000,10000))
-#w<-which(f$tssdist==0)
-#tssdistcat10000[w]<-levels(tssdistcat10000)[1]
- 
-#tssdistcat20000<-cut(f$tssdist,breaks=seq(0,10000000,20000))
-#w<-which(f$tssdist==0)
-#tssdistcat20000[w]<-levels(tssdistcat20000)[1]
- 
-#tssdistcat100000<-cut(f$tssdist,breaks=seq(0,10000000,100000))
-#w<-which(f$tssdist==0)
-#tssdistcat100000[w]<-levels(tssdistcat100000)[1]
- 
-#f<-data.frame(f,mafcat,cpgdistcat,proxycat,tssdistcat500bp=tssdistcat500,tssdistcat2kb=tssdistcat2000,tssdistcat5kb=tssdistcat5000,tssdistcat10kb=tssdistcat10000,tssdistcat20kb=tssdistcat20000,tssdistcat100kb=tssdistcat100000)
-
-#f$groups<-paste(f$mafcat,f$cpgdistcat,f$nproxies,f$tssdistcat500bp)
-#f$groups2<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat500bp)
-#f$groups3<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat2kb)
-#f$groups4<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat5kb)
-#f$groups5<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat10kb)
-#f$groups6<-paste(f$mafcat,f$cpgdistcat,f$proxycat,f$tssdistcat20kb)
  
  
 f.all<-rbind(f.all,f)
-save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
  
 }
 
-o<-order(cl$pval)
-cl<-cl[o,]
-m<-match(f.all$SNP,cl$SNP)
-cl.pval<-cl[m,"pval"]
+#add mQTL status
+m<-match(f.all$SNP,cl.snp$mqtlsnp)
+f.all<-data.frame(f.all,cl.snp[m,])
+f.all[320:330,c("SNP","mqtlsnp")]
 
-cl.cis<-cl[which(cl$cis==TRUE),]
-m<-match(f.all$SNP,cl.cis$SNP)
-cl.cispval<-cl.cis[m,"pval"]
-
-cl.trans<-cl[which(cl$cis==FALSE),]
-m<-match(f.all$SNP,cl.trans$SNP)
-cl.transpval<-cl.trans[m,"pval"]
-
-f.all<-data.frame(f.all,cl.pval=cl.pval,cl.cispval=cl.cispval,cl.transpval=cl.transpval)
+length(which(!is.na(f.all$mqtlsnp)))
+#232602
+w<-which(is.na(f.all$mqtlsnp))
+f.all$mQTL[w]<-"FALSE"
+table(f.all$mQTL)
 
 save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
-
 
 
 
