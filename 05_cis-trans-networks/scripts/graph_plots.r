@@ -63,6 +63,19 @@ for(i in 1:20)
 }
 
 
+temp <- extract_subset(gr, dat, mem$cpg[mem$cluster == 41])
+pdf(paste0("../images/cluster", 41, ".pdf"))
+plot(temp$gr, 
+	layout=layout.fruchterman.reingold, 
+	vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+	vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
+	vertex.label=NA, 
+	edge.arrow.size=0, 
+	edge.color=as.numeric(as.factor(E(temp$gr)$type))
+)
+dev.off()
+
+
 ## What do these look like on circos plots??
 
 library(ggbio)
@@ -110,6 +123,15 @@ for(i in 1:20)
 	print(p)
 	dev.off()
 }
+
+temp <- extract_subset_granges(gr, dat, mem$cpg[mem$cluster == 41])
+pdf(paste0("../images/cluster_circle", 41, ".pdf"))
+p <- ggbio() + 
+	circle(temp$links, geom = "link", linked.to = "topos", alpha=0.1) +
+	circle(temp$snp, geom = "point", aes(y=y)) +
+	circle(hg19chr, geom = "ideo", fill = "gray70", trackWidth=0.1)
+print(p)
+dev.off()
 
 
 hub <- hub.score(gr)$vector
