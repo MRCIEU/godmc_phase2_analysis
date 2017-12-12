@@ -38,9 +38,11 @@ for(i in 1:length(fn))
 {
 	message(i, " ", fn[i])
 	cmd <- paste0("zfgrep -wf ../data/cluster_rsids.txt ", fn[i], " > ", fn[i], ".cluster")
-	l[[i]] <- read.table(paste0(fn[i], ".cluster"), he=FALSE)
-	l$i <- i
-	l$fn <- fn[i]
+	system(cmd)
+	x <- read.table(paste0(fn[i], ".cluster"), he=FALSE)
+	x$i <- i
+	x$fn <- fn[i]
+	l[[i]] <- x
 }
 
 save(l, file="../data/cluster_extract.rdata")

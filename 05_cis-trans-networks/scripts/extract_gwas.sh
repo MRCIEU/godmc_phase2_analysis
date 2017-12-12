@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #SBATCH --job-name=extr
-#SBATCH --nodes=1 --mem=2G --time=0-04:00:00
+#SBATCH --nodes=1 --mem=20G --time=0-04:00:00
 #SBATCH --partition=veryshort
 
 echo "Running on ${HOSTNAME}"
