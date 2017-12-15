@@ -5,7 +5,7 @@
 #SBATCH --mem=4G
 #SBATCH --ntasks=1
 #SBATCH --time=0-04:00:00
-#SBATCH --array=0-36%5
+#SBATCH --array=10,20
 #SBATCH --output=job_reports/slurm-%A_%a.out
 #SBATCH --queue=veryshort
 
@@ -81,14 +81,15 @@ rm -rf ${scratch_dir}
 mkdir -p ${scratch_dir}
 cd ${scratch_dir}
 tar xf ${rtdr}/data/16_raw/${cohort}_16.tar
-for i in {1..962}
-do
-	echo ${i}
-	Rscript ${rtdr}/01_meta_analysis_16/flip_alleles.r results/16/results_${i}.gz ${flipfiles}/${cohort}_data.easyqc.flipped.SNPs.txt ${rtdr}/data/ref/eur2.bim.rdata
-done
+# for i in {1..962}
+# do
+# 	echo ${i}
+# 	Rscript ${rtdr}/01_meta_analysis_16/flip_alleles.r results/16/results_${i}.gz ${flipfiles}/${cohort}_data.easyqc.flipped.SNPs.txt ${rtdr}/data/ref/eur2.bim.rdata
+# done
+parallel Rscript ${rtdr}/01_meta_analysis_16/flip_alleles.r results/16/results_{}.gz ${flipfiles}/${cohort}_data.easyqc.flipped.SNPs.txt ${rtdr}/data/ref/eur2.bim.rdata ::: {1..962}
 tar cf ${new_cohort_dir}/${cohort}_16.tar *
 cd ${rtdr}/01_meta_analysis_16
 rm -rf ${scratch_dir}
-# done
+
 
 

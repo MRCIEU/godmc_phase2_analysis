@@ -5,7 +5,8 @@
 #SBATCH --mem=4G
 #SBATCH --ntasks=1
 #SBATCH --time=0-02:00:00
-#SBATCH --array=11-962%100
+#SBATCH --array=1-962
+#SBATCH --partition=veryshort
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 
@@ -33,12 +34,10 @@ metal="metal_bc4"
 cohort_dir="../data/16/"
 metal_dir="../scratch/16_${i}"
 result_dir="../results/16"
-new_cohort_dir="../data/16_flipped"
 
 metal_in="16_${i}.in"
 
 mkdir -p ${result_dir}
-mkdir -p ${new_cohort_dir}
 mkdir -p ${metal_dir}/scratch
 rm -f ${metal_dir}/${metal_in}
 touch ${metal_dir}/${metal_in}
@@ -61,20 +60,14 @@ echo "" >> ${metal_dir}/${metal_in}
 
 for cohort in ${cohort_dir}*16.tar
 do
+
 	echo $cohort
-	cohortname1="$(basename "$cohort" .tar)"
-	mkdir -p ${new_cohort_dir}/${cohortname1}
 	cohortname="scratch/$(basename "$cohort" .tar)"
 	mkdir -p ${cohortname}_${i}
 	cd ${cohortname}_${i}
 	tar xvf ../../${cohort} results/16/results_${i}.gz
 	cd ../../
-	gunzip ${cohortname}_${i}/results/16/results_${i}.gz
-	Rscript flip_alleles.r \
-		${cohortname}_${i}/results/16/results_${i} \
-		${new_cohort_dir}/${cohortname1}/results_${i}.gz
-	rm ${cohortname}_${i}/results/16/results_${i}
-	cp ${new_cohort_dir}/${cohortname1}/results_${i}.gz ${metal_dir}/${cohortname}_${i}.gz
+	mv ${cohortname}_${i}/results/16/results_${i}.gz ${metal_dir}/${cohortname}_${i}.gz
 	rm -r ${cohortname}_${i}
 
 	echo "PROCESS ${cohortname}_${i}.gz" >> ${metal_dir}/${metal_in}
@@ -89,12 +82,24 @@ echo "QUIT" >> ${metal_dir}/${metal_in}
 cp ${metal} ${metal_dir}
 cd ${metal_dir}
 
-./${metal} ${metal_in}
+./${metal} ${metal_in} > 16_${i}.txt.log
 mv 16_${i}1.txt 16_${i}.txt
+mv 16_${i}1.txt.info 16_${i}.txt.info
 gzip 16_${i}.txt
+gzip 16_${i}.txt.log
+
+
+## Remove bad alleles
+
+zgrep "WARNING: Bad alleles for marker" 16_${i}.txt.log.gz | cut -d " " -f 7 | sed -E "s/'|,//g" | cut -d "_" -f 1 | sort -u > 16_${i}.txt.badlist
+nbad=`cat 16_${i}.txt.badlist | wc -l`
+echo "Removing ${nbad} bad SNPs"
+zfgrep -vf 16_${i}.txt.badlist 16_${i}.txt.gz | gzip -c > 16_${i}.txt.gz2
+mv 16_${i}.txt.gz2 16_${i}.txt.gz
+
 cd -
 mv ${metal_dir}/16_${i}.txt.* ${result_dir}
-# rm -r ${metal_dir}
+rm -r ${metal_dir}
 
 # GWAMA --filelist ${metal_file} --quantitative
 
