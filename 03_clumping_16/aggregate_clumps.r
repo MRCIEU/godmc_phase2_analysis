@@ -5,23 +5,33 @@ l <- list()
 for(i in 1:962)
 {
 	message(i)
-	load(paste0("../results/16/16_", i, "_clumped.rdata"))
+	fn <- paste0("../results/16/16_", i, "_clumped.rdata")
+	if(file.exists(fn))
+	{
+	load(fn)
+	# load(paste0("../results/16/16_", i, "_clumped.rdata"))
 	clumped$chunk <- i
 	clumped$Pvalue <- as.numeric(clumped$Pvalue)
 	clumped$HetPVal <- as.numeric(clumped$HetPVal)
 	clumped$PvalueARE <- as.numeric(clumped$PvalueARE)
 	clumped$PvalueMRE <- as.numeric(clumped$PvalueMRE)
 	l[[i]] <- clumped
+	} else {
+	message("missing")
+	}
 }
 clumped <- bind_rows(l)
 names(clumped)[names(clumped) == "Pvalue"] <- "pval"
 save(clumped, file="../results/16/16_clumped.rdata")
 
-q()
+# q()
 
 table(clumped$pval < 5e-8)
 table(clumped$pval < 5e-14)
 
+sum(clumped$pval < 5e-8 & clumped$cis)
+sum(clumped$pval < 5e-14 & !clumped$cis)
+q()
 
 cs <- subset(clumped, pval < 5e-14)
 table(cs$cis)

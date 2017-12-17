@@ -62,7 +62,7 @@ a$snppos <- as.numeric(a$snppos)
 a <- inner_join(a, cpgpos, by=c("cpg"))
 a$cis <- FALSE
 a$cis[a$snpchr == a$cpgchr & (abs(a$snppos - a$cpgpos) <= cis_radius)] <- TRUE
-a <- remove_bad_snps(a, bim)
+# a <- remove_bad_snps(a, bim)
 
 # Remove results with fewer than 5 studies or fewer than 5k samples
 nstudies <- nchar(a$Direction[1])

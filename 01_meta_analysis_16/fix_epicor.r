@@ -13,7 +13,7 @@ update_alleles <- function(dat, indels)
 	da$NEA[i1] <- da$A2[i1]
 	da$EA[i2] <- da$A1[i2]
 	da$NEA[i2] <- da$A2[i2]
-	da <- subset(da, select=-c(chr, pos, A1, A2, A1.orig, A2.orig))
+	da <- subset(da, select=-c(pos, A1, A2, A1.orig, A2.orig))
 	dat <- subset(dat, !SNP %in% indels$SNP)
 	dat <- rbind(dat, da)
 	dat <- dat[order(dat$index), ]

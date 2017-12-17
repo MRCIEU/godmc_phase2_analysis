@@ -4,10 +4,10 @@
 #SBATCH --nodes=1
 #SBATCH --mem=4G
 #SBATCH --ntasks=1
-#SBATCH --time=0-24:00:00
+#SBATCH --time=0-4:00:00
 #SBATCH --array=1-962%100
 #SBATCH --output=job_reports/slurm-%A_%a.out
-
+#SBATCH --partition=veryshort
 
 
 set -e

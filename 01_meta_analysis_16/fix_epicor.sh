@@ -36,16 +36,18 @@ mkdir -p ${scratch_dir}
 
 # rename SNPs in indel list
 wc -l ../data/16_raw/EPICOR_INDEL_list.txt
-sed -E 's/(:I)|(:D)/:INDEL/g' ../data/16_raw/EPICOR_INDEL_list.txt > ../data/16_raw/EPICOR_INDEL_list.txt2
+# sed -E 's/(:I)|(:D)/:INDEL/g' ../data/16_raw/EPICOR_INDEL_list.txt > ../data/16_raw/EPICOR_INDEL_list.txt2
 
 cd ${scratch_dir}
 tar xf ${rtdr}/data/16_raw/${cohort}_16.tar
 # for i in {1..962}
 # do
 # 	echo ${i}
-# 	Rscript ${rtdr}/01_meta_analysis_16/fix_epicor.r results/16/results_${i}.gz ${rtdr}/data/16_raw/EPICOR_INDEL_list.txt2
+# 	Rscript ${rtdr}/01_meta_analysis_16/fix_epicor.r results/16/results_${i}.gz ${rtdr}/data/16_raw/EPICOR_INDEL_list.txt
 # done
-parallel Rscript ${rtdr}/01_meta_analysis_16/fix_epicor.r results/16/results_{}.gz ${rtdr}/data/16_raw/EPICOR_INDEL_list.txt2 ::: {66..959}
+parallel -j12 Rscript ${rtdr}/01_meta_analysis_16/fix_epicor.r results/16/results_{}.gz ${rtdr}/data/16_raw/EPICOR_INDEL_list.txt ::: {1..962}
+
+ls -lrt results/16/results* | head
 
 mv ${rtdr}/data/16_raw/${cohort}_16.tar ${renamed_orig}
 tar cf ${rtdr}/data/16_raw/${cohort}_16.tar *

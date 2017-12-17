@@ -78,7 +78,7 @@ system(cmd)
 # Apply different thresholds to cis and trans
 # e.g. 1e-8 for cis
 # e.g. 1e-14 for trans
-
+# res <- head(res, 100)
 clumped <- group_by(res, cpg, cis) %>%
 	do({
 		x <- .
@@ -93,6 +93,9 @@ clumped <- group_by(res, cpg, cis) %>%
 		# Get cis/trans clumping threshold
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_conditional(fn, newbfile, thresh)
+		system(paste0(
+			"cp -f ", fn, "*bad* bad"
+		))
 		system(paste0("rm ", fn, "*"))
 		return(keep)
 	})

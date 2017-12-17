@@ -86,7 +86,9 @@ tar xf ${rtdr}/data/16_raw/${cohort}_16.tar
 # 	echo ${i}
 # 	Rscript ${rtdr}/01_meta_analysis_16/flip_alleles.r results/16/results_${i}.gz ${flipfiles}/${cohort}_data.easyqc.flipped.SNPs.txt ${rtdr}/data/ref/eur2.bim.rdata
 # done
-parallel Rscript ${rtdr}/01_meta_analysis_16/flip_alleles.r results/16/results_{}.gz ${flipfiles}/${cohort}_data.easyqc.flipped.SNPs.txt ${rtdr}/data/ref/eur2.bim.rdata ::: {1..962}
+parallel -j12 Rscript ${rtdr}/01_meta_analysis_16/flip_alleles.r results/16/results_{}.gz ${flipfiles}/${cohort}_data.easyqc.flipped.SNPs.txt ${rtdr}/data/ref/eur2.bim.rdata ::: {1..962}
+
+ls -lrt results/16/results* | head
 tar cf ${new_cohort_dir}/${cohort}_16.tar *
 cd ${rtdr}/01_meta_analysis_16
 rm -rf ${scratch_dir}
