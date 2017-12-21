@@ -1,0 +1,100 @@
+arguments<-commandArgs(T)
+i<-as.numeric(arguments[1])
+
+library(data.table)
+library(dplyr)
+###
+df.out<-read.table(paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".txt.gz",sep=""),he=F)
+names(df.out)<-c("snpchr","snppos","type","id","pval","chunk")
+spl<-strsplit(as.character(df.out$id),split="_")
+spl<-do.call("rbind",spl)
+df.out<-data.frame(cpg=spl[,2],snp=spl[,1],df.out)
+
+retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
+ #exclusion probes from TwinsUK
+excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_exclusion_probes.txt",he=T)
+#42446
+rm<-which(retaincpg%in%excl[,1])
+#14882
+retaincpg<-retaincpg[-rm]
+#420509
+ 
+df.out<-df.out[which(df.out$cpg%in%retaincpg),]
+
+#remove snps
+flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+w<-which(df.out$snp%in%flip[,1])
+if(length(w)>0){
+df.out<-df.out[-w,]}
+
+indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+w<-which(df.out$snp%in%indels[,1]) #129
+if(length(w)>0){
+df.out<-df.out[-w,]}
+
+library(meffil)
+y<-meffil.get.features("450k")
+m<-match(df.out$cpg,y$name)
+
+df.out<-data.frame(df.out,y[m,c("chromosome","position")])
+names(df.out)<-c("cpg","snp","snpchr","snppos","type","id","pval","chunk","cpgchr","cpgpos")
+df.out$cpgchr<-gsub("chrX","chr23",df.out$cpgchr)
+w<-which(df.out$snpchr==df.out$cpgchr&abs(df.out$snppos-df.out$cpgpos)<=100000)
+df.out$cis<-"FALSE"
+df.out$cis[w]<-"TRUE"
+df.out$trans<-"FALSE"
+w<-which(df.out$snpchr==df.out$cpgchr&abs(df.out$snppos-df.out$cpgpos)>100000)
+df.out$trans[w]<-"TRUE"
+w<-which(df.out$snpchr!=df.out$cpgchr)
+df.out$trans[w]<-"TRUE"
+
+#
+w1<-which(df.out$trans==TRUE & df.out$pval > 1e-14)
+w2<-which(df.out$cis==TRUE & df.out$pval > 1e-8)
+dim(df.out)
+rm<-unique(c(w1,w2))
+df.out<-df.out[-rm,]
+dim(df.out)
+
+#test
+#w<-which(df.out$snp=="chr22:49697538:SNP")
+
+#              cpg                snp snpchr   snppos type
+#6      cg00021237 chr22:49697538:SNP  chr22 49697538  SNP
+#337076 cg06629999 chr22:49697538:SNP  chr22 49697538  SNP
+#349035 cg06847006 chr22:49697538:SNP  chr22 49697538  SNP
+#802869 cg19521610 chr22:49697538:SNP  chr22 49697538  SNP
+#                                  id       pval chunk cpgchr   cpgpos   cis
+#6      chr22:49697538:SNP_cg00021237 5.370e-236     1   chr8 67525849 FALSE
+#337076 chr22:49697538:SNP_cg06629999  1.071e-21   255  chr22 49720192  TRUE
+#349035 chr22:49697538:SNP_cg06847006 1.920e-134   263  chr22 49697565  TRUE
+#802869 chr22:49697538:SNP_cg19521610  1.059e-34   701  chr22 49717457  TRUE
+ 
+data<-data.table(df.out)
+data$cis<-as.logical(data$cis)
+df1<-data[,snp_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("snp")]
+
+#data[w,]
+#          cpg                snp snpchr   snppos type
+#1: cg00021237 chr22:49697538:SNP  chr22 49697538  SNP
+#2: cg06629999 chr22:49697538:SNP  chr22 49697538  SNP
+#3: cg06847006 chr22:49697538:SNP  chr22 49697538  SNP
+#4: cg19521610 chr22:49697538:SNP  chr22 49697538  SNP
+#                              id       pval chunk cpgchr   cpgpos   cis trans
+#1: chr22:49697538:SNP_cg00021237 5.370e-236     1   chr8 67525849 FALSE  TRUE
+#2: chr22:49697538:SNP_cg06629999  1.071e-21   255  chr22 49720192  TRUE FALSE
+#3: chr22:49697538:SNP_cg06847006 1.920e-134   263  chr22 49697565  TRUE FALSE
+#4: chr22:49697538:SNP_cg19521610  1.059e-34   701  chr22 49717457  TRUE FALSE
+#      snp_cis
+#1: ambivalent
+#2: ambivalent
+#3: ambivalent
+#4: ambivalent
+
+df2<-data[ , (min_pval = min(pval)), by = snp]
+data<-inner_join(df1,df2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"min_pval"
+
+
+write.table(data,paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
