@@ -59,8 +59,8 @@ p1<-ggplot(r.all2,aes(x=STATE,y=-log10(Pvalue),size=logOddsRatio,fill=Tissue))+
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,size=10),legend.position="bottom")+
   scale_size(range=c(1,4))+
   ylim(0,(m+0.2*m))+
-  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))
-
+  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
+  guides(fill = guide_legend(ncol=10))
 ggsave(p1,file=paste0(snptype[j],".pdf"),height=10,width=18)
 
 print("repressed")
