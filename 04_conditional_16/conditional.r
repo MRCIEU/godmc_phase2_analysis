@@ -94,7 +94,7 @@ clumped <- group_by(res, cpg, cis) %>%
 		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
 		keep <- do_conditional(fn, newbfile, thresh)
 		system(paste0(
-			"cp -f ", fn, "*bad* bad"
+			"cp ", fn, "*bad* bad/"
 		))
 		system(paste0("rm ", fn, "*"))
 		return(keep)

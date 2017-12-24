@@ -5,7 +5,7 @@
 #SBATCH --mem=4G
 #SBATCH --ntasks=1
 #SBATCH --time=0-2:00:00
-#SBATCH --array=81
+#SBATCH --array=1-962
 #SBATCH --output=job_reports/slurm-%A_%a.out
 #SBATCH --partition=veryshort
 

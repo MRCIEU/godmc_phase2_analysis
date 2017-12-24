@@ -5,8 +5,14 @@ l <- list()
 for(i in 1:962)
 {
 	message(i)
-	load(paste0("../results/16/16_", i, "_conditional.rdata"))
-	l[[i]] <- clumped
+	fn <- paste0("../results/16/16_", i, "_conditional.rdata")
+	if(file.exists(fn))
+	{
+		load(fn)
+		l[[i]] <- clumped
+	} else {
+		message("missing")
+	}
 }
 conditional <- bind_rows(l)
 names(conditional)[names(conditional) == "P-value"] <- "pval"
