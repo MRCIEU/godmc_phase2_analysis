@@ -1,10 +1,12 @@
 #!bin/bash
 
 results_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
+#don't remove last slash
 cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/16/"
+outdir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/01_qc"
 
-
-cd $results_dir
+mkdir -p $outdir/chr20.assoc
+cd $outdir
 
 for cohort in ${cohort_dir}*16.tar
 do
@@ -14,7 +16,7 @@ do
 	echo $cohortname
 	mkdir -p $cohort_dir/${cohortname}
 
-		cd /panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/01_meta_analysis_16
+		cd $outdir
 		file="chr20_chunks.txt"
 		while read -r line
 		do
@@ -23,6 +25,7 @@ do
 
 			cd $cohort_dir/${cohortname}
 			tar -xvf ../${cohortname}.tar results/16/results_${chunk}.gz
+			zcat results/16/results_${chunk}.gz | fgrep -w -f $outdir/chr20_ids.txt >$outdir/chr20.assoc/${cohortname}.chr20.assoc_${chunk}.txt
 		done < $file
 
 ###for i in `seq 1 25`; 
