@@ -181,4 +181,4 @@ cpg_in_bait <- list(table=dat, test=fisher, unique_cpgs=length(unique(cpg_in_bai
 enrichment <- list(snp_in_bait=snp_in_bait, cpg_in_bait=cpg_in_bait)
 print(enrichment)
 
-save(data, enrichment, file= "../results/enrichments/mqtl_hic_grubert.rdata")
+save(data, enrichment, file="../results/enrichments/mqtl_hic_grubert.rdata")
