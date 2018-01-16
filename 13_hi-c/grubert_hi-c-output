@@ -1,0 +1,46 @@
+Running on node33-040
+null device 
+          1 
+null device 
+          1 
+$snp_in_bait
+$snp_in_bait$table
+  c.length.snp_in_bait.SNP...length.bait_hic_snp.SNP..bait_hic_snp.SNP..in..
+1                                                                     152333
+2                                                                    6371622
+  c.length.snp_in_bait_reflection.SNP...length.bait_hic_snp.SNP..bait_hic_snp.SNP..in..
+1                                                                                  1249
+2                                                                               9775672
+
+$snp_in_bait$test
+estimate.odds ratio             p.value           conf.int1           conf.int2 
+ "187.102872064712"                 "0"  "176.513682396028"  "197.002398802394" 
+
+$snp_in_bait$unique_snps
+[1] 48631
+
+$snp_in_bait$percentage
+[1] 0.4692481
+
+
+$cpg_in_bait
+$cpg_in_bait$table
+  c.length.cpg_in_bait.CpG...length.bait_hic_cpg.CpG..bait_hic_cpg.CpG..in..
+1                                                                     105242
+2                                                                    7905791
+  c.length.cpg_in_bait_reflection.CpG...length.bait_hic_cpg.CpG..bait_hic_cpg.CpG..in..
+1                                                                                  2401
+2                                                                              11571961
+
+$cpg_in_bait$test
+estimate.odds ratio             p.value           conf.int1           conf.int2 
+ "64.1118171426785"                 "0"   "61.567560884266"  "66.9958034905394" 
+
+$cpg_in_bait$unique_cpgs
+[1] 43574
+
+$cpg_in_bait$percentage
+[1] 0.3769834
+
+
+execution time was 2303 s.

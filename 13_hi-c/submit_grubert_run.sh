@@ -12,7 +12,8 @@ set -e
 echo "Running on ${HOSTNAME}"
 start_time=`date +%s`
 
-Rscript grubert_hic_new.r
+cd /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/godmc_phase2_analysis/13_hi-c
+Rscript grubert_hic_run.r
 
 ####
 

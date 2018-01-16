@@ -160,12 +160,12 @@ data <- list(snp_in_bait, cpg_in_bait)
 library(ggplot2)
 
 plotdata <- data.frame(data=c(rep(paste("clumped (median distance = ", round(median(abs(clumped$cpgpos - clumped$snppos))), ")"), nrow(clumped)), rep(paste0("hic (median distance = ", round(median(abs(hic$dist), na.rm=T)), ")"), nrow(hic)), rep(paste0("snp_in_bait (median distance = ", round(median(abs(snp_in_bait$dist))), ")"), nrow(snp_in_bait)), rep(paste0("cpg_in_bait (median distance = ", round(median(abs(cpg_in_bait$dist))), ")"), nrow(cpg_in_bait))), distance=c(abs(clumped$cpgpos - clumped$snppos), hic$dist, snp_in_bait$dist, cpg_in_bait$dist))
-pdf("densityplot_grubert.pdf", width=10, height=4)
+pdf("../results/enrichments/densityplot_grubert.pdf", width=10, height=4)
 ggplot(plotdata, aes(distance, fill=data, alpha=0.5)) + geom_density(color=NA) + scale_fill_manual(values=c("#4477AA", "#117733", "#DDCC77", "#CC6677")) + guides(alpha=F) + xlim(0, 1000000) + theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme(legend.key = element_blank(), strip.background = element_rect(colour=NA, fill=NA), panel.border=element_blank(), panel.spacing = unit(2, "lines"))
 dev.off()
 
 plotdata2 <- data.frame(data=c(rep(paste0("hic (median distance = ", round(median(abs(hic$dist), na.rm=T)), ")"), nrow(hic)), rep(paste0("snp_in_bait (median distance = ", round(median(abs(snp_in_bait$dist))), ")"), nrow(snp_in_bait)), rep(paste0("cpg_in_bait (median distance = ", round(median(abs(cpg_in_bait$dist))), ")"), nrow(cpg_in_bait))), distance=c(hic$dist, snp_in_bait$dist, cpg_in_bait$dist))
-pdf("densityplot_no_clumped_grubert.pdf", width=10, height=4)
+pdf("../results/enrichments/densityplot_no_clumped_grubert.pdf", width=10, height=4)
 ggplot(plotdata2, aes(distance, fill=data, alpha=0.5)) + geom_density(color=NA) + scale_fill_manual(values=c("#4477AA", "#117733", "#DDCC77", "#CC6677")) + guides(alpha=F) + xlim(0, 1000000) + theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme(legend.key = element_blank(), strip.background = element_rect(colour=NA, fill=NA), panel.border=element_blank(), panel.spacing = unit(2, "lines"))
 dev.off()
 
