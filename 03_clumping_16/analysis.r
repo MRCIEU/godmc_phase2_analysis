@@ -4,6 +4,7 @@ library(meffil)
 library(dplyr)
 library(gridExtra)
 library(stringr)
+library(data.table)
 
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped.rdata")
 max(clumped[which(clumped$cis==TRUE),"pval"])
@@ -22,6 +23,35 @@ mean(clumped$HetISq[w1])
 mean(clumped$HetISq[w2])
 #[1] 45.09869
 
+data=as.data.table(clumped)
+data[,cpgchr:=gsub("23","X",cpgchr),]
+data[,cpgchr:=gsub("24","Y",cpgchr),]
+data[,cpg_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("cpgchr","cpgpos")]
+
+clumped<-data.frame(data)
+#table(clumped$cpg_cis)
+
+#ambivalent      FALSE       TRUE 
+#     36749       8555     239515 
+
+clumped2<-clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
+table(clumped2$cis)
+# FALSE   TRUE 
+# 23117 248607 
+length(unique(clumped2$cpg))
+#190102
+
+data=as.data.table(clumped2)
+data[,cpgchr:=gsub("23","X",cpgchr),]
+data[,cpgchr:=gsub("24","Y",cpgchr),]
+data[,cpg_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("cpgchr","cpgpos")]
+
+clumped2<-data.frame(data)
+
+cpg_cis<-unique(data.frame(cpg=clumped2$cpg,cpg_cis=clumped2$cpg_cis))
+table(cpg_cis$cpg_cis)
+#ambivalent      FALSE       TRUE 
+#     11902       7214     170986 
 
 #indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
 #w<-which(clumped$snp%in%indels[,1]) #129
@@ -106,7 +136,6 @@ mqtl_countsrm <- bind_rows(
 ##
 y<-meffil.get.features("450k")
 ncpg<-length(unique(y$name))
-
 
 ####
 #n_independent_regions <- 1000000 used in Frank Dudbridge paper
@@ -331,32 +360,25 @@ ggsave(plot=p1, file="./images/meanbycohort.pdf", width=7, height=7)
 clumped$id<-paste(clumped$snp,clumped$cpg,sep="_")
 clumped$studycount<-0
 ###
-#path="/panfs/panasas01/shared-godmc/counts_2017/combined"
-path="/projects/MRC-IEU/research/data/godmc/_devs/GODMC_Analysis/data/counts_2017/combined"
-l<-list.files(path=path,pattern=".ge1.2.allcohorts.txt.gz")
+#path="/projects/MRC-IEU/research/data/godmc/_devs/GODMC_Analysis/data/counts_2017/combined"
+#l<-list.files(path=path,pattern=".ge1.2.allcohorts.txt.gz")
 
-for (i in 1:length(l)){
-cat(i,"\n")
-#r<-read.table(paste0("/panfs/panasas01/sscm/epzjlm/repo/goya/godmc/processed_data/phase2/assoclist/assoclist_",i,".gz"))
-r<-read.table(paste0(path,"/",l[i]))
-r$id<-paste(r$V2,r$V3,sep="_")
-w<-which(r$id%in%clumped$id)
-r<-r[w,]
-w<-which(clumped$id%in%r$id)
-clumped$studycount[w]<-r$V1
-}
-save(clumped,file="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumpedwithstudycount.rdata")
+#for (i in 1:length(l)){
+#cat(i,"\n")
+#r<-read.table(paste0(path,"/",l[i]))
+#r$id<-paste(r$V2,r$V3,sep="_")
+#w<-which(r$id%in%clumped$id)
+#r<-r[w,]
+#w<-which(clumped$id%in%r$id)
+#clumped$studycount[w]<-r$V1
+#}
+#save(clumped,file="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumpedwithstudycount.rdata")
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumpedwithstudycount.rdata")
+
 #which association fall out if you compare fixed vs random
+clumped2<-clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
 
 #####
-
-clumped2<-clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
-table(clumped2$cis)
-# FALSE   TRUE 
-# 23117 248607 
-
-
 print(length(which(clumped2$pval<clumped2$PvalueARE)))
 #260825
 print(length(which(clumped2$pval<clumped2$PvalueMRE)))
@@ -624,23 +646,22 @@ ggsave(plot=p1, file="./images/clump_counts_cpg.pdf", width=7, height=7)
 
 ## Number of hits per SNP
 
-clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
-	dplyr::summarise(n=n()) %>%
-	dplyr::group_by(n, cis) %>%
-	dplyr::summarise(count=n())
+#clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
+#	dplyr::summarise(n=n()) %>%
+#	dplyr::group_by(n, cis) %>%
+#	dplyr::summarise(count=n())
 
-p1 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
-geom_bar(position="dodge", aes(fill=cis), stat="identity") +
-labs(x="Independent hits from clumping (p < 1e-8; 1e-14)", y="mQTLs per SNP")
-ggsave(plot=p1, file="./images/clump_counts_snp.pdf", width=10, height=7)
-
+#p1 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
+#geom_bar(position="dodge", aes(fill=cis), stat="identity") +
+#labs(x="Independent hits from clumping (p < 1e-8; 1e-14)", y="mQTLs per SNP")
+#ggsave(plot=p1, file="./images/clump_counts_snp.pdf", width=10, height=7)
 
 
 ## Estimate Rsq
 
 # What proportion of rsq is cis vs trans
 
-clumped2$rsq <- 2 * clumped$Effect^2 * clumped$Freq1 * (1 - clumped$Freq1)
+clumped2$rsq <- 2 * clumped2$Effect^2 * clumped2$Freq1 * (1 - clumped2$Freq1)
 
 rsq <- filter(clumped2, pval < 1e-8) %>%
 	dplyr::group_by(cpg, cis) %>%
@@ -705,9 +726,35 @@ temp1$log10pval<--log10(temp1$pval)
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
 geom_point(size=0.1) +
 labs(x="Distance of SNP from CpG",y="-log10 (mqtl Pvalue)")
+
+p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
+  stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
+  geom_point(size=0.5) +
+  stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.4,0,1)), contour=FALSE) + 
+  scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256))
+
+
+## QC figure
+
+temp1 <- subset(clumped2, cpgchr == snpchr)
+temp1$posdif <- temp1$snppos - temp1$cpgpos 
+cisdist<-temp1[which(temp1$cis=="TRUE"),]
+mediandist<-round(median(abs(cisdist$posdif))/1000,0)
+temp1$log10pval<--log10(temp1$pval)
+#p1 <- ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
+#	geom_density() +
+#	labs(x="Distance of SNP from CpG") +
+#	annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
+
+p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
+  stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
+  #geom_point(size=0.1) +
+  #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
+  labs(x="Distance od SNP from CpG",y="-log10 (mqtl Pvalue)")
+  scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256))
+
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 
-temp4 <- subset(clumped2, Direction %in% dir_count$Direction)
 
 ## Directions
 
@@ -715,6 +762,29 @@ dir_count <- dplyr::group_by(clumped2, Direction) %>%
 	dplyr::summarise(count=n()) %>%
 	filter(count > 100)
 
+dir_i2 <- dplyr::group_by(clumped2, Direction) %>%
+dplyr::summarise(meanhetI2=mean(HetISq),count=n())
+
+df<-data.frame(dir_i2)
+max(df[,"meanhetI2"])
+#99.7
+min(df[,"meanhetI2"])
+#[1] 0
+mean(df[,"meanhetI2"])
+#[1] 44.12932
+median(df[,"meanhetI2"])
+#[1] 43.8
+
+mean(df[which(df$count>100),"meanhetI2"])
+#[1] 48.77388
+median(df[which(df$count>100),"meanhetI2"])
+#[1] 49.81657
+min(df[which(df$count>100),"meanhetI2"])
+#[1] 35.72358
+max(df[which(df$count>100),"meanhetI2"])
+#[1] 60.81676
+
+temp4 <- subset(clumped2, Direction %in% dir_count$Direction)
 
 p2 <- ggplot(dir_count, aes(x=Direction, y=count)) +
 geom_bar(stat="identity") +
@@ -728,7 +798,7 @@ temp4<-data.frame(temp4,Ncatsd=as.character(labs[m,-1]))
 p3 <- ggplot(temp4, aes(x=Direction, y=HetISq)) +
 geom_boxplot(fill="red") +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5,size=4)) +
-labs(y="Isq for mQTL")
+labs(y="I^2 for mQTL")
 
 temp4$Effect_abs<-abs(temp4$Effect)
 temp4$i2cat<-cut(as.numeric(as.character(temp4$HetISq)), breaks = seq(0,100,by=10))
@@ -744,15 +814,15 @@ m <- data.frame(c(by(abs(temp4$Effect), temp4$i2cat, max)))
 m2<-match(temp4$i2cat,row.names(m))
 temp4<-data.frame(temp4,maxbeta=abs(m[m2,]))
 
-n_fun <- function(x){
-  return(data.frame(y = median(x), label = length(x)))
-}
+#n_fun <- function(x){
+#  return(data.frame(y = median(x), label = length(x)))
+#}
 
 p4<-ggplot(temp4, aes(x=i2cat, y=Effect_abs)) +
 geom_boxplot() +
 #stat_summary(fun.data = n_fun, geom = "text", fun.y = median,position=position_dodge(width=0.9), size=3) +
 geom_text(data=temp4, aes(x=temp4$i2cat,y = (maxbeta+0.1),label = Ncati2),vjust = 0,size=3) +
-labs(y="Beta coefficient",x="I2 category") 
+labs(y="Beta coefficient",x="I^2 category") 
 
 pdf("./images/heterogeneity_qc.pdf", width=12, height=7)
 grid.arrange(p1,p2,p3,p4,ncol=2,nrow=2)
@@ -874,13 +944,13 @@ load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_conditio
 
 ## Number of independent SNPs per cis and trans
 
-sig <- subset(conditional, (cis & pval < 1e-7) | (!cis & pval < 1e-14))
+sig <- subset(conditional, (cis & p < 1e-8) | (!cis & p < 1e-14))
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
 	dplyr::summarise(n=n())
 
 p1 <- ggplot(clump_counts, aes(x=n)) +
 geom_bar(position="dodge", aes(fill=cis)) +
-labs(x="Independent hits from conditional analysis (p < 1e-7; 1e-14)", y="mQTLs per CpG")
+labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs per CpG")
 ggsave(p1, file="./images/conditional_counts_cpg.pdf", width=7, height=7)
 
 
@@ -893,8 +963,17 @@ clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
 
 p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
-labs(x="Independent hits from conditional analysis (p < 1e-7; 1e-14)", y="mQTLs per SNP")
+labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs per SNP")
 ggsave(p2, file="./images/conditional_counts_snp.pdf", width=7, height=7)
+
+
+
+cl_counts <- dplyr::group_by(clumped2, cpg, cis) %>%
+	dplyr::summarise(n=n())
+
+#In the conditional analysis there is one probe with 113 cis associations (cg13601595) and 160 probes with more than 50 cisassociations. 
+#In clumped there are no probes with more than 50 associations and only 29 probes with more than 4 associations.
+
 
 
 
