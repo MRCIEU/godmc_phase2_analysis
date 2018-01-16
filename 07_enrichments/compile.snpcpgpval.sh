@@ -23,8 +23,9 @@ i=${PBS_ARRAYID}
 
 ##dir="/panfs/panasas01/sscm/epzjlm/godmc_phase2_analysis/results/16"
 
-dir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16"
-cd $dir
+#dir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16"
+#dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16"
+#cd $dir
 #touch snpcpgpval.txt
 #touch tmp.txt
 #for i in `seq 1 962`;do
@@ -47,6 +48,6 @@ dir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments"
 cd $dir
 R CMD BATCH --no-save --no-restore '--args '$i'' compile.snpcpgpval_addcistrans.R compile.snpcpgpval_addcistrans.$i.Rout
 
-dir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16"
+dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16"
 cd $dir
 gzip snpcpgpval.chr$i.cistrans.txt

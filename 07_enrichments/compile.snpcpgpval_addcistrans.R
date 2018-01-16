@@ -4,49 +4,74 @@ i<-as.numeric(arguments[1])
 library(data.table)
 library(dplyr)
 ###
-df.out<-read.table(paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".txt.gz",sep=""),he=F)
-names(df.out)<-c("snpchr","snppos","type","id","pval","chunk")
-spl<-strsplit(as.character(df.out$id),split="_")
-spl<-do.call("rbind",spl)
-df.out<-data.frame(cpg=spl[,2],snp=spl[,1],df.out)
+chr<-paste("chr",i,sep="")
+chunks<-c(1:962)
 
-retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
+res.chr<-data.frame()
+for (chunk in 1:length(chunks)){
+
+load(paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_cleaned_",chunk,".rdata",sep=""))
+w<-which(res$snpchr==chr)
+
+if(length(w)>0){
+res<-res[w,]
+res$chunk<-chunk
+cat(nrow(res),"\n")
+res.chr<-rbind(res.chr,res)}
+
+}
+
+res.chr$id<-paste(res.chr$snp,res.chr$cpg,sep="_")
+
+res.chr<-res.chr[,c("cpg","snp","snpchr","snppos","snptype","id","Pvalue","chunk","cpgchr","cpgpos","cis","Effect")]
+#cpg	snp	snpchr	snppos	type	id	pval	chunk	cpgchr	cpgpos	cis	trans	snp_cis	min_pval
+
+#write.table(res.chr,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".txt",sep=""), sep=" ",col.names=F,row.names=F,quote=F)
+#df.out<-read.table(paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".txt.gz",sep=""),he=F)
+df.out<-res.chr
+df.out$cpgchr<-gsub("chrX","chr23",df.out$cpgchr)
+names(df.out)<-c("cpg","snp","snpchr","snppos","type","id","pval","chunk","cpgchr","cpgpos","cis","Effect")
+#spl<-strsplit(as.character(df.out$id),split="_")
+#spl<-do.call("rbind",spl)
+#df.out<-data.frame(cpg=spl[,2],snp=spl[,1],df.out)
+
+#retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  #exclusion probes from TwinsUK
-excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_exclusion_probes.txt",he=T)
+#excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_exclusion_probes.txt",he=T)
 #42446
-rm<-which(retaincpg%in%excl[,1])
+#rm<-which(retaincpg%in%excl[,1])
 #14882
-retaincpg<-retaincpg[-rm]
+#retaincpg<-retaincpg[-rm]
 #420509
  
-df.out<-df.out[which(df.out$cpg%in%retaincpg),]
+#df.out<-df.out[which(df.out$cpg%in%retaincpg),]
 
 #remove snps
-flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
-w<-which(df.out$snp%in%flip[,1])
-if(length(w)>0){
-df.out<-df.out[-w,]}
+#flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+#w<-which(df.out$snp%in%flip[,1])
+#if(length(w)>0){
+#df.out<-df.out[-w,]}
 
-indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
-w<-which(df.out$snp%in%indels[,1]) #129
-if(length(w)>0){
-df.out<-df.out[-w,]}
+#indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+#w<-which(df.out$snp%in%indels[,1]) #129
+#if(length(w)>0){
+#df.out<-df.out[-w,]}
 
-library(meffil)
-y<-meffil.get.features("450k")
-m<-match(df.out$cpg,y$name)
+#library(meffil)
+#y<-meffil.get.features("450k")
+#m<-match(df.out$cpg,y$name)
 
-df.out<-data.frame(df.out,y[m,c("chromosome","position")])
-names(df.out)<-c("cpg","snp","snpchr","snppos","type","id","pval","chunk","cpgchr","cpgpos")
-df.out$cpgchr<-gsub("chrX","chr23",df.out$cpgchr)
-w<-which(df.out$snpchr==df.out$cpgchr&abs(df.out$snppos-df.out$cpgpos)<=100000)
-df.out$cis<-"FALSE"
-df.out$cis[w]<-"TRUE"
-df.out$trans<-"FALSE"
-w<-which(df.out$snpchr==df.out$cpgchr&abs(df.out$snppos-df.out$cpgpos)>100000)
-df.out$trans[w]<-"TRUE"
-w<-which(df.out$snpchr!=df.out$cpgchr)
-df.out$trans[w]<-"TRUE"
+#df.out<-data.frame(df.out,y[m,c("chromosome","position")])
+#names(df.out)<-c("cpg","snp","snpchr","snppos","type","id","pval","chunk","cpgchr","cpgpos")
+
+#w<-which(df.out$snpchr==df.out$cpgchr&abs(df.out$snppos-df.out$cpgpos)<=1000000)
+#df.out$cis2<-"FALSE"
+#df.out$cis2[w]<-"TRUE"
+#df.out$trans<-"FALSE"
+#w<-which(df.out$snpchr==df.out$cpgchr&abs(df.out$snppos-df.out$cpgpos)>1000000)
+#df.out$trans[w]<-"TRUE"
+#w<-which(df.out$snpchr!=df.out$cpgchr)
+#df.out$trans[w]<-"TRUE"
 
 #
 w1<-which(df.out$trans==TRUE & df.out$pval > 1e-14)
@@ -96,5 +121,15 @@ data<-inner_join(df1,df2)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"min_pval"
 
+data<-data.table(data)
+df3<-data[ , (min_Effect = min(Effect)), by = snp]
+df4<-data[ , (max_Effect = max(Effect)), by = snp]
+df<-data.table(rbind(df3,df4))
 
-write.table(data,paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
+maxAbsObs <- function(x) x[which.max(abs(x))]
+df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
+data<-inner_join(data,df2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"max_abs_Effect"
+
+write.table(data,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
