@@ -78,4 +78,33 @@ theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x
 labs(x="study", y="effect size")
 ggsave(plot=p1, file="./images/effectsizechr20bystudy.pdf", width=7, height=7)
 
+library(plyr)
+tmp<-daply(df, .(variant_names_in,study_names_in), function(x) x$beta_in)
+tmp<-data.frame(tmp)
+
+p<-ggpairs(tmp[,1:9])
+ggsave(p,file="./images/betacomptest1.png")
+
+p<-ggpairs(tmp[,10:18])
+ggsave(p,file="./images/betacomptest2.png")
+
+p<-ggpairs(tmp[,19:27])
+ggsave(p,file="./images/betacomptest3.png")
+
+p<-ggpairs(tmp[,28:36])
+ggsave(p,file="./images/betacomptest4.png")
+
+p<-ggpairs(tmp)
+ggsave(p,file="./images/betacomptest.png",height=12,width=12)
+
+
+#p<-ggpairs(
+#  tmp,
+ # upper = list(continuous = "cor"),
+  #lower = list(continuous = wrap("points",size=0.2)),
+  #diag = list(continuous = wrap('diagAxis', labelSize = 2,gridLabelSize=0)),
+  #columnLabels=rep("",ncol(tmp)),
+#)
+
+
 

@@ -15,10 +15,10 @@ cd $mydir
 
 #R CMD BATCH mstat.control.R mstat.Rout
 
-#R CMD BATCH extractclumpedsnps.R extractclumpedsnps.Rout 
-#plink --bfile /panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered --extract clumpedsnps.txt --indep 50 5 1.010101 --out indep.clump
-#R CMD BATCH extractchunks.R extractchunks.Rout
-#sh extractchr20chunks.sh
+R CMD BATCH extractclumpedsnps.R extractclumpedsnps.Rout 
+plink --bfile /panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered --extract clumpedsnps.txt --indep 50 5 1.010101 --out indep.clump
+R CMD BATCH extractchunks.R extractchunks.Rout
+sh extractchr20chunks.sh
 
 R CMD BATCH mstat.R mstat.Rout
 mv *tif ./images

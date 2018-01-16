@@ -1,3 +1,4 @@
+
 #!bin/bash
 
 results_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
