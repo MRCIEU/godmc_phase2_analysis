@@ -23,6 +23,7 @@ filtered_gwas_mqtl <- fread("zcat ../results/filtered_gwas_mqtl.txt.gz")
 ao <- available_outcomes()
 ao <- subset(ao, id %in% filtered_gwas_mqtl$V1, select=c(id, unit))
 ao$cc <- ao$unit == "log odds"
+filtered_gwas_mqtl$V1 <- as.character(filtered_gwas_mqtl$V1)
 filtered_gwas_mqtl <- merge(filtered_gwas_mqtl, subset(ao, select=c(id, cc)), by.x="V1", by.y="id")
 load("../../results/16/16_clumped.rdata")
 snp_1kg <- fread("../data/eur.bim.orig")
