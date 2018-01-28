@@ -1,7 +1,7 @@
 library(data.table)
 library(dplyr)
 
-fn <- paste0("../results/coloc/coloc", 1:191, ".rdata")
+fn <- paste0("../results/coloc/coloc", 1:158, ".rdata")
 l <- list()
 for(i in fn)
 {
@@ -19,6 +19,7 @@ res <- subset(res, !is.na(H4))
 ext <- fread("zcat ../results/filtered_gwas_mqtl.txt")
 names(ext) <- c("outcome", "snp", "ea", "oa", "eaf", "b", "se", "p", "n")
 names(res)[1] <- "snp"
+ext$outcome <- as.character(ext$outcome)
 
 res <- inner_join(res, ext, by=c("snp", "outcome"))
 
