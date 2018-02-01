@@ -33,7 +33,7 @@ echo -n > $F1
 for CHR in `seq 1 22` #X
 do
 	echo 'CHR'$CHR
-	./garfield-prep-chr -ptags $PRUNETAGSDIR/chr$CHR -ctags $CLUMPTAGSDIR/chr$CHR -maftss $MAFTSSDDIR/chr$CHR -pval $PVALDIR/chr$CHR -ann $ANNOTDIR/chr$CHR  -chr $CHR -o $F1 || { echo 'Failure!'; } 
+	./garfield-prep-chr-feat-v2 -ptags $PRUNETAGSDIR/chr$CHR -ctags $CLUMPTAGSDIR/chr$CHR -maftss $MAFTSSDDIR/chr$CHR -pval $PVALDIR/chr$CHR -ann $ANNOTDIR/chr$CHR  -chr $CHR -o $F1 || { echo 'Failure!'; } 
 done
 
 echo 'Calculate effective number of annotations'
