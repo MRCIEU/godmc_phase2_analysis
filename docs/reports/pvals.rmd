@@ -1,0 +1,105 @@
+---
+title: mQTL p-values by type of association
+output: html_document
+---
+
+I was a bit concerned that the distribution of pvalues looked bad - very many p-values of 0. I just wanted to see what what the random effects p-values looked like by comparison.
+
+```{r}
+library(knitr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+load("../../results/16/16_clumped.rdata")
+```
+
+How many p-values are 0 for different models?
+
+```{r}
+group_by(clumped, cis == "TRUE") %>%
+	summarise(
+		count=n(), 
+		prop_fixed_0=sum(pval == 0) / n(),
+		prop_ARE_0=sum(PvalueARE == 0) / n(),
+		prop_MRE_0=sum(PvalueMRE == 0) / n()
+	) %>%
+	kable
+```
+
+Lots of pvalues of 0 for fixed effects model. They seem to be typically those with a large number of effects in the same direction
+
+```{r}
+table(subset(clumped, pval == 0)$Direction) %>% sort(decr=TRUE) %>% as.data.frame %>% head(30) %>% kable
+```
+
+What is the distribution of p-values for different meta analysis models? Fix 0 to the smallest non-0 p-value:
+
+```{r}
+minval <- subset(clumped, pval != 0)$pval %>% min
+clumped$pval[clumped$pval == 0] <- minval
+clumped$PvalueARE[clumped$PvalueARE == 0] <- minval
+clumped$PvalueMRE[clumped$PvalueMRE == 0] <- minval
+
+temp <- gather(subset(clumped, select=c(pval, PvalueMRE, PvalueARE)))
+ggplot(temp, aes(x=-log10(value))) +
+geom_histogram() +
+facet_grid(key ~ .)
+```
+
+What is the distribution for cis-only, trans-only and ambivalent CpGs and SNPs? Use threshold of `cis = 1e-10` and `trans = 1e-14` to calculate this (it will vary for different thresholds)
+
+```{r}
+
+sig <- subset(clumped, (pval < 1e-10 & cis) | (pval < 1e-14 & !cis) )
+snptype <- group_by(sig, snp) %>%
+	summarise(snpt=sum(unique(as.numeric(cis) + 1)))
+snptype$snpt <- dplyr::recode(as.character(snptype$snpt), "1"="Trans only", "2"="Cis only", "3"="Ambivalent")
+
+cpgtype <- group_by(sig, cpg) %>%
+	summarise(cpgt=sum(unique(as.numeric(cis) + 1)))
+cpgtype$cpgt <- dplyr::recode(as.character(cpgtype$cpgt), "1"="Trans only", "2"="Cis only", "3"="Ambivalent")
+
+sig <- merge(sig, snptype, by="snp")
+sig <- merge(sig, cpgtype, by="cpg")
+
+```
+
+**The ambivalent SNPs are the most uncommon - is this correct? When we were discussing I think it was the trans only that were problematic?**
+
+What proportion of associations are significant for ARE and MRE, grouped by type?
+
+```{r}
+sig$sigARE <- (sig$PvalueARE < 1e-10 & sig$cis) | (sig$PvalueARE < 1e-14 & !sig$cis)
+sig$sigMRE <- (sig$PvalueMRE < 1e-10 & sig$cis) | (sig$PvalueMRE < 1e-14 & !sig$cis)
+
+group_by(sig, snpt, cpgt) %>%
+summarise(psigARE = sum(sigARE)/n(), psigMRE=sum(sigMRE)/n(), count=n()) %>%
+kable
+
+group_by(sig, snpt) %>%
+summarise(psigARE = sum(sigARE)/n(), psigMRE=sum(sigMRE)/n(), count=n()) %>%
+kable
+
+group_by(sig, cpgt, cpgt) %>%
+summarise(psigARE = sum(sigARE)/n(), psigMRE=sum(sigMRE)/n(), count=n()) %>%
+kable
+```
+
+Distribution of pvalues:
+
+```{r}
+gather(subset(sig, select=c(cpgt, pval, PvalueMRE, PvalueARE)), key="key", value="value", pval, PvalueMRE, PvalueARE) %>%
+ggplot(aes(x=-log10(value))) +
+geom_histogram(aes(fill=cpgt)) +
+facet_grid(cpgt ~ key, scale="free_y") +
+scale_fill_brewer(type="qual")
+
+gather(subset(sig, select=c(snpt, pval, PvalueMRE, PvalueARE)), key="key", value="value", pval, PvalueMRE, PvalueARE) %>%
+ggplot(aes(x=-log10(value))) +
+geom_histogram(aes(fill=snpt)) +
+facet_grid(snpt ~ key, scale="free_y") +
+scale_fill_brewer(type="qual")
+```
+
+The distributions of p-values for the different models are extremely similar, suggesting that there is nothing systematically wrong with the results for cis-only, trans-only or ambivalent associations.
