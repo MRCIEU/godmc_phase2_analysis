@@ -638,6 +638,12 @@ sig <- subset(clumped, (cis & pval < 1e-8) | (!cis & pval < 1e-14))
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
 	dplyr::summarise(n=n())
 
+p1 <- ggplot(clump_counts, aes(x=samplesize,y=as.factor(numbersnps))) +
+geom_point() +
+labs(x="average samplesize",y="number of independent cis SNPs per CpGs")
+ggsave(plot=p1, file="./images/clump_counts_cpg_samplesize.pdf", width=7, height=7)
+
+
 p1 <- ggplot(clump_counts, aes(x=as.factor(n))) +
 geom_bar(position="dodge", aes(fill=cis)) +
 labs(x="Independent hits from clumping (p < 1e-8; 1e-14)", y="mQTLs per CpG")
@@ -676,6 +682,20 @@ p1 <- ggplot(rsq, aes(x=rsq)) +
 geom_density(aes(fill=cis), alpha=0.3) +
 labs(x="Rsq ")
 ggsave(plot=p1, file="./images/rsq_density_cistrans.pdf", width=12, height=8)
+
+## Estimate Rsq
+
+a <- subset(clumped, pval < 1e-8 & cis)
+a$rsq <- a$Effect^2 * 2 * a$Freq1 * (1-a$Freq1)
+
+p1<-ggplot(a, aes(x=TotalSampleSize, y=rsq)) +
+geom_point() +
+geom_smooth(method="lm",se=FALSE)
+
+ggsave(plot=p1, file="./images/rsq_samplesize.pdf", width=12, height=8)
+
+summary(lm(rsq ~ TotalSampleSize, a))
+
 
 # ggplot(rsqt, aes(x=rsq)) +
 # geom_density() +
@@ -942,19 +962,120 @@ ggsave(p1,file="./images/qcatvsbeta.pdf",height=6,width=16)
 
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_conditional.rdata")
 
+
+
 ## Number of independent SNPs per cis and trans
 
-sig <- subset(conditional, (cis & p < 1e-8) | (!cis & p < 1e-14))
+sig <- subset(conditional, (cis & p < 1e-8))
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
-	dplyr::summarise(n=n())
+	dplyr::summarise(numbersnps=n(),samplesize=mean(n), max_samplesize=max(n),min_samplesize=min(n))
 
-p1 <- ggplot(clump_counts, aes(x=n)) +
+
+p1 <- ggplot(clump_counts, aes(x=numbersnps)) +
 geom_bar(position="dodge", aes(fill=cis)) +
 labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs per CpG")
 ggsave(p1, file="./images/conditional_counts_cpg.pdf", width=7, height=7)
 
+p1 <- ggplot(clump_counts, aes(x=samplesize,y=numbersnps)) +
+geom_point() +
+stat_smooth(method="lm",col="red") +
+labs(x="average samplesize",y="number of independent cis SNPs per CpGs")
+ggsave(plot=p1, file="./images/clump_counts_cpg_samplesize.pdf", width=7, height=7)
+
+df<-data.frame(clump_counts)
+w1<-which(df$numbersnps<5)
+w2<-which(df$numbersnps>=5)
+df$cat<-df$numbersnps
+df$cat[w1]<-"<5 snps"
+df$cat[w2]<-">=5 snps"
+
+summary(lm(df$samplesize~df$numbersnps))
+#Coefficients:
+#               Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)   23592.699     10.949  2154.7   <2e-16 ***
+#df$numbersnps  -124.150      1.049  -118.3   <2e-16 ***
+
+p1<-ggplot(df, aes(samplesize, colour = cat)) +
+geom_density()
+ggsave(p1, file="./images/conditional_counts_cpg_samplesize_density.pdf", width=7, height=7)
+
+p1<-ggplot(df, aes(max_samplesize, colour = cat)) +
+geom_density()
+ggsave(p1, file="./images/conditional_counts_cpg_maxsamplesize_density.pdf", width=7, height=7)
+
+sig <- subset(conditional, (!cis & p < 1e-14))
+clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
+	dplyr::summarise(numbersnps=n(),samplesize=mean(n), max_samplesize=max(n),min_samplesize=min(n))
+
+df<-data.frame(clump_counts)
+w1<-which(df$numbersnps<5)
+w2<-which(df$numbersnps>=5)
+df$cat<-df$numbersnps
+df$cat[w1]<-"<5 snps"
+df$cat[w2]<-">=5 snps"
+
+p1<-ggplot(df, aes(samplesize, colour = cat)) +
+geom_density()
+ggsave(p1, file="./images/conditional_counts_cpg_samplesize_densitytrans.pdf", width=7, height=7)
+
+p1<-ggplot(df, aes(max_samplesize, colour = cat)) +
+geom_density()
+ggsave(p1, file="./images/conditional_counts_cpg_maxsamplesize_densitytrans.pdf", width=7, height=7)
+
+
+#ARIES
+y<-meffil.get.features("450k")
+f7<-read.table("F7.ALL.M.tab",he=T)
+m<-match(f7$gene,y$name)
+f7<-data.frame(cpgchr=y[m,c("chromosome")],cpgpos=y[m,c("position")],f7)
+f7$cpgchr<-gsub("chr","",f7$cpgchr)
+f7$cpgchr<-gsub("X","23",f7$cpgchr)
+f7$cpgchr<-gsub("Y","24",f7$cpgchr)
+
+bim<-read.table("ariesmqtlsnps.bim")
+cis_radius <- 1000000
+
+m<-match(f7$SNP,bim[,2])
+f7<-data.frame(snpchr=bim[m,1],snppos=bim[m,4],f7)
+
+f7$cis <- FALSE
+f7$cis[f7$snpchr == f7$cpgchr & (abs(f7$snppos - f7$cpgpos) <= cis_radius)] <- TRUE
+sigf7 <- subset(f7, (cis & p.value < 1e-8))
+clump_countsf7 <- dplyr::group_by(sigf7, gene, cis) %>%
+	dplyr::summarise(numbersnps=n(),data="aries_f7")
+
+clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
+	dplyr::summarise(numbersnps=n(),data="godmc")
+
+df<-rbind(clump_counts,clump_countsf7)
+p1<-ggplot(df, aes(x=numbersnps,colour=data)) +
+geom_density() +
+xlim(0, 20)
+ggsave(p1, file="./images/conditional_counts_cpg_cis_godmc_vs_aries.pdf", width=7, height=7)
+
+df<-data.frame(table(clump_counts$numbersnps),data="godmc")
+df7<-data.frame(table(clump_countsf7$numbersnps),data="aries f7")
+df<-rbind(df,df7)
+
+p1<-ggplot(df, aes(x=as.factor(Var1),y=as.numeric(Freq),fill=data)) +
+geom_bar(stat="identity",position="dodge") +
+labs(x="Number of SNPs per CpG",y="Count")
+ggsave(p1, file="./images/conditional_counts_cpg_cis_godmc_vs_aries_barplot.pdf", width=7, height=7)
+
+p1 <- ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
+geom_bar(stat="identity") +
 
 ## Number of hits per SNP
+
+
+sig <- subset(conditional, (cis & p < 1e-8) | (!cis & p < 1e-14))
+clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
+	dplyr::summarise(numbersnps=n(),samplesize=mean(n))
+
+p1 <- ggplot(clump_counts, aes(x=numbersnps)) +
+geom_bar(position="dodge", aes(fill=cis)) +
+labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs per CpG")
+ggsave(p1, file="./images/conditional_counts_cpg.pdf", width=7, height=7)
 
 clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
 	dplyr::summarise(n=n()) %>%
