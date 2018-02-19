@@ -35,13 +35,13 @@ max(clumped[which(clumped$cis==FALSE),"pval"])
 #5e-8
 
 
-flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
-w<-which(clumped$snp%in%flip[,1])
-clumped<-clumped[-w,]
+#flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+#w<-which(clumped$snp%in%flip[,1])
+#clumped<-clumped[-w,]
 
-indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
-w<-which(clumped$snp%in%indels[,1]) #129
-clumped<-clumped[-w,]
+#indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+#w<-which(clumped$snp%in%indels[,1]) #129
+#clumped<-clumped[-w,]
 
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  
@@ -53,9 +53,8 @@ rm<-which(retaincpg%in%excl[,1])
 retaincpg<-retaincpg[-rm]
 #420509
  
-clumped<-clumped[which(clumped$cpg%in%retaincpg),]
-nrow(clumped)
-
+#clumped<-clumped[which(clumped$cpg%in%retaincpg),]
+#nrow(clumped)
 
 clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
 
@@ -359,7 +358,7 @@ lola_res_hist$tissue<-tiss[m,"Tissue"]
 plotLOLA(locResults_all=lola_res_hist,plot_pref="cpg_extbg_hist_matched",height=10,width=18)
 
 #save(lola_res0_matched,lola_res0,file="../results/lola_ext_mqtlcpg.rdata")
-save(lola_res0_matched,file="../results/lola_ext_mqtlcpg.rdata")
+save(lola_res0_matched,file="../results/enrichments/lola_ext_mqtlcpg.rdata")
 
 ##ambivalent/FALSE/TRUE
 
@@ -434,7 +433,7 @@ plotLOLA(locResults_all=res_hist,plot_pref="cpg_extbg_hist_matched_cis",height=1
 plotLOLA(locResults_all=res_dnase1,plot_pref="cpg_extbg_dnasenarrowpeaks_matched_cis",height=10,width=18)
 plotLOLA(locResults_all=res_dnase2,plot_pref="cpg_extbg_dnasepeaks_matched_cis",height=10,width=18)
 
-save(res_all,res_dnase1,res_dnase2,res_hist,file="../results/lola_ext_mqtlcpg_cis.rdata")
+save(res_all,res_dnase1,res_dnase2,res_hist,file="../results/enrichments/lola_ext_mqtlcpg_cis.rdata")
 
 #
 length(unique(res_dnase1$antibody))
@@ -473,6 +472,7 @@ length(which(t[,1]>0)) #ambivalent
 length(which(t[,2]>0)) #cis
 length(which(t[,3]>0)) #trans
 
+df<-(data.frame(table(res_hist[which(res_hist$antibody=="H3K4me3"& res_hist$userSet=="ambivalent (10941 regions)"),"tissue"])))
 
 ####
 #H3K4me1 is enriched at enhancers (both active and poised)

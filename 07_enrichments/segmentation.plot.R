@@ -5,20 +5,24 @@ library(ggplot2)
 library(data.table)
 library(gridExtra)
 library(grid)
+library(dplyr)
 
 filter<-as.numeric(10)
+
 padj<-read.table(paste0(path,"mqtl_segmentations1/garfield.Meff.mqtl_segmentations1.out"),he=F)
 padj<-padj[which(padj$V1=="Padj"),"V2"]
 
 pval_lim<-padj
 
+tiss<-read.table("~/repo/godmc_phase2_analysis/07_enrichments/jul2013.roadmapData_tissues.txt",sep="\t",he=T)
 ann<-read.table("/panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/segmentations/output_annotations/states.txt",he=T,sep="\t")
 
 snptype<-c("mqtl_segmentations","mqtl_ambivalent_segmentations","mqtl_cis_segmentations","mqtl_trans_segmentations")
+snptype2<-c("All","ambivalent","cis_only","trans_only")
 
+r.all<-data.frame()
 for (j in 1:length(snptype)) {
 cat(snptype[j],"\n")
-r.all<-data.frame()
 for (i in 1:25){
 p<-paste0(path,snptype[j],i,"/","garfield.test.",snptype[j],i,".out")
 f<-file.size(p)
@@ -26,49 +30,83 @@ if(!is.na(f)){
 cat(i,"\n")
 r<-read.table(paste0(path,snptype[j],i,"/","garfield.test.",snptype[j],i,".out"),he=T)
 r$STATE<-ann$NO.[i]
-r.all<-rbind(r.all,r)
-}}
-r.all <- unique(r.all[which(as.numeric(as.character(r.all$NThresh))>=filter),])
-  r.all$Annotation<-gsub("/lustre/scratch113/projects/uk10k/users/vi1/segmentations/data/NIH_25Marks/","",r.all$Annotation)
-  r.all$Annotation<-gsub("_25_imputed12marks_stateno.bed.gz","",r.all$Annotation)
+r$snp_cis<-snptype2[j]
+r$Annotation<-gsub("/lustre/scratch113/projects/uk10k/users/vi1/segmentations/data/NIH_25Marks/","",r$Annotation)
+r$Annotation<-gsub("_25_imputed12marks_stateno.bed.gz","",r$Annotation)
 
+m<-match(r$Annotation,tiss$ID)
+    r$Tissue<-tiss[m,"Tissue"]
+    r$Annotation<-tiss[m,"Name"]
+    r$Type<-tiss[m,"Type"]
+    r$Celltype<-tiss[m,"Tissue"]
+r.all<-rbind(r.all,r)
+
+}}
+
+
+#r.all <- unique(r.all[which(as.numeric(as.character(r.all$NThresh))>=filter),])
+  
 w<-which(is.na(r.all$STATE))
 length(w)
 
-tiss<-read.table("~/repo/godmc_phase2_analysis/07_enrichments/jul2013.roadmapData_tissues.txt",sep="\t",he=T)
-    m<-match(r.all$Annotation,tiss$ID)
-    r.all$Tissue<-tiss[m,"Tissue"]
-    r.all$Annotation<-tiss[m,"Name"]
-    r.all$Type<-tiss[m,"Type"]
-    r.all$Celltype<-tiss[m,"Tissue"]
-
+    
 #
 
 r.all2<-r.all[which(r.all$PThres==1e-14),]
 r.all2$logOddsRatio<-log(r.all2$OR)
 
 w<-which(r.all2$Pvalue==0)
+if (length(w)>0){
 m<-min(r.all2$Pvalue[-w])
 r.all2$Pvalue[w]<-m
+}
+}
+
+nvar<-r.all2%>%group_by(snp_cis)%>%summarize(mean(NThresh))
+r.all2$snp_cis<-gsub("All",paste0("All (N=",nvar[1,2]," SNPs)"),r.all2$snp_cis)
+r.all2$snp_cis<-gsub("ambivalent",paste0("ambivalent (N=",nvar[2,2]," SNPs)"),r.all2$snp_cis)
+r.all2$snp_cis<-gsub("cis_only",paste0("cis only (N=",nvar[3,2]," SNPs)"),r.all2$snp_cis)
+r.all2$snp_cis<-gsub("trans_only",paste0("trans only (N=",nvar[4,2]," SNPs)"),r.all2$snp_cis)
+
+
+
 m<-max(-log10(r.all2$Pvalue))
 r.all2$STATE<-gsub("prime","'",r.all2$STATE)
-p1<-ggplot(r.all2,aes(x=STATE,y=-log10(Pvalue),size=logOddsRatio,fill=Tissue))+
-  geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+
-  geom_point(alpha=0.7,shape=21,stroke=1)+
-  facet_wrap(~Category,scale="free_x",ncol=1)+
-  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,size=10),legend.position="bottom")+
-  scale_size(range=c(1,4))+
-  ylim(0,(m+0.2*m))+
-  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
-  guides(fill = guide_legend(ncol=10))
-ggsave(p1,file=paste0(snptype[j],".pdf"),height=10,width=18)
+
+max(r.all2[which(r.all2$STATE%in%c("TxWk","Tx3'","Tx5'")&r.all2$snp_cis%in%c("cis_only","ambivalent")&r.all2$Pvalue<padj),"OR"])
 
 print("repressed")
 print(table(r.all2[which(r.all2$OR<1&r.all2$Pvalue<padj),"STATE"]))
 print("activated")
 print(table(r.all2[which(r.all2$OR>1&r.all2$Pvalue<padj),"STATE"]))
 
-}
+
+r.all3<-r.all2[which(r.all2$snp_cis!=paste0("All (N=",nvar[1,2]," SNPs)")),]
+  
+  p1<-ggplot(r.all3,aes(x=STATE,y=OR))+
+  geom_hline(yintercept=1, linetype="dotted")+
+  geom_jitter(width = 0.2, aes(colour=Tissue,size=-log10(Pvalue)))+
+  facet_wrap(~snp_cis,ncol=1)+
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
+  #pvalue scaling
+  scale_size(range=c(1,8))+
+  guides(fill = guide_legend(ncol=20))+
+  scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,6),limits=c(0.2,6)) +
+  ylab("Odds ratio (log scale)") +
+  theme(legend.text=element_text(size=12))
+  ggsave(p1,file=paste0("./images/snp_segmentations_OR.pdf"),height=10,width=18)
+
+p1<-ggplot(r.all3,aes(x=STATE,y=-log10(Pvalue),size=logOddsRatio,fill=Tissue))+
+  geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+
+  geom_point(alpha=0.7,shape=21,stroke=1)+
+  facet_wrap(~snp_cis,scale="free_x",ncol=1)+
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,size=10),legend.position="bottom")+
+  scale_size(range=c(1,4))+
+  ylim(0,(m+0.2*m))+
+  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
+  guides(fill = guide_legend(ncol=10))
+ggsave(p1,file=paste0("./images/snp_segmentations.pdf"),height=10,width=18)
+
 
 
 #STATE NO. MNEMONIC  DESCRIPTION COLOR NAME  COLOR CODE
@@ -97,8 +135,4 @@ print(table(r.all2[which(r.all2$OR>1&r.all2$Pvalue<padj),"STATE"]))
 #23  PromBiv Bivalent Promoter Purple  112,48,160
 #24  ReprPC  Repressed PolyComb  Silver  128,128,128 cis
 #25  Quies Quiescent/Low White 255,255,255
-
-
-
-
 

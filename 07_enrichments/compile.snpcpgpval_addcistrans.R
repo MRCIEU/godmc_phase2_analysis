@@ -131,5 +131,22 @@ df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
 data<-inner_join(data,df2)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"max_abs_Effect"
+###
+data<-data.table(data)
+amb<-subset(data,snp_cis!="TRUE" & cis!="TRUE")
+df2<-amb[ , (min_transpval = min(pval)), by = snp]
+data<-full_join(data,df2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"trans_min_pval"
 
-write.table(data,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
+df3<-amb[ , (min_Effect = min(Effect)), by = snp]
+df4<-amb[ , (max_Effect = max(Effect)), by = snp]
+df<-data.table(rbind(df3,df4))
+
+maxAbsObs <- function(x) x[which.max(abs(x))]
+df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
+data<-inner_join(data,df2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"trans_max_abs_Effect"
+#chr22:50546868:SNP
+write.table(data,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans2.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)

@@ -30,13 +30,13 @@ max(clumped[which(clumped$cis==FALSE),"pval"])
 #5e-8
 
 
-flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
-w<-which(clumped$snp%in%flip[,1])
-clumped<-clumped[-w,]
+#flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
+#w<-which(clumped$snp%in%flip[,1])
+#clumped<-clumped[-w,]
 
-indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
-w<-which(clumped$snp%in%indels[,1]) #129
-clumped<-clumped[-w,]
+#indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+#w<-which(clumped$snp%in%indels[,1]) #129
+#clumped<-clumped[-w,]
 
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  
@@ -48,8 +48,8 @@ rm<-which(retaincpg%in%excl[,1])
 retaincpg<-retaincpg[-rm]
 #420509
  
-clumped<-clumped[which(clumped$cpg%in%retaincpg),]
-nrow(clumped)
+#clumped<-clumped[which(clumped$cpg%in%retaincpg),]
+#nrow(clumped)
 
 clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
 
@@ -307,14 +307,14 @@ bg_matched<-rbind(Illumina450_bg_matched,Illumina450_godmc)
 GoDMC_cpg_gr=unique(with(data,GRanges(seqnames = Rle(cpgchr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
 
 #plot CG and CpG frequency for GoDMC cpgs and background 
-pdf("compare_seq_properties.pdf",height=3,width=4)
+pdf("./images/compare_seq_properties.pdf",height=3,width=4)
 ggplot(Illumina450_dt,aes(x=GC_freq,col=isGoDMC))+geom_density()
 ggplot(Illumina450_dt,aes(x=GC_freq))+geom_density()
 ggplot(Illumina450_dt,aes(x=CpG_freq,col=isGoDMC))+geom_density()
 ggplot(Illumina450_dt,aes(x=CpG_freq))+geom_density()
 dev.off()
 
-pdf("compare_seq_properties_matched.pdf",height=3,width=4)
+pdf("./images/compare_seq_properties_matched.pdf",height=3,width=4)
 ggplot(bg_matched,aes(x=GC_freq,col=isGoDMC))+geom_density()
 ggplot(bg_matched,aes(x=GC_freq))+geom_density()
 ggplot(bg_matched,aes(x=CpG_freq,col=isGoDMC))+geom_density()
@@ -338,7 +338,7 @@ cpg_bg_gr_matched=unique(c(Illumina450_bg_matched,GoDMC_cpg_gr))
 lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB0, cores=5)
 lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
 plotLOLA(locResults_all=lola_res0_matched,plot_pref="cpg_corebg_matched",height=10,width=18)
-save(lola_res0_matched,lola_res0,file="../results/lola_core_mqtlcpg.rdata")
+save(lola_res0_matched,lola_res0,file="../results/enrichments/lola_core_mqtlcpg.rdata")
 
 ##ambivalent/FALSE/TRUE
 
@@ -394,7 +394,7 @@ res_all$userSet[w]<-paste0("cis_only (", l[3]," regions)")
 
 plotLOLA(locResults_all=res_all,plot_pref="cpg_corebg_matched_cis",height=10,width=18)
 
-save(res_all,file="../results/lola_core_mqtlcpg_cis.rdata")
+save(res_all,file="../results/enrichments/lola_core_mqtlcpg_cis.rdata")
 
 
 res_all2<-res_all[which(res_all$collection%in%c("codex","encode_tfbs")),]
@@ -413,64 +413,104 @@ t1<-table(res_all2$Tissue)
 dim(res_all2)
 #[1] 2634   32
 
+res_all2[which(res_all2$logOddsRatio=="-Inf"),]
+table(res_all2[which(res_all2$logOddsRatio=="-Inf"),"pValueLog"])
+# 0 
+#10 
+
 res_all2<-res_all2[which(res_all2$logOddsRatio!="-Inf"),]
 res_all2[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
 res_all2<-res_all2[which(res_all2$p.adjust<0.001),]
 dim(res_all2)
-#[1] 1038   33
+#[1] 1052   33
 t2<-table(res_all2$Tissue)
 data.frame(t1,t2)
-
 #             Var1 Freq         Var1.1 Freq.1
-#1           Blood 1362          Blood    516
-#2    Blood vessel   51   Blood vessel     27
+#1           Blood 1362          Blood    519
+#2    Blood vessel   51   Blood vessel     29
 #3            Bone    9           Bone      5
 #4           Brain   78          Brain     37
 #5      Cerebellum    3     Cerebellum      2
-#6          Cervix  195         Cervix     58
+#6          Cervix  195         Cervix     59
 #7  Choroid plexus    3 Choroid plexus      2
 #8           Colon   21          Colon     11
 #9        Endoderm    6       Endoderm      3
 #10    Endometrium   24    Endometrium      6
-#11            ESC  240            ESC     84
+#11            ESC  240            ESC     86
 #12      Esophagus    3      Esophagus      2
 #13            Eye    3            Eye      2
 #14        Gingiva    3        Gingiva      2
 #15          Heart    6          Heart      4
 #16         Kidney   36         Kidney     15
-#17          Liver  228          Liver     86
-#18           Lung  141           Lung     67
-#19          Mamma  129          Mamma     65
+#17          Liver  228          Liver     89
+#18           Lung  141           Lung     68
+#19          Mamma  129          Mamma     68
 #20         Muscle   12         Muscle      4
-#21       Pancreas   12       Pancreas      6
+#21       Pancreas   12       Pancreas      5
 #22       Placenta    3       Placenta      2
 #23         Retina    3         Retina      2
 #24           Skin   51           Skin     27
 #25    Spinal cord    3    Spinal cord      2
 #26         Testis    9         Testis      1
 
+load("tfbsbycpgmean.Robj")
+df.out$antibody2<-gsub("\\_.*","",df.out$antibody)
+df.out$cellType<-sub(".*._", "", df.out$antibody)
 
-res_all2[userSet=="trans_only (3855 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
-res_all2[userSet=="ambivalent (10886 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
-res_all2[userSet=="ambivalent (10886 regions)",][antibody=="CTCF"][collection=="encode_tfbs"|collection=="codex", ][1:15,]
-res_all2[userSet=="ambivalent (10886 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] 
-dim(unique(res_all2[userSet=="ambivalent (10886 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
+df.out0<-df.out[which(df.out[,1]==0),]
+df.out1<-df.out[which(df.out[,1]==1),]
+
+
+
+#nvars<-names(ov.all)[6:ncol(ov.all)]
+#ov.all2<-ov.all[,seq(2,6:ncol(ov.all)),with=FALSE]
+#row.names(ov.all2)<-ov.all[,1]
+#out<-ov.all%>%group_by(paste0(nvars))%>%summarise(mean=mean(meancpg))
+#out<-ov.all[, lapply(.SD,mean(meancpg)), by=ov.all[,6]]
+#out<-ov.all[, lapply(.SD,mean), by=eval(colnames(ov.all)[6:ncol(ov.all)])]
+#.SD is the (S)ubset of (D)ata excluding group columns
+
+
+
+res_all2[userSet=="trans_only (3864 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
+res_all2[userSet=="ambivalent (10941 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
+res_all2[userSet=="ambivalent (10941 regions)",][antibody=="CTCF"][collection=="encode_tfbs"|collection=="codex", ][1:15,]
+res_all2[userSet=="ambivalent (10941 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] 
+dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
 #19
-dim(unique(res_all2[userSet=="ambivalent (10886 regions)",][antibody=="Rad21",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
+dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="Rad21",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
 #7
-dim(unique(res_all2[userSet=="ambivalent (10886 regions)",][antibody=="SMC3",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
+dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="SMC3",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
 #5
 
-amb<-unique(res_all2[userSet=="ambivalent (10886 regions)",][collection=="encode_tfbs"|collection=="codex"])
+amb<-unique(res_all2[userSet=="ambivalent (10941 regions)",][collection=="encode_tfbs"|collection=="codex"])
 df<-unique(data.frame(amb$antibody,amb$cellType_corr))
 df<-data.frame(table(df[,1]))
 dim(df) #127
-dim(df[df$Freq>3,]) #10
+dim(df[df$Freq>3,]) #12
+
+#df[df$Freq>5,]
+#    Var1 Freq
+#15 CEBPB    6
+#21  CTCF   19
+#92 Rad21    7
+
+
 
 df<-unique(data.frame(amb$antibody,amb$Tissue))
 df<-data.frame(table(df[,1]))
-dim(df) #127
-dim(df[df$Freq>3,]) #9
+dim(df) #126
+dim(df[df$Freq>3,]) #11
+
+tf<-df[df$Freq>3,"Var1"]
+for (i in 1:length(tf)){
+lineage<-unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody==tf[i],][collection=="encode_tfbs"|collection=="codex",c("Lineage")])
+lineage<-data.frame(lineage)
+w<-which(lineage[,1]%in%c("Endodermal","Ectodermal","Mesodermal"))
+if(length(w)==3){
+print(tf[i])  
+}
+}
 
 df<-data.frame(table(res_all2$Tissue))
 #516/1038
@@ -478,7 +518,7 @@ or<-ddply(amb,~antibody,summarise,mean=mean(oddsRatio))
 mean(or$mean)
 #1.335355
 
-trans<-unique(res_all2[userSet=="trans_only (3855 regions)",][collection=="encode_tfbs"|collection=="codex"])
+trans<-unique(res_all2[userSet=="trans_only (3864 regions)",][collection=="encode_tfbs"|collection=="codex"])
 df<-unique(data.frame(trans$antibody,trans$cellType_corr))
 df<-data.frame(table(df[,1]))
 dim(df) #168
@@ -492,7 +532,28 @@ df<-data.frame(table(df[,1]))
 dim(df) #168
 dim(df[df$Freq>3,]) #19
 
-cis<-unique(res_all2[userSet=="cis_only (106926 regions)",][collection=="encode_tfbs"|collection=="codex"])
+#df[which(df$Freq>5),]
+#         Var1 Freq
+#31      c-Myc    6
+#34       CTCF   23
+#115      Pol2   12
+#116  Pol2-4H8    7
+#123     Rad21    6
+#133 Sin3Ak-20    6
+#145      TAF1    6
+#164       YY1    7
+
+tf<-df[df$Freq>3,"Var1"]
+for (i in 1:length(tf)){
+lineage<-unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody==tf[i],][collection=="encode_tfbs"|collection=="codex",c("Lineage")])
+lineage<-data.frame(lineage)
+w<-which(lineage[,1]%in%c("Endodermal","Ectodermal","Mesodermal"))
+if(length(w)==3){
+print(tf[i])  
+}
+}
+
+cis<-unique(res_all2[userSet=="cis_only (107004 regions)",][collection=="encode_tfbs"|collection=="codex"])
 df<-unique(data.frame(cis$antibody,cis$cellType_corr))
 df<-data.frame(table(df[,1]))
 dim(df) #17
@@ -505,7 +566,7 @@ dim(df[df$Freq>3,]) #0
 
 or<-ddply(cis,~antibody,summarise,mean=mean(oddsRatio))
 mean(or$mean)
-#1.376712
+#1.35719
 
 ###
 

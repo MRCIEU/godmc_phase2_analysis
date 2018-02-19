@@ -28,7 +28,7 @@ setwd("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments")
 regionDB <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/chrom_states",collection="25states")
 
 #
-load("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/16_clumped.rdata")
+load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped.rdata")
 max(clumped[which(clumped$cis==TRUE),"pval"])
 #1e-4
 max(clumped[which(clumped$cis==FALSE),"pval"])
@@ -39,10 +39,10 @@ max(clumped[which(clumped$cis==FALSE),"pval"])
 #w<-which(clumped$snp%in%flip[,1])
 #clumped<-clumped[-w,]
 
-indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
-w<-which(clumped$snp%in%indels[,1]) #129
-if(length(w)>0){
-clumped<-clumped[-w,]}
+#indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
+#w<-which(clumped$snp%in%indels[,1]) #129
+#if(length(w)>0){
+#clumped<-clumped[-w,]}
 
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  
@@ -54,9 +54,8 @@ rm<-which(retaincpg%in%excl[,1])
 retaincpg<-retaincpg[-rm]
 #420509
  
-clumped<-clumped[which(clumped$cpg%in%retaincpg),]
-nrow(clumped)
-
+#clumped<-clumped[which(clumped$cpg%in%retaincpg),]
+#nrow(clumped)
 
 clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
 
@@ -189,6 +188,37 @@ plotLOLA=function(locResults_all,plot_pref,height=35,width=18){
 } 
 }
 
+plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){
+  
+  ##process LOLA results
+  #pval_lim=0.001
+  
+  locResults=process_LOLA(LOLA_res=locResults_all,cellType_conversions=cellType_conversions)
+  
+  #sub=locResults
+  #sub[,signif:=any(p.adjust<=pval_lim),by="seg_explanation"]
+  #sub=sub[signif==TRUE]
+  #sub[,tissue_count:=paste0(tissue," ",length(unique(filename[which(p.adjust<=pval_lim)])),"/",tissue_count_all),by=c("tissue")]
+  
+   ##bubble plots
+  if(locResults$description[1]=="25states"){
+  pdf(paste0(plot_pref,"_All_OR.pdf"),height=height,width=width+2)
+  pl3=ggplot(locResults,aes(x=seg_explanation,y=oddsRatio,size=pValueLog,fill=tissue))+
+  #geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+
+  geom_jitter(alpha=0.7,shape=21,stroke=1,width = 0.1, height = 0.5)+
+  facet_wrap(~userSet,scale="free_x",ncol=1)+
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
+  scale_size(range=c(1,8))+
+  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
+  ylim(0.1,4)+
+  guides(colour = guide_legend(override.aes = list(size=10,ncol=10))) +
+  #guides(fill = guide_legend(ncol=10)+
+  theme(legend.text=element_text(size=10))
+  print(pl3)
+  dev.off()
+} 
+}
+
 #produceLOLA_plots_intern = function(grs,plot_pref,height=35,width=18,recreate=FALSE){
 
   #run LOLA cpgs
@@ -305,14 +335,14 @@ bg_matched<-rbind(Illumina450_bg_matched,Illumina450_godmc)
 GoDMC_cpg_gr=unique(with(data,GRanges(seqnames = Rle(cpgchr), IRanges(start=cpgstart, end=cpgend),strand=Rle("*"))))
 
 #plot CG and CpG frequency for GoDMC cpgs and background 
-pdf("compare_seq_properties.pdf",height=3,width=4)
+pdf("./images/compare_seq_properties.pdf",height=3,width=4)
 ggplot(Illumina450_dt,aes(x=GC_freq,col=isGoDMC))+geom_density()
 ggplot(Illumina450_dt,aes(x=GC_freq))+geom_density()
 ggplot(Illumina450_dt,aes(x=CpG_freq,col=isGoDMC))+geom_density()
 ggplot(Illumina450_dt,aes(x=CpG_freq))+geom_density()
 dev.off()
 
-pdf("compare_seq_properties_matched.pdf",height=3,width=4)
+pdf("./images/compare_seq_properties_matched.pdf",height=3,width=4)
 ggplot(bg_matched,aes(x=GC_freq,col=isGoDMC))+geom_density()
 ggplot(bg_matched,aes(x=GC_freq))+geom_density()
 ggplot(bg_matched,aes(x=CpG_freq,col=isGoDMC))+geom_density()
@@ -338,7 +368,7 @@ cpg_bg_gr_matched=unique(c(Illumina450_bg_matched,GoDMC_cpg_gr))
 
 lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB, cores=5)
 lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
-save(lola_res0_matched,file="../results/lola_chromstates_mqtlcpg.rdata")
+save(lola_res0_matched,file="../results/enrichments/lola_chromstates_mqtlcpg.rdata")
 
 #subset by dnase and histonemark
 #w<-which(is.na(lola_res0_matched$antibody)&lola_res0_matched$collection=="roadmap_epigenomics")
@@ -356,13 +386,14 @@ lola_res0_matched$seg_explanation<-state[m,"NO."]
 #lola_res0_matched$seg_explanation[which(is.na(m))]<-"expanded"
 
 w<-which(is.na(m))
-res_all<-res_all[-w,]
+lola_res0_matched<-lola_res0_matched[-w,]
+
 tiss<-read.table("jul2013.roadmapData_tissues.txt",sep="\t",he=T)
 m<-match(lola_res0_matched$dataSource,as.character(tiss$ID),)
 lola_res0_matched$tissue<-tiss[m,"Tissue"]
 
 plotLOLA(locResults_all=lola_res0_matched,plot_pref="cpg_extbg_chromstates_matched",height=10,width=18)
-save(lola_res0_matched,file="../results/lola_chromstates_mqtlcpg.rdata")
+save(lola_res0_matched,file="../results/enrichments/lola_chromstates_mqtlcpg.rdata")
 
 #save(lola_res0_matched,lola_res0,file="../results/lola_ext_mqtlcpg.rdata")
 
@@ -410,6 +441,7 @@ lola_res0_matched$userSet<-j
 res_all<-rbind(res_all,lola_res0_matched)
 
 }
+
 w<-which(res_all$userSet==1)
 res_all$userSet[w]<-paste0(n[1]," (", l[1]," regions)")
 w<-which(res_all$userSet==2)
@@ -437,49 +469,54 @@ res_all$tissue<-tiss[m,"Tissue"]
 
 plotLOLA(locResults_all=res_all,plot_pref="cpg_extbg_chromstates_matched_cis",height=10,width=18)
 
-save(res_all,file="../results/lola_chromstates_mqtlcpg_cis.rdata")
+plotLOLA_OR(locResults_all=res_all,plot_pref="cpg_extbg_chromstates_matched_cis_OR",height=10,width=18)
+
+save(res_all,file="../results/enrichments/lola_chromstates_mqtlcpg_cis.rdata")
+
+res_all<-res_all[which(res_all$logOddsRatio!="-Inf"),]
+res_all[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
+res_all<-res_all[which(res_all$p.adjust<0.001),]
 
 #
-length(unique(res_dnase1$antibody))
-length(unique(res_dnase2$antibody))
-length(unique(res_hist$antibody))
-#31
-res_hist<-res_hist[which(res_hist$logOddsRatio!="-Inf"),]
-res_dnase1<-res_dnase1[which(res_dnase1$logOddsRatio!="-Inf"),]
-res_dnase2<-res_dnase2[which(res_dnase2$logOddsRatio!="-Inf"),]
 
-res_hist[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
-res_hist<-res_hist[which(res_hist$p.adjust<0.001),]
+amb<-unique(res_all[userSet=="ambivalent (10941 regions)",])
+df<-unique(data.frame(amb$seg_explanation,amb$tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #127
+dim(df[df$Freq>3,]) #12
 
-res_dnase1[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
-res_dnase1<-res_dnase1[which(res_dnase1$p.adjust<0.001),]
-
-res_dnase2[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
-res_dnase2<-res_dnase2[which(res_dnase2$p.adjust<0.001),]
-
-table(res_dnase1$userSet)
-#ambivalent (10886 regions)  trans_only (3855 regions) 
-#                        53                         52 
-
-table(res_dnase2$userSet)
-#ambivalent (10886 regions)  trans_only (3855 regions) 
-#                        78                         78 
-
-table(res_hist$userSet)
-#ambivalent (10886 regions)  cis_only (106926 regions) 
-#                       741                        225 
-#trans_only (3855 regions) 
-#                       489
-
-t<-table(res_hist$antibody,res_hist$userSet)
-length(which(t[,1]>0)) #ambivalent
-length(which(t[,2]>0)) #cis
-length(which(t[,3]>0)) #trans
+cis<-unique(res_all[userSet=="cis_only (107004 regions)",])
+df<-unique(data.frame(cis$seg_explanation,cis$tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #127
+dim(df[df$Freq>3,]) #12
 
 
 ####
-#H3K4me1 is enriched at enhancers (both active and poised)
-#H3K4me3 is enriched at actively transcribed promoters
-#H3K9ac is enriched at promoters and enhancers
-#H3K27ac is enriched at active enhancers
+#STATE NO. MNEMONIC  DESCRIPTION COLOR NAME  COLOR CODE
+#1 TssA  Active TSS  Red 255,0,0
+#2 PromU Promoter Upstream TSS Orange Red  255,69,0 ambivalent,cis
+#3 PromD1  Promoter Downstream TSS with DNase  Orange Red  255,69,0 ambivalent
+#4 PromD2  Promoter Downstream TSS Orange Red  255,69,0
+#5 Tx5'  Transcription 5'  Green 0,128,0 ambivalent,trans
+#6 Tx  Transcription Green 0,128,0 ambivalent, 
+#7 Tx3'  Transcription 3'  Green 0,128,0 trans
+#8 TxWk  Weak transcription  Light Green 0,150,0 cis, ambivalent, trans
+#39 TxReg Transcription Regulatory  GreenYellow 194,225,5
+#10  TxEnh5' Transcription 5' Enhancer GreenYellow 194,225,5
+#11  TxEnh3' Transcription 3' Enhancer GreenYellow 194,225,5
+#12  TxEnhW  Transcription Weak Enhancer GreenYellow 194,225,5 ambivalent
+#13  EnhA1 Active Enhancer 1 Orange  255,195,77
+#14  EnhA2 Active Enhancer 2 Orange  255,195,77
+#15  EnhAF Active Enhancer Flank Orange  255,195,77
+#16  EnhW1 Weak Enhancer 1 Yellow  255,255,0
+#17  EnhW2 Weak Enhancer 2 Yellow  255,255,0: ambivalent,cis
+#18  EnhAc Enhancer Acetylation Only Yellow  255,255,0
+#19  DNase DNase only  Light Yellow  255,255,102
+#20  ZNF/Rpts  ZNF genes & repeats Medium Aquamarine 102,205,170
+#21  Het Heterochromatin PaleTurquoise 138,145,208
+#22  PromP Poised Promoter Light Purple  230,184,183
+#23  PromBiv Bivalent Promoter Purple  112,48,160
+#24  ReprPC  Repressed PolyComb  Silver  128,128,128 cis
+#25  Quies Quiescent/Low White 255,255,255
 

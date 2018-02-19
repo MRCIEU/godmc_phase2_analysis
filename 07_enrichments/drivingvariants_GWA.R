@@ -1,12 +1,12 @@
-#awk '{print "chr" $5}' <garfield.test.ambivalentmqtl_sds.out.significant.annotations.1e-14.0.010050256375866.variants|sed 's/[^(]*$//'|perl -pe 's/\(//g' >snps.txt
-#awk '{print "chr" $5}' <garfield.test.transmqtl_sds.out.significant.annotations.1e-14.0.0100477631605532.variants|sed 's/[^(]*$//'|perl -pe 's/\(//g' >snps.txt
+#awk '{print "chr" $5}' <garfield.test.ambivalentmqtl_sds.out.significant.annotations.1e-14.0.010047802254319.variants|sed 's/[^(]*$//'|perl -pe 's/\(//g' >snps.txt
+#awk '{print "chr" $5}' <garfield.test.cismqtl_sds.out.significant.annotations.1e-8.0.0100524490036318.variants|sed 's/[^(]*$//'|perl -pe 's/\(//g' >snps.txt
 #ls /mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/data/gwas
 
-cd /panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments
-cat /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/output/transmqtl_sds/snps.txt /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/output/ambivalentmqtl_sds/snps.txt |sort -u >transsdssnps.txt
-awk '{print "chr"$1":SNP"}' <transsdssnps.txt >transsdssnps.plink.txt
-plink --bfile /panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered --extract /panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments/transsdssnps.plink.txt --make-bed --out test --maf 0.01
-plink --bfile test --indep-pairwise 1000kb 5 0.1 --out indep --maf 0.01
+cd /panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/13_selection
+cat /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/output/cismqtl_sds/snps.txt /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/output/ambivalentmqtl_sds/snps.txt |sort -u >cissdssnps.txt
+awk '{print $1":SNP"}' <cissdssnps.txt >cissdssnps.plink.txt
+plink --bfile /panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered --extract /panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/13_selection/cissdssnps.plink.txt --make-bed --out test --maf 0.01
+plink --bfile test --indep-pairwise 1000kb 5 0.001 --out indep --maf 0.01
 
 #
 library(biomaRt)
