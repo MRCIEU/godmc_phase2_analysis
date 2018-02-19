@@ -514,6 +514,15 @@ cpgtype$cpgt &lt;- dplyr::recode(as.character(cpgtype$cpgt), &quot;1&quot;=&quot
 
 sig &lt;- merge(sig, snptype, by=&quot;snp&quot;)
 sig &lt;- merge(sig, cpgtype, by=&quot;cpg&quot;)</code></pre>
+<p>Count the cis/trans/ambivalent SNPs and CpGs</p>
+<pre class="r"><code>table(cpgtype$cpgt)</code></pre>
+<pre><code>## 
+## Ambivalent   Cis only Trans only 
+##      11807     168197       7309</code></pre>
+<pre class="r"><code>table(snptype$snpt)</code></pre>
+<pre><code>## 
+## Ambivalent   Cis only Trans only 
+##       2605     204625      13083</code></pre>
 <p><strong>The ambivalent SNPs are the most uncommon - is this correct? When we were discussing I think it was the trans only that were problematic?</strong></p>
 <p>What proportion of associations are significant for ARE and MRE, grouped by type?</p>
 <pre class="r"><code>sig$sigARE &lt;- (sig$PvalueARE &lt; 1e-10 &amp; sig$cis) | (sig$PvalueARE &lt; 1e-14 &amp; !sig$cis)

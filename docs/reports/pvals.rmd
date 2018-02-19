@@ -65,6 +65,16 @@ sig <- merge(sig, cpgtype, by="cpg")
 
 ```
 
+Count the cis/trans/ambivalent SNPs and CpGs
+
+```{r}
+table(cpgtype$cpgt)
+```
+
+```{r}
+table(snptype$snpt)
+```
+
 **The ambivalent SNPs are the most uncommon - is this correct? When we were discussing I think it was the trans only that were problematic?**
 
 What proportion of associations are significant for ARE and MRE, grouped by type?
