@@ -10,21 +10,21 @@ get_dat <- function(fn, i)
 	system(cmd)
 	cmd <- paste0("fgrep -wf ../data/extracted/mqtl_clumped.txt ../data/extracted/filtered_gwas_", fn$id[i], ".txt > ../data/extracted/filtered_gwas_mqtl_", fn$id[i], ".txt")
 	system(cmd)
-	cmd <- paste0("zfgrep -wf ../data/extracted/mqtl_conditional.txt ", path, " | gzip -c > ../data/extracted/filtered_gwas_mqtl_conditional_", fn$id[i], ".txt.gz")
-	system(cmd)
+	# cmd <- paste0("zfgrep -wf ../data/extracted/mqtl_conditional.txt ", path, " | gzip -c > ../data/extracted/filtered_gwas_mqtl_conditional_", fn$id[i], ".txt.gz")
+	# system(cmd)
 
 }
 
-load("../../results/16/16_conditional.rdata")
+# load("../../results/16/16_conditional.rdata")
 load("../../results/16/16_clumped.rdata")
 
-names(conditional)[names(conditional) == "SNP"] <- "snp"
+# names(conditional)[names(conditional) == "SNP"] <- "snp"
 
-res1 <- subset(conditional, 
-	((pJ < 1e-10 & cis) |
-	(pJ < 1e-14 & !cis)) &
-	grepl("SNP", snp)
-)
+# res1 <- subset(conditional, 
+# 	((pJ < 1e-10 & cis) |
+# 	(pJ < 1e-14 & !cis)) &
+# 	grepl("SNP", snp)
+# )
 
 res2 <- subset(clumped, 
 	((pval < 1e-10 & cis) |
@@ -42,10 +42,10 @@ snp_1kg <- subset(snp_1kg, c1 == 1 & c2 == 1)
 snp_1kg$snp <- paste0("chr", snp_1kg$V1, ":", snp_1kg$V4, ":SNP")
 snp_1kg <- subset(snp_1kg, !duplicated(snp))
 
-res1 <- merge(res1, subset(snp_1kg, select=c(V2, snp)), by="snp")
+# res1 <- merge(res1, subset(snp_1kg, select=c(V2, snp)), by="snp")
 res2 <- merge(res2, subset(snp_1kg, select=c(V2, snp)), by="snp")
 dir.create("../data/extracted/", recursive = TRUE)
-write.table(res1$V2, file="../data/extracted/mqtl_conditional.txt", row=F, col=F, qu=F)
+# write.table(res1$V2, file="../data/extracted/mqtl_conditional.txt", row=F, col=F, qu=F)
 write.table(res2$V2, file="../data/extracted/mqtl_clumped.txt", row=F, col=F, qu=F)
 
 library(doParallel)

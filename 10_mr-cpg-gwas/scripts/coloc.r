@@ -121,7 +121,7 @@ res <- filter(filtered_gwas_mqtl, V2 %in% snplist) %>%
 			j <- 1
 			for(traitnum in 1:ntrait)
 			{
-				fn <- paste0("../scratch/filtered_gwas_", selected_snp$V1[traitnum], ".txt")
+				fn <- paste0("../data/extracted/filtered_gwas_", selected_snp$V1[traitnum], ".txt")
 				trait <- fread(fn) %>%
 					filter(snp %in% unclumped$SNP)
 				message(i, " : ", ncpg, " : ", ntrait, " : ", selected_snp$V2[1], " : ", candidate_cpgs$cpg[cpgnum], " : ", selected_snp$V1[traitnum])
@@ -152,3 +152,4 @@ res <- filter(filtered_gwas_mqtl, V2 %in% snplist) %>%
 	})
 
 save(res, file=out)
+
