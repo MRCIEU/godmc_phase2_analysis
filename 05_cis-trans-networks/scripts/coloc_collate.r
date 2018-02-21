@@ -1,6 +1,6 @@
 library(dplyr)
 
-fn <- paste0("../results/coloc", 1:999, ".rdata")
+fn <- paste0("../results/coloc", 1:930, ".rdata")
 l <- list()
 for(i in fn)
 {
