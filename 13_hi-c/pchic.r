@@ -1,202 +1,182 @@
-# setwd("I:/medewerkers/Koen/godmc/pchic/")
 library(GenomicRanges)
-library(FDb.InfiniumMethylation.hg19)
 library(AnnotationHub)
 library(data.table)
 library(tidyverse)
-feats <- features(FDb.InfiniumMethylation.hg19)
+library(BiocParallel)
 pchic <- fread("zcat ../data/misc/PCHiC_peak_matrix_cutoff5.tsv.gz") #http://dx.doi.org/10.1016/j.cell.2016.09.037
-pchic$interaction <- 1:nrow(pchic)
-
 load("../results/16/16_clumped.rdata")
+
+clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
+
+pchic$interaction <- 1:nrow(pchic)
+clumped$code <- paste(clumped$cpg, clumped$snp)
 
 pchic_bait <- GRanges(seqnames=paste0("chr", pchic$baitChr), ranges=IRanges(start=pchic$baitStart, end=pchic$baitEnd, names=pchic$interaction))
 mcols(pchic_bait) <- pchic
 pchic_oe <- GRanges(seqnames=paste0("chr", pchic$oeChr), ranges=IRanges(start=pchic$oeStart, end=pchic$oeEnd, names=pchic$interaction))
 mcols(pchic_oe) <- pchic
 
-hub <- AnnotationHub()
-chain <- query(hub, "hg38ToHg19")[[1]]
-
-pchic_bait <- liftOver(pchic_bait, chain)
-pchic_bait <- unlist(pchic_bait)
-
-pchic_oe <- liftOver(pchic_oe, chain)
-pchic_oe <- unlist(pchic_oe)
-
-bait.overlap.cpg <- function(cpg) {
-  cpg <- feats[names(feats) %in% cpg]
+bait.overlap.cpg <- function() {
+  clumped <- clumped_cpg
+  cpg <- GRanges(seqnames=clumped$cpgchr, ranges=IRanges(start=clumped$cpgpos, end=clumped$cpgpos, names=clumped$cpg))
   overlaps <- findOverlaps(pchic_bait, cpg, ignore.strand=T)
   result <- mcols(pchic_bait[queryHits(overlaps)])
   result$CpG <- names(cpg[subjectHits(overlaps)])
   return(result[order(result$CpG), ])
 }
 
-bait.overlap.snp <- function(snp) {
-  split <- do.call(rbind, t(strsplit(snp, split=":")))
-  chr <- split[, 1]
-  loc <- as.numeric(split[, 2])
-  snp <- GRanges(seqnames=chr, ranges=IRanges(start=loc, end=loc, names=snp))
+bait.overlap.snp <- function() {
+  clumped <- clumped_snp
+  snp <- GRanges(seqnames=clumped$snpchr, ranges=IRanges(start=clumped$snppos, end=clumped$snppos, names=clumped$snp))
   overlaps <- findOverlaps(pchic_bait, snp, ignore.strand=T)
   result <- mcols(pchic_bait[queryHits(overlaps)])
   result$SNP <- names(snp[subjectHits(overlaps)])
   return(result[order(result$SNP), ])
 }
 
-oe.overlap.cpg <- function(cpg) {
-  cpg <- feats[names(feats) %in% cpg]
+oe.overlap.cpg <- function() {
+  clumped <- clumped_cpg
+  cpg <- GRanges(seqnames=clumped$cpgchr, ranges=IRanges(start=clumped$cpgpos, end=clumped$cpgpos, names=clumped$cpg))
   overlaps <- findOverlaps(pchic_oe, cpg, ignore.strand=T)
   result <- mcols(pchic_oe[queryHits(overlaps)])
   result$CpG <- names(cpg[subjectHits(overlaps)])
   return(result[order(result$CpG), ])
 }
 
-oe.overlap.snp <- function(snp) {
-  split <- do.call(rbind, t(strsplit(snp, split=":")))
-  chr <- split[, 1]
-  loc <- as.numeric(split[, 2])
-  snp <- GRanges(seqnames=chr, ranges=IRanges(start=loc, end=loc, names=snp))
+oe.overlap.snp <- function() {
+  clumped <- clumped_snp
+  snp <- GRanges(seqnames=clumped$snpchr, ranges=IRanges(start=clumped$snppos, end=clumped$snppos, names=clumped$snp))
   overlaps <- findOverlaps(pchic_oe, snp, ignore.strand=T)
   result <- mcols(pchic_oe[queryHits(overlaps)])
   result$SNP <- names(snp[subjectHits(overlaps)])
   return(result[order(result$SNP), ])
 }
 
-bait_pchic_cpg <- bait.overlap.cpg(unique(clumped$cpg)) # cpg in promoter
-bait_pchic_snp <- bait.overlap.snp(unique(clumped$snp)) # snp in promoter
-
-oe_pchic_cpg <- oe.overlap.cpg(unique(clumped$cpg)) # cpg in interacting region
-oe_pchic_snp <- oe.overlap.snp(unique(clumped$snp)) # snp in interacting region
-
-
-# Any interaction IDs that are the same on bait_pchic_cpg and oe_pchic_snp etc?
-
-a <- merge(bait_pchic_cpg, subset(oe_pchic_snp, select=c(interaction, SNP)), by="interaction")
-a$code <- paste(a$CpG, a$SNP)
-
-b <- merge(oe_pchic_cpg, subset(bait_pchic_snp, select=c(interaction, SNP)), by="interaction")
-b$code <- paste(b$CpG, b$SNP)
-
-clumped$code <- paste(clumped$cpg, clumped$snp)
-
-a <- a[a$code %in% clumped$code, ]
-b <- b[b$code %in% clumped$code, ]
-ab <- rbind(a, b)
-
-table(ab$oeChr == ab$baitChr)
-table(a$SNP %in% clumped$snp)
-
-abl <- subset(ab, select=c(code, Mon, Mac0, Mac1, Mac2, Neu, MK, EP, Ery, FoeT, nCD4, tCD4, aCD4, naCD4, nCD8, tCD8, nB, tB)) %>%
-  as.data.frame %>%
-  gather(key="celltype", value="chicagoscore", -code) %>%
-  filter(chicagoscore > 5)
-
-abc <- group_by(abl, code) %>%
-  summarise(celltype=paste(celltype, collapse=","))
-
-group_by(abl, celltype) %>%
-  summarise(s=sum(chicagoscore))
-
-# write.table(bait_pchic_cpg, file="bait_pchic_cpg.tsv", sep="\t", quote=F, row.names=F)
-# write.table(bait_pchic_snp, file="bait_pchic_snp.tsv", sep="\t", quote=F, row.names=F)
-
-# write.table(oe_pchic_cpg, file="oe_pchic_cpg.tsv", sep="\t", quote=F, row.names=F)
-# write.table(oe_pchic_snp, file="oe_pchic_snp.tsv", sep="\t", quote=F, row.names=F)
-
-# enrichment
-
-reflection.fun <- function() {
-  
-  bait.overlap.cpg.reflection <- function(cpg) {
-    cpg <- feats_reflection[names(feats_reflection) %in% cpg]
-    overlaps <- findOverlaps(pchic_bait, cpg, ignore.strand=T)
-    result <- mcols(pchic_bait[queryHits(overlaps)])
-    result$CpG <- names(cpg[subjectHits(overlaps)])
-    return(result[order(result$CpG), ])
-  }
-  
-  pchic_bait <- pchic_bait[na.omit(as.character(pchic_bait$baitChr) == as.character(pchic_bait$oeChr)), ]
-  pchic_oe <- pchic_oe[na.omit(as.character(pchic_oe$baitChr) == as.character(pchic_oe$oeChr)), ]
-  clumped <- clumped[na.omit(clumped$cpgchr == clumped$snpchr), ]
-  
-  # reflection
-  clumped$reflection <- NA
-  clumped$reflection[clumped$snppos < clumped$cpgpos] <- clumped$cpgpos[clumped$snppos < clumped$cpgpos] - clumped$snppos[clumped$snppos < clumped$cpgpos]
-  clumped$reflection[clumped$snppos > clumped$cpgpos] <- clumped$cpgpos[clumped$snppos > clumped$cpgpos] + clumped$snppos[clumped$snppos > clumped$cpgpos]
-  clumped <- clumped[!is.na(clumped$reflection), ]
-  
-  # circularize
-  clumped <- lapply(unique(clumped$cpgchr), function(x) {
-    clumped <- clumped[clumped$cpgchr == x, ]
-    clumped$maxpos <- max(clumped$cpgpos, na.rm=T)
-    clumped
-  })
-  clumped <- do.call(rbind, clumped)
-  clumped$reflection[clumped$reflection < 0]  <- clumped$maxpos[clumped$reflection < 0] + clumped$reflection[clumped$reflection < 0]
-  clumped$reflection[clumped$reflection > clumped$maxpos]  <- clumped$reflection[clumped$reflection > clumped$maxpos] - clumped$maxpos[clumped$reflection > clumped$maxpos]
-  
-  # add reflection positions to feats
-  feats_reflection <- feats[match(clumped$cpg, names(feats))]
-  start(feats_reflection) <- 1
-  end(feats_reflection) <- max(end(feats_reflection))
-  start(feats_reflection) <- clumped$reflection
-  end(feats_reflection) <- clumped$reflection + 1
-  
-  bait_pchic_cpg_reflection <- bait.overlap.cpg.reflection(unique(clumped$cpg)) # reflection in promoter
-  bait_pchic_cpg <- bait.overlap.cpg(unique(clumped$cpg)) # cpg in promoter
-  oe_pchic_snp <- oe.overlap.snp(unique(clumped$snp)) # snp in interacting region
-  
-  a <- merge(bait_pchic_cpg, subset(oe_pchic_snp, select=c(interaction, SNP)), by="interaction") # cpg
-  a$code <- paste(a$CpG, a$SNP)
-  a <- a[a$code %in% clumped$code, ]
-  
-  b <- merge(bait_pchic_cpg_reflection, subset(oe_pchic_snp, select=c(interaction, SNP)), by="interaction") # reflection of cpg
-  b$code <- paste(b$CpG, b$SNP)
-  b <- b[b$code %in% clumped$code, ]
-  
-  # perform fisher test
-  dat <- data.frame(c(length(unique(a$SNP)), length(unique(clumped$snp))), c(length(unique(b$SNP)), length(unique(clumped$snp))))
-  fisher <- unlist(fisher.test(dat))[c(4, 1, 2, 3)]
-  list(table=dat, test=fisher)
+bait.overlap.cpg.reflection <- function() {
+  clumped <- clumped_cpg
+  cpg <- GRanges(seqnames=clumped$cpgchr, ranges=IRanges(start=clumped$cpgreflection, end=clumped$cpgreflection, names=clumped$cpg))
+  overlaps <- findOverlaps(pchic_bait, cpg, ignore.strand=T)
+  result <- mcols(pchic_bait[queryHits(overlaps)])
+  result$CpG <- names(cpg[subjectHits(overlaps)])
+  return(result[order(result$CpG), ])
 }
 
-reflection <- reflection.fun()
-print(reflection$test)
-
-permutation.fun <- function(chr, n=10000) {
-  set.seed(1)
-  
-  # only for cpg snp pairs on same chromosome, since pchic interactions almost only on same chr
-  # seperate permutations per chr (fair distribution)
-  pchic_bait <- pchic_bait[na.omit(as.character(pchic_bait$baitChr) == as.character(pchic_bait$oeChr) & as.character(pchic_bait$baitChr) == chr), ]
-  pchic_oe <- pchic_oe[na.omit(as.character(pchic_oe$baitChr) == as.character(pchic_oe$oeChr) & as.character(pchic_oe$baitChr) == chr), ]
-  clumped <- clumped[na.omit(clumped$cpgchr == clumped$snpchr & clumped$cpgchr == paste0("chr", chr)), ]
-
-  bait_pchic_cpg <- bait.overlap.cpg(unique(clumped$cpg)) # cpg in promoter
-  oe_pchic_snp <- oe.overlap.snp(unique(clumped$snp)) # snp in interacting region
-  a <- merge(bait_pchic_cpg, subset(oe_pchic_snp, select=c(interaction, SNP)), by="interaction")
-  a$code <- paste(a$CpG, a$SNP)
-  len <- length(unique(a$SNP[a$code %in% clumped$code]))
-
-  null <- c()
-  for (i in 1:n) {
-    # randomize interactions as null distribution
-    clumped$cpg <- sample(clumped$cpg)
-    clumped$code <- paste(clumped$cpg, clumped$snp)
-    null <- c(null, length(unique(a$SNP[a$code %in% clumped$code])))
-  }
-  es <- mean((len + 1) / (null + 1))
-  pval <- (sum(len <= null) + 1) / (length(null) + 1)
-  data.frame(es, pval)
+bait.overlap.snp.reflection <- function(snp) {
+  clumped <- clumped_snp
+  snp <- GRanges(seqnames=clumped$snpchr, ranges=IRanges(start=clumped$snpreflection, end=clumped$snpreflection, names=clumped$snp))
+  overlaps <- findOverlaps(pchic_bait, snp, ignore.strand=T)
+  result <- mcols(pchic_bait[queryHits(overlaps)])
+  result$SNP <- names(snp[subjectHits(overlaps)])
+  return(result[order(result$SNP), ])
 }
 
-library(BiocParallel)
-chrs <- unique(as.character(pchic_bait$baitChr))
-chrs <- chrs[paste0("chr", chrs) %in% clumped$cpgchr]
-permutation <- bplapply(chrs, permutation.fun, BPPARAM=MulticoreParam(length(chrs)))
-enrichment <- do.call(rbind, permutation)
-enrichment <- list(table=enrichment, test=apply(enrichment, 2, mean))
-print(enrichment$test)
+oe.overlap.cpg.reflection <- function() {
+  clumped <- clumped_cpg
+  cpg <- GRanges(seqnames=clumped$cpgchr, ranges=IRanges(start=clumped$cpgreflection, end=clumped$cpgreflection, names=clumped$cpg))
+  overlaps <- findOverlaps(pchic_oe, cpg, ignore.strand=T)
+  result <- mcols(pchic_oe[queryHits(overlaps)])
+  result$CpG <- names(cpg[subjectHits(overlaps)])
+  return(result[order(result$CpG), ])
+}
 
-save(ab, abc, enrichment, reflection, file="../results/enrichments/mqtl_pchic.rdata")
+oe.overlap.snp.reflection <- function() {
+  clumped <- clumped_snp
+  snp <- GRanges(seqnames=clumped$snpchr, ranges=IRanges(start=clumped$snpreflection, end=clumped$snpreflection, names=clumped$snp))
+  overlaps <- findOverlaps(pchic_oe, snp, ignore.strand=T)
+  result <- mcols(pchic_oe[queryHits(overlaps)])
+  result$SNP <- names(snp[subjectHits(overlaps)])
+  return(result[order(result$SNP), ])
+}
 
+# cis
+clumped <- subset(clumped, cpgchr == snpchr & abs(cpgpos - snppos) <= 1000000)
+pchic_oe <- pchic_oe[na.omit(as.character(pchic_oe$oeChr) == as.character(pchic_oe$baitChr) & min(abs(c(pchic_oe$oeEnd - pchic_oe$baitStart, pchic_oe$oeStart - pchic_oe$baitEnd))) <= 1000000), ]
+pchic_bait <- pchic_bait[na.omit(as.character(pchic_bait$oeChr) == as.character(pchic_bait$baitChr) & min(abs(c(pchic_bait$oeEnd - pchic_bait$baitStart, pchic_bait$oeStart - pchic_bait$baitEnd))) <= 1000000), ]
+
+# cpgreflection
+clumped$cpgreflection <- NA
+clumped$cpgreflection[clumped$snppos < clumped$cpgpos] <- clumped$cpgpos[clumped$snppos < clumped$cpgpos] - clumped$snppos[clumped$snppos < clumped$cpgpos]
+clumped$cpgreflection[clumped$snppos > clumped$cpgpos] <- clumped$cpgpos[clumped$snppos > clumped$cpgpos] + clumped$snppos[clumped$snppos > clumped$cpgpos]
+
+# snpreflection
+clumped$snpreflection <- NA
+clumped$snpreflection[clumped$cpgpos < clumped$snppos] <- clumped$snppos[clumped$cpgpos < clumped$snppos] - clumped$cpgpos[clumped$cpgpos < clumped$snppos]
+clumped$snpreflection[clumped$cpgpos > clumped$snppos] <- clumped$snppos[clumped$cpgpos > clumped$snppos] + clumped$cpgpos[clumped$cpgpos > clumped$snppos]
+
+# outside chrom
+clumped <- lapply(unique(clumped$cpgchr), function(x) {
+  clumped <- clumped[clumped$cpgchr == x, ]
+  clumped$cpgmax <- max(clumped$cpgpos, na.rm=T)
+  clumped$snpmax <- max(clumped$snppos, na.rm=T)
+  clumped
+})
+clumped <- do.call(rbind, clumped)
+
+clumped$cpgreflection[clumped$cpgreflection < 0]  <- NA
+clumped$cpgreflection[clumped$cpgreflection > clumped$cpgmax]  <- NA
+
+clumped$snpreflection[clumped$snpreflection < 0]  <- NA
+clumped$snpreflection[clumped$snpreflection > clumped$snpmax]  <- NA
+
+clumped_cpg <- clumped[!is.na(clumped$cpgreflection), ]
+clumped_snp <- clumped[!is.na(clumped$snpreflection), ]
+
+# overlaps
+bait_pchic_cpg <- bait.overlap.cpg() # cpg in promoter
+bait_pchic_snp <- bait.overlap.snp() # snp in promoter
+oe_pchic_cpg <- oe.overlap.cpg() # cpg in interacting region
+oe_pchic_snp <- oe.overlap.snp() # snp in interacting region
+bait_pchic_cpg_reflection <- bait.overlap.cpg.reflection() # cpg reflection in promoter
+bait_pchic_snp_reflection <- bait.overlap.snp.reflection() # snp reflection in promoter
+oe_pchic_cpg_reflection <- oe.overlap.cpg.reflection() # cpg reflection in interacting region
+oe_pchic_snp_reflection <- oe.overlap.snp.reflection() # snp reflection in interacting region
+
+# snp in promoter
+snp_in_promoter <- merge(oe_pchic_cpg, subset(bait_pchic_snp, select=c(interaction, SNP)), by="interaction") # snp in promoter
+snp_in_promoter$code <- paste(snp_in_promoter$CpG, snp_in_promoter$SNP)
+snp_in_promoter <- snp_in_promoter[snp_in_promoter$code %in% clumped$code, ]
+
+snp_in_promoter_reflection <- merge(oe_pchic_cpg_reflection, subset(bait_pchic_snp, select=c(interaction, SNP)), by="interaction") # snp in promoter reflection
+snp_in_promoter_reflection$code <- paste(snp_in_promoter_reflection$CpG, snp_in_promoter_reflection$SNP)
+snp_in_promoter_reflection <- snp_in_promoter_reflection[snp_in_promoter_reflection$code %in% clumped$code, ]
+
+# cpg in promoter
+cpg_in_promoter <- merge(oe_pchic_snp, subset(bait_pchic_cpg, select=c(interaction, CpG)), by="interaction") # cpg in promoter
+cpg_in_promoter$code <- paste(cpg_in_promoter$CpG, cpg_in_promoter$SNP)
+cpg_in_promoter <- cpg_in_promoter[cpg_in_promoter$code %in% clumped$code, ]
+
+cpg_in_promoter_reflection <- merge(oe_pchic_snp_reflection, subset(bait_pchic_cpg, select=c(interaction, CpG)), by="interaction") # cpg in promoter reflection
+cpg_in_promoter_reflection$code <- paste(cpg_in_promoter_reflection$CpG, cpg_in_promoter_reflection$SNP)
+cpg_in_promoter_reflection <- cpg_in_promoter_reflection[cpg_in_promoter_reflection$code %in% clumped$code, ]
+
+data <- list(snp_in_promoter=snp_in_promoter, cpg_in_promoter=cpg_in_promoter)
+
+# mean number of cells having a interaction
+snp_sum <- apply(snp_in_promoter[, 13:29], 1, function(x) sum(x >= 5))
+cpg_sum <- apply(cpg_in_promoter[, 13:29], 1, function(x) sum(x >= 5))
+print(mean(c(snp_sum, cpg_sum)))
+
+# number of interactions per cell type
+print(apply(snp_in_promoter[, 13:29], 2, function(x) sum(x >= 5)))
+print(apply(cpg_in_promoter[, 13:29], 2, function(x) sum(x >= 5)))
+
+# density plot
+library(ggplot2)
+plotdata <- data.frame(data=c(rep(paste("mQTL (median distance = ", round(median(abs(clumped$cpgpos - clumped$snppos))), ")"), nrow(clumped)), rep(paste0("promoter capture hiC (median distance = ", round(median(abs(pchic$dist), na.rm=T)), ")"), nrow(pchic)), rep(paste0("overlap (median distance = ", round(median(abs(c(snp_in_promoter$dist, cpg_in_promoter$dist)))), ")"), length(c(snp_in_promoter$dist, cpg_in_promoter$dist)))), distance=c(clumped$cpgpos - clumped$snppos, pchic$dist, c(snp_in_promoter$dist, cpg_in_promoter$dist)))
+pdf("../results/enrichments/densityplot.pdf", width=10, height=4)
+ggplot(plotdata, aes(distance, fill=data, alpha=0.5)) + geom_density(color=NA) + scale_fill_manual(values=c("#4477AA", "#DDCC77", "#CC6677")) + guides(alpha=F) + xlim(-1000000, 1000000) + theme_bw() + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), panel.background = element_blank(), axis.line = element_line(colour = "black")) + theme(legend.key = element_blank(), strip.background = element_rect(colour=NA, fill=NA), panel.border=element_blank(), panel.spacing = unit(2, "lines"))
+dev.off()
+
+# perform fisher test
+dat <- data.frame(c(length(snp_in_promoter$SNP), length(bait_pchic_snp$SNP[!bait_pchic_snp$SNP %in% snp_in_promoter$SNP])), c(length(snp_in_promoter_reflection$SNP), length(bait_pchic_snp$SNP[!bait_pchic_snp$SNP %in% snp_in_promoter_reflection$SNP])))
+fisher <- unlist(fisher.test(dat))[c(4, 1, 2, 3)]
+snp_in_promoter <- list(table=dat, test=fisher, unique_snps=length(unique(snp_in_promoter$SNP)), percentage=length(unique(snp_in_promoter$SNP)) / length(unique(bait_pchic_snp$SNP)[!unique(bait_pchic_snp$SNP) %in% unique(snp_in_promoter$SNP)]))
+
+dat <- data.frame(c(length(cpg_in_promoter$CpG), length(bait_pchic_cpg$CpG[!bait_pchic_cpg$CpG %in% cpg_in_promoter$CpG])), c(length(cpg_in_promoter_reflection$CpG), length(bait_pchic_cpg$CpG[!bait_pchic_cpg$CpG %in% cpg_in_promoter_reflection$CpG])))
+fisher <- unlist(fisher.test(dat))[c(4, 1, 2, 3)]
+cpg_in_promoter <- list(table=dat, test=fisher, unique_cpgs=length(unique(cpg_in_promoter$CpG)), percentage=length(unique(cpg_in_promoter$CpG)) / length(unique(bait_pchic_cpg$CpG)[!unique(bait_pchic_cpg$CpG) %in% unique(cpg_in_promoter$CpG)]))
+
+enrichment <- list(snp_in_promoter=snp_in_promoter, cpg_in_promoter=cpg_in_promoter)
+print(enrichment)
+
+save(data, enrichment, file="../results/enrichments/mqtl_pchic.rdata")
