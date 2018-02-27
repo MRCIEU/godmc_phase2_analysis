@@ -10,14 +10,18 @@ fn <- read.csv("../../data/gwas/00info.csv")
 # load("../results/mr_ld_tophits.rdata")
 load("../results/cpg_trait_coloc.rdata")
 load("../../data/misc/cpg_pos.rdata")
-zhou <- scan("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what=character())
+# zhou <- scan("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what=character())
 cpgtrait <- merge(res, fn, by.x="outcome", by.y="id")
 cpgtrait <- inner_join(cpgtrait, cpgpos, by=c("exposure"="cpg"))
-cpgtrait <- filter(cpgtrait, exposure %in% zhou)
+# cpgtrait <- filter(cpgtrait, exposure %in% zhou)
 cpgtrait$chr <- as.numeric(gsub("chr", "", cpgtrait$cpgchr))
 res2 <- subset(cpgtrait, H4 > 0.8)
 res2$p[res2$p < 1e-100] <- 1e-100
 res2 <- subset(res2, p < threshold2)
+
+load("../../results/16/16_clumped.rdata")
+
+
 
 
 ##
