@@ -159,8 +159,8 @@ plotLOLA=function(locResults_all,plot_pref,height=35,width=18){
   locResults=process_LOLA(LOLA_res=locResults_all,cellType_conversions=cellType_conversions)
   
   sub=locResults
-  sub[,signif:=any(p.adjust<=pval_lim),by="target"]
-  sub=sub[signif==TRUE]
+  #sub[,signif:=any(p.adjust<=pval_lim),by="target"]
+  #sub=sub[signif==TRUE]
   sub[,lineage_count:=paste0(Lineage," ",length(unique(filename[which(p.adjust<=pval_lim)])),"/",lineage_count_all),by=c("Lineage")]
   sub[,lineage_count_state:=paste0(Lineage," ",length(unique(filename[which(p.adjust<=pval_lim)])),"/",lineage_count_allstate),by=c("Lineage","cellState")]
   
@@ -190,7 +190,7 @@ plotLOLA=function(locResults_all,plot_pref,height=35,width=18){
   dev.off()
   
   pdf(paste0(plot_pref,"_All.pdf"),height=height,width=width+2)
-  pl3=ggplot(sub,aes(x=target,y=-log10(p.adjust),size=logOddsRatio,fill=lineage_count,col=(cellState=="Malignant")))+geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+geom_point(alpha=0.7,shape=21,stroke=1)+facet_wrap(~userSet,scale="free_x",ncol=1)+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+scale_size(range=c(1,4))+scale_fill_manual(values=structure(sub_colors$color, names=sub_colors$lineage_count))+scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+guides(fill = guide_legend(ncol=3))
+  pl3=ggplot(sub,aes(x=target,y=-log10(p.adjust),size=logOddsRatio,fill=lineage_count,col=(cellState=="Malignant")))+geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+geom_point(alpha=0.7,shape=21,stroke=1)+facet_wrap(~userSet,scale="free_x",ncol=1)+theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+scale_size(range=c(1,4))+scale_fill_manual(values=structure(sub_colors$color, names=sub_colors$lineage_count))+scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+guides(fill = guide_legend(ncol=3,override.aes = list(size=6)))
   print(pl3)
   dev.off()
   
@@ -454,13 +454,75 @@ data.frame(t1,t2)
 #26         Testis    9         Testis      1
 
 load("tfbsbycpgmean.Robj")
-df.out$antibody2<-gsub("\\_.*","",df.out$antibody)
-df.out$cellType<-sub(".*._", "", df.out$antibody)
+load("../results/enrichments/lola_core_mqtlcpg.rdata")
+res_all<-lola_res0_matched
+res_all$antibody<-gsub("_.*","",res_all$antibody)
 
-df.out0<-df.out[which(df.out[,1]==0),]
-df.out1<-df.out[which(df.out[,1]==1),]
+df.out$filename<-gsub(".bed","",df.out$antibody)
+w<-which(names(df.out)%in%"antibody")
+df.out<-df.out[,-w]
+#df.out$antibody2<-gsub("\\_.*","",df.out$antibody)
+#df.out$cellType<-sub(".*._", "", df.out$antibody)
+
+w<-which(df.out$filename%in%res_all$filename)
+df.out2<-df.out[w,]
+m<-match(df.out2$filename,res_all$filename)
+df.out2<-data.frame(df.out2,res_all[m,])
+
+df.out0<-df.out2[which(df.out2[,1]==0),]
+df.out1<-df.out2[which(df.out2[,1]==1),]
+df.out1<-data.table(df.out1)
+##  
+pval_lim=0.001
+  
+  locResults=process_LOLA(LOLA_res=df.out1,cellType_conversions=cellType_conversions)
+  
+  sub=locResults
+  sub[,signif:=any(p.adjust<=pval_lim),by="target"]
+  sub=sub[signif==TRUE]
+  sub[,lineage_count:=paste0(Lineage," ",length(unique(filename[which(p.adjust<=pval_lim)])),"/",lineage_count_all),by=c("Lineage")]
+  sub[,lineage_count_state:=paste0(Lineage," ",length(unique(filename[which(p.adjust<=pval_lim)])),"/",lineage_count_allstate),by=c("Lineage","cellState")]
+  
+  sub_colors=sub[,.N,by=c("Lineage","lineage_count")]
+  sub_colors=merge(sub_colors,colors,by="Lineage")
+  
+  sub_colors_state=sub[,.N,by=c("Lineage","cellState","lineage_count_state")]
+  sub_colors_state=merge(sub_colors_state,colors,by="Lineage")
+  
+  ##summary plot
+  sub_sum=sub[,list(mean_mlog10p.adjust=mean(mlog10p.adjust[p.adjust<=pval_lim&mlog10p.adjust!=Inf]),count=length(userSet[p.adjust<=pval_lim])),by="userSet"]
+  
+
+pdf(paste0("meanmethylation_tfbs_cis.pdf"),height=10,width=18)
+  p1<-ggplot(sub,aes(x=antibody,y=mean,fill=lineage_count,col=(cellState=="Malignant")))+
+  geom_hline(yintercept=mean(df.out0$mean),col="black",linetype="dashed")+
+  geom_point(size=4,alpha=0.7,shape=21,stroke=1)+
+  #facet_wrap(~userSet,scale="free_x",ncol=1)+
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
+  scale_size(range=c(1,4))+scale_fill_manual(values=structure(sub_colors$color, names=sub_colors$lineage_count))+
+  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+guides(fill = guide_legend(ncol=3))
+  labs(y="mean methylation")
+  print(p1)
+  dev.off()
 
 
+m<-match(df.out1$cellType,cellType_conversions$cellType)
+df.out1<-data.table(data.frame(df.out1,cellType_conversions[m,]))
+
+hypo<-df.out1[df.out1$mean<0.1,]
+length(unique(hypo$cellType_corr))
+#18
+length(unique(hypo$Tissue))
+#15
+t1<-table(hypo$Tissue)
+dim(hypo)
+#[1] 2634   32d
+df<-unique(data.frame(hypo$antibody,hypo$Tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #127
+dim(df[df$Freq>5,]) 
+hypo[which(hypo$antibody%in%c("Nrf1")),c("mean","Lineage","Tissue","cellType")]
+hypo[which(hypo$antibody%in%c("BRCA1")),c("mean","Lineage","Tissue","cellType")]
 
 #nvars<-names(ov.all)[6:ncol(ov.all)]
 #ov.all2<-ov.all[,seq(2,6:ncol(ov.all)),with=FALSE]
