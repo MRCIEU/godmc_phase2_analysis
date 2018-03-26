@@ -2,7 +2,8 @@
 
 #SBATCH --job-name=coloc
 #SBATCH --nodes=1 --mem=2G --time=0-04:00:00
-#SBATCH --array=1-999
+# #SBATCH --array=1-930
+#SBATCH --array=28,629
 #SBATCH --output=job_reports/slurm-%A_%a.out
 #SBATCH --partition=veryshort
 

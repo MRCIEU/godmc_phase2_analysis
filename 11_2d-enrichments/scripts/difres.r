@@ -25,13 +25,10 @@ load_permutations <- function()
 
 	res <- reshape2::melt(real)
 
-	avail <- list.files("../results/matrix")
-	avail <- avail[avail != "m0.rdata"]
-
-	for(i in avail[1:100])
+	for(i in 1:100)
 	{
 		message(i)
-		load(paste0("../results/matrix/", i))
+		load(paste0("../results/matrix/m", i, ".rdata"))
 		nom <- paste0("p", i)
 		res[[nom]] <- reshape2::melt(mat)$value
 	}
