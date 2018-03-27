@@ -138,7 +138,7 @@ hub <- hub.score(gr)$vector
 auth <- authority.score(gr)$vector
 
 pdf("auth_hub.pdf")
-plot(hub ~ auth)
+plot(log(hub), log(auth))
 dev.off()
 
 pdf(file="../images/plot_all.pdf")
@@ -159,6 +159,28 @@ dev.off()
 
 ## Remove small communities
 
+
+gr <- graph_from_data_frame(dat, directed=TRUE)
+
+wc <- cluster_walktrap(gr, steps=20)
+fg <- cluster_fast_greedy(as.undirected(gr))
+
+# # Simplifying doesn't work:
+# gr2a <- igraph::simplify(gr2)
+# is_simple(gr2)
+# is_simple(gr2a)
+
+# gr2adf <- igraph::as_data_frame(gr2a)
+
+# wc <- cluster_walktrap(gr, steps=20)
+# class(wc)
+# length(wc)
+
+mem <- membership(fg)
+mem <- data_frame(cpg=names(mem), cluster=as.numeric(mem))
+
+
+
 com <- as_data_frame(mem)
 names(com) <- c("cpg", "mem")
 a <- group_by(com, mem) %>%
@@ -176,7 +198,7 @@ ind <- match(comkeep$cpg, V(grc)$name)
 all(V(grc)$name == comkeep$cpg)
 V(grc)$community <- comkeep$mem
 pdf(file="../images/plot_nosmall.pdf")
-plot(grc, layout=layout.fruchterman.reingold, vertex.color=V(grc)$community, vertex.frame.color=V(grc)$community, vertex.size = hub, vertex.label = NA, edge.arrow.size = 0)
+plot(grc, layout=layout.fruchterman.reingold, vertex.color=V(grc)$community, vertex.frame.color=V(grc)$community, vertex.size = 2, vertex.label = NA, edge.arrow.size = 0)
 dev.off()
 
 
