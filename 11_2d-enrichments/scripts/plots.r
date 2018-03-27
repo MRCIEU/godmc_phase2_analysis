@@ -84,6 +84,8 @@ temp <- group_by(temp, cpganno, snpanno) %>%
 
 # temp2 <- group_by(temp2, snpanno) %>%
 
+temp <- subset(temp, !grepl("H3K", snpanno) & !grepl("H3K", cpganno))
+
 
 snpl <- data.frame(snpanno=unique(temp$snpanno))
 snpl$snpid <- 1:nrow(snpl)

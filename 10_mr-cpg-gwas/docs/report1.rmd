@@ -25,6 +25,7 @@ sig <- res[res$H4 > 0.8 & res$p < threshold1,]
 sig <- subset(sig, !duplicated(paste(exposure, outcome)))
 sig <- merge(sig, subset(ao, select=c(id, trait, category, subcategory)), by.x="outcome", by.y="id")
 sig <- inner_join(sig, cpgpos, by=c("exposure"="cpg"))
+sig$cpgchrn <- as.numeric(gsub("chr", "", sig$cpgchr))
 sigm <- subset(sig, category != "Metabolites")
 
 ```
@@ -68,7 +69,6 @@ sig %>% filter(category != "Metabolites") %>% group_by(trait) %>% summarise(cat=
 How many associations per chromosome?
 
 ```{r}
-sig$cpgchrn <- as.numeric(gsub("chr", "", sig$cpgchr))
 sig %>% group_by(cpgchrn) %>% summarise(n=n()) %>% 
 ggplot(aes(x=cpgchrn, y=n)) +
 geom_point() +
@@ -97,6 +97,7 @@ How many of the `r length(unique(sig$exposure))` CpGs that have a causal effect 
 load("../../results/16/16_clumped.rdata")
 temp <- subset(clumped, cpg %in% sig$exposure)
 trans <- filter(temp, !cis)
+cis <- filter(temp, cis)
 nrow(trans %>% filter(!duplicated(cpg)))
 ```
 
@@ -110,8 +111,14 @@ nrow(trans %>% filter(!duplicated(cpg)))
 ```{r}
 sigt <- filter(sig, exposure %in% trans$cpg)
 temp <- data_frame(transsnp=trans$snp, exposure=trans$cpg)
-to_extract <- inner_join(sigt, temp, by="exposure")
-save(to_extract, file="../results/to_extract.rdata")
+to_extractt <- inner_join(sigt, temp, by="exposure")
+
+sigc <- filter(sig, exposure %in% cis$cpg)
+temp <- data_frame(transsnp=cis$snp, exposure=cis$cpg)
+to_extractc <- inner_join(sigc, temp, by="exposure")
+
+save(to_extractt, file="../results/to_extractt.rdata")
+save(to_extractc, file="../results/to_extractc.rdata")
 ```
 
 
