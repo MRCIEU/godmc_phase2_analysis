@@ -145,7 +145,7 @@ df<-data.table(rbind(df3,df4))
 
 maxAbsObs <- function(x) x[which.max(abs(x))]
 df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
-data<-inner_join(data,df2)
+data<-full_join(data,df2)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"trans_max_abs_Effect"
 #chr22:50546868:SNP

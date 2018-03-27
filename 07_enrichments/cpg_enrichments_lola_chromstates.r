@@ -203,17 +203,19 @@ plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){
    ##bubble plots
   if(locResults$description[1]=="25states"){
   pdf(paste0(plot_pref,"_All_OR.pdf"),height=height,width=width+2)
-  pl3=ggplot(locResults,aes(x=seg_explanation,y=oddsRatio,size=pValueLog,fill=tissue))+
-  #geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+
-  geom_jitter(alpha=0.7,shape=21,stroke=1,width = 0.1, height = 0.5)+
+  pl3=ggplot(locResults,aes(x=seg_explanation,y=oddsRatio))+
+  geom_hline(yintercept=1, linetype="dotted")+
+  geom_jitter(width = 0.2, aes(colour=tissue,size=pValueLog))+
   facet_wrap(~userSet,scale="free_x",ncol=1)+
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
   scale_size(range=c(1,8))+
-  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
-  ylim(0.1,4)+
-  guides(colour = guide_legend(override.aes = list(size=10,ncol=10))) +
-  #guides(fill = guide_legend(ncol=10)+
-  theme(legend.text=element_text(size=10))
+  #scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
+  #ylim(0.1,4)+
+  #guides(colour = guide_legend(override.aes = list(size=10,ncol=10))) +
+  guides(fill = guide_legend(ncol=20))+
+  scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,6),limits=c(0.2,6)) +
+  ylab("Odds ratio (log scale)") +
+  theme(legend.text=element_text(size=12))
   print(pl3)
   dev.off()
 } 

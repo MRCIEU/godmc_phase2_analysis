@@ -1,0 +1,119 @@
+---
+title: MR of CPG to trait analysis
+author: Gibran Hemani
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r}
+library(knitr)
+library(dplyr)
+library(TwoSampleMR)
+library(ggplot2)
+library(ggthemes)
+
+threshold1 <- 0.05 / (300000 * 698)
+threshold2 <- 0.05 / (300000)
+
+fn <- read.csv("../../data/gwas/00info.csv")
+
+load("../results/cpg_trait_coloc.rdata")
+load("../../data/misc/cpg_pos.rdata")
+
+
+ao <- available_outcomes() %>% filter(id %in% res$outcome)
+sig <- res[res$H4 > 0.8 & res$p < threshold1,]
+sig <- subset(sig, !duplicated(paste(exposure, outcome)))
+sig <- merge(sig, subset(ao, select=c(id, trait, category, subcategory)), by.x="outcome", by.y="id")
+sig <- inner_join(sig, cpgpos, by=c("exposure"="cpg"))
+sigm <- subset(sig, category != "Metabolites")
+
+```
+
+We can define `CPG->trait` associations to be significant if the colocalisation score `> 0.8` and the p-value adjusted for 300000 CpGs tested in 698 traits (p < `r threshold1`). How many significant associations?
+
+```{r}
+nrow(sig)
+```
+
+How many unique CpGs?
+
+```{r}
+length(unique(sig$exposure))
+```
+
+How many unique traits?
+
+```{r}
+length(unique(sig$outcome))
+```
+
+How many traits can a single CpG influence?
+
+```{r}
+hist(table(sig$exposure), breaks=max(table(sig$exposure)))
+```
+
+How many associations per category of trait?
+
+```{r}
+kable(as.data.frame(table(sig$category)))
+```
+
+Which traits have the most associations?
+
+```{r}
+sig %>% filter(category != "Metabolites") %>% group_by(trait) %>% summarise(cat=first(subcategory), n=n()) %>% arrange(desc(n)) %>% kable
+```
+
+How many associations per chromosome?
+
+```{r}
+sig$cpgchrn <- as.numeric(gsub("chr", "", sig$cpgchr))
+sig %>% group_by(cpgchrn) %>% summarise(n=n()) %>% 
+ggplot(aes(x=cpgchrn, y=n)) +
+geom_point() +
+geom_smooth(method="lm")
+
+```
+
+Chromosome 6 clearly has far more associations than expected by chance. Potentially unreliable because colocalisation analysis will not be able perform correctly with high LD regions. 
+
+Which traits are these MHC associations?
+
+```{r}
+sig %>% 
+filter(category != "Metabolites") %>% 
+filter(cpgchrn == 6 & cpgpos > 25000000 & cpgpos < 35000000) %>%
+group_by(trait) %>% 
+summarise(cat=first(subcategory), n=n()) %>% 
+arrange(desc(n)) %>% kable
+
+sig6 <- filter(sig, !(cpgchrn == 6 & cpgpos > 25000000 & cpgpos < 35000000))
+```
+
+How many of the `r length(unique(sig$exposure))` CpGs that have a causal effect also have a trans association?
+
+```{r}
+load("../../results/16/16_clumped.rdata")
+temp <- subset(clumped, cpg %in% sig$exposure)
+trans <- filter(temp, !cis)
+nrow(trans %>% filter(!duplicated(cpg)))
+```
+
+## Follow up
+
+1. Get the trans SNPs for the CpG-trait pairs
+2. Extract those SNPs from the GWAS summary data
+3. Test for concordance of direction with the original cis effect
+
+
+```{r}
+sigt <- filter(sig, exposure %in% trans$cpg)
+temp <- data_frame(transsnp=trans$snp, exposure=trans$cpg)
+to_extract <- inner_join(sigt, temp, by="exposure")
+save(to_extract, file="../results/to_extract.rdata")
+```
+
+
+
+
