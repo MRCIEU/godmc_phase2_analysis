@@ -5,13 +5,13 @@ load("../data/annotations.rdata")
 load("../data/trans_clumped.rdata")
 
 jid <- as.numeric(commandArgs(T)[1])
-out <- paste0("../results/matrix/m", jid, ".rdata")
+out <- paste0("../results/matrix/ms", jid, ".rdata")
 
 set.seed(jid)
 if(jid != 0)
 {
 	message("Permuting")
-	clumped$cpg <- sample(clumped$cpg)
+	clumped$snp <- sample(clumped$snp)
 }
 
 an <- intersect(unique(cpgres$anno), unique(snpres$anno))

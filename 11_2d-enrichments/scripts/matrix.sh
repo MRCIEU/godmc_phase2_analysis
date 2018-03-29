@@ -6,7 +6,7 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=28
 #SBATCH --time=0-20:00:00
-#SBATCH --array=0-500%20
+#SBATCH --array=0-100%50
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 echo "Running on ${HOSTNAME}"
