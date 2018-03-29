@@ -21,9 +21,11 @@ message("communities")
 ext_communities_cpg <- runLOLA(community_cpgs_separate, community_cpgs, tfbsdb, cores=5)
 save(ext_communities_cpg, file="../results/ext_communities_cpg.rdata")
 
+ext_communities_cpg$fdr <- p.adjust(10^-ext_communities_cpg$pValueLog, "fdr")
+
 ext_communities_cpg_tophits <- group_by(ext_communities_cpg, userSet) %>%
-	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
-	filter(fdr2 < 0.5)
+	mutate(fdr2 = p.adjust(10^(-pValueLog), "fdr")) %>%
+	filter(fdr2 < 0.05)
 save(ext_communities_cpg_tophits, file="../results/ext_communities_cpg_tophits.rdata")
 
 rm(ext_communities_cpg)

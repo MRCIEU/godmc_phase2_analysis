@@ -26,8 +26,12 @@ message("communities")
 core_communities_cpg <- runLOLA(community_cpgs_separate, community_cpgs, tfbsdb, cores=5)
 save(core_communities_cpg, file="../results/core_communities_cpg.rdata")
 
+core_communities_cpg <- subset(core_communities_cpg, collection=="encode_tfbs")
+
+core_communities_cpg$fdr <- p.adjust(10^-core_communities_cpg$pValueLog, "fdr")
+
 core_communities_cpg_tophits <- group_by(core_communities_cpg, userSet) %>%
-	mutate(fdr2 = p.adjust(exp(-pValueLog), "fdr")) %>%
+	mutate(fdr2 = p.adjust(10^(-pValueLog), "fdr")) %>%
 	filter(fdr2 < 0.05)
 save(core_communities_cpg_tophits, file="../results/core_communities_cpg_tophits.rdata")
 
