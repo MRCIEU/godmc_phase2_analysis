@@ -160,10 +160,10 @@ dev.off()
 ## Remove small communities
 
 
-gr <- graph_from_data_frame(dat, directed=TRUE)
+# gr <- graph_from_data_frame(dat, directed=TRUE)
 
-wc <- cluster_walktrap(gr, steps=20)
-fg <- cluster_fast_greedy(as.undirected(gr))
+# wc <- cluster_walktrap(as.undirected(gr), steps=1000)
+# fg <- cluster_fast_greedy(as.undirected(gr))
 
 # # Simplifying doesn't work:
 # gr2a <- igraph::simplify(gr2)
@@ -176,8 +176,8 @@ fg <- cluster_fast_greedy(as.undirected(gr))
 # class(wc)
 # length(wc)
 
-mem <- membership(fg)
-mem <- data_frame(cpg=names(mem), cluster=as.numeric(mem))
+# mem <- membership(wc)
+# mem <- data_frame(cpg=names(mem), cluster=as.numeric(mem))
 
 
 
@@ -197,8 +197,10 @@ hub <- (hub.score(grc)$vector + 2)^2 - 1
 ind <- match(comkeep$cpg, V(grc)$name)
 all(V(grc)$name == comkeep$cpg)
 V(grc)$community <- comkeep$mem
+V(grc)$community2 <- V(grc)$community
+V(grc)$community2[duplicated(V(grc)$community2)] <- NA
 pdf(file="../images/plot_nosmall.pdf")
-plot(grc, layout=layout.fruchterman.reingold, vertex.color=V(grc)$community, vertex.frame.color=V(grc)$community, vertex.size = 2, vertex.label = NA, edge.arrow.size = 0)
+plot(grc, layout=layout.fruchterman.reingold, vertex.color=V(grc)$community, vertex.frame.color=V(grc)$community, vertex.size = 2, vertex.label = V(grc)$community2, edge.arrow.size = 0)
 dev.off()
 
 
@@ -227,3 +229,27 @@ dev.off()
 
 # SNPs point to CpGs
 # CpGs that are directly linked to the same 
+
+
+library(pathfindR)
+
+table(mem$cpg %in% anno$ind)
+
+out <- list()
+for(j in 2:10)
+{
+	i <- memcount$cluster[j]
+	message(i)
+	dir.create(paste0("../results/pathfindR/", i), recursive=TRUE)
+	setwd(paste0("../results/pathfindR/", i))
+
+	temp1 <- subset(anno, ind %in% subset(mem, cluster == i)$cpg) %>%
+		filter(!duplicated(values), values != "")
+	temp1$ind <- 5
+	temp1$pval <- 1e-8
+	out[[j]] <- run_pathfindR(temp1, n_processes=1)
+	out$cluster <- i
+	setwd("../../../../../scripts")
+
+}
+
