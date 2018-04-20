@@ -118,11 +118,38 @@ sdmean<-apply(sd.out,1,function(x) wt.sd(as.numeric(x),wt=as.numeric(ss$V2)))
 m<-match(data$cpg,names(meanmean))
 df2<-unique(data.frame(cpg=data$cpg,meancpg=meanmean[m],sdcpg=sdmean[m],cpg_cis=data$cpg_cis))
 
+m<-match(names(meanmean),data$cpg)
+df.all<-unique(data.frame(cpg=names(meanmean),meancpg=meanmean,sdcpg=sdmean,cpg_cis=data$cpg_cis[m]))
+m<-match(retaincpg,df.all$cpg)
+df.all<-df.all[m,]
+
+data$MAF<-data$Freq1
+w<-which(data$MAF>0.5)
+data$MAF[w]<-1-data$MAF[w]
+
 ###
 data2<-data[ , (min_pval = min(pval)), by = cpg]
 data<-inner_join(data,data2)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"min_pval"
+
+data<-data.table(data)
+data2<-data[ , (min_maf = min(MAF)), by = cpg]
+data<-inner_join(data,data2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"min_maf"
+
+data<-data.table(data)
+data2<-data[ , (max_maf = min(MAF)), by = cpg]
+data<-inner_join(data,data2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"max_maf"
+
+data<-data.table(data)
+data2<-data[ , (max_i2 = max(HetISq)), by = cpg]
+data<-inner_join(data,data2)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"max_i2"
 
 data<-data.table(data)
 df3<-data[ , (min_Effect = min(Effect)), by = cpg]
@@ -143,6 +170,21 @@ data<-full_join(data,df3)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"trans_min_pval"
 
+df3<-amb[ , (min_transmaf = max(MAF)), by = cpg]
+data<-full_join(data,df3)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"trans_max_maf"
+
+df3<-amb[ , (min_cismaf = min(MAF)), by = cpg]
+data<-full_join(data,df3)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"trans_min_maf"
+
+df3<-amb[ , (max_transi2 = max(HetISq)), by = cpg]
+data<-full_join(data,df3)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"trans_max_i2"
+
 df3<-amb[ , (min_Effect = min(Effect)), by = cpg]
 df4<-amb[ , (max_Effect = max(Effect)), by = cpg]
 df3<-data.table(rbind(df3,df4))
@@ -153,6 +195,7 @@ data<-full_join(data,df3)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"trans_max_abs_Effect"
 
+
 ##
 data<-data.table(data)
 
@@ -161,6 +204,21 @@ df3<-amb[ , (min_cispval = min(pval)), by = cpg]
 data<-full_join(data,df3)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"cis_min_pval"
+
+df3<-amb[ , (min_cismaf = max(MAF)), by = cpg]
+data<-full_join(data,df3)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"cis_max_maf"
+
+df3<-amb[ , (min_cismaf = min(MAF)), by = cpg]
+data<-full_join(data,df3)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"cis_min_maf"
+
+df3<-amb[ , (max_cisi2 = max(HetISq)), by = cpg]
+data<-full_join(data,df3)
+w<-which(names(data)%in%"V1")
+names(data)[w]<-"cis_max_i2"
 
 df3<-amb[ , (min_Effect = min(Effect)), by = cpg]
 df4<-amb[ , (max_Effect = max(Effect)), by = cpg]
@@ -173,27 +231,118 @@ w<-which(names(data)%in%"V1")
 names(data)[w]<-"cis_max_abs_Effect"
 ##
 
-tmp<-unique(data[,c("cpg","min_pval","max_abs_Effect","trans_min_pval","trans_max_abs_Effect","cis_min_pval","cis_max_abs_Effect")])
+tmp<-unique(data[,c("cpg","min_pval","max_abs_Effect","trans_min_pval","trans_max_abs_Effect","cis_min_pval","cis_max_abs_Effect","min_maf","cis_min_maf","trans_min_maf","max_i2","cis_max_i2","trans_max_i2")])
 m<-match(df2$cpg,tmp$cpg)
 df2<-data.frame(df2,tmp[m,-1])
 
 m<-match(data$cpg,df2$cpg)
 data<-data.frame(data,df2[m,c("meancpg","sdcpg")])
 
-df<-data.frame(df2[,1:3],cpg_cis="All",df2[,5:10])
+df<-data.frame(df2[,1:3],cpg_cis="All",df2[,5:ncol(df2)])
 df2<-rbind(df,df2)
 
+
+
+amb_cis<-df2[df2$cpg_cis=="cis+trans",]
+amb_trans<-df2[df2$cpg_cis=="cis+trans",]
+amb_cis$cpg_cis<-"cis+trans_cis"
+amb_trans$cpg_cis<-"cis+trans_trans"
+
+amb_cis$max_abs_Effect<-amb_cis$cis_max_abs_Effect
+amb_trans$max_abs_Effect<-amb_trans$trans_max_abs_Effect
+amb_cis$min_maf<-amb_cis$cis_min_maf
+amb_trans$min_maf<-amb_trans$trans_min_maf
+amb_cis$max_i2<-amb_cis$cis_max_i2
+amb_trans$max_i2<-amb_trans$trans_max_i2
+
+
+df3<-rbind(df2,amb_cis,amb_trans)
+o<-order(df3$cpg_cis)
+df3<-df3[o,]
+w<-which(df3$cpg_cis%in%c("cis+trans"))
+df3<-df3[-w,]
 #p1 <- ggplot(df2, aes(x=as.factor(cpg_cis), y=meancpg)) +
 #geom_boxplot() +
 #theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
 #labs(x="Category", y="mean methylation")
 #ggsave(plot=p1, file="./images/meancpg_ciscategory.pdf", width=7, height=7)
+
+m<-match(df2$cpg,y$name)
+df2<-data.frame(df2,y[m,])
+
+n<-data.frame(table(df2$cpg_cis))
+df2$cpg_cis_n<-df2$cpg_cis
+df2$cpg_cis_n<-gsub("All",paste0("All (n=",n$Freq[1],")"),df2$cpg_cis_n)
+df2$cpg_cis_n<-gsub("cis only",paste0("cis only (n=",n$Freq[2],")"),df2$cpg_cis_n)
+df2$cpg_cis_n<-gsub("cis\\+trans",paste0("cis+trans (n=",n$Freq[3],")"),df2$cpg_cis_n)
+df2$cpg_cis_n<-gsub("trans only",paste0("trans only (n=",n$Freq[4],")"),df2$cpg_cis_n)
+save(df2,file="meancpg.Robj")
+
+m<-match(df.all$cpg,y$name)
+df.all<-data.frame(df.all,y[m,])
+
+w<-which(is.na(df.all$cpg_cis))
+df.all$cpg_cis<-as.character(df.all$cpg_cis)
+df.all$cpg_cis[w]<-"No mqtl"
+df.all$cpg_cis<-as.factor(df.all$cpg_cis)
+n<-data.frame(table(df.all$cpg_cis))
+df.all$cpg_cis_n<-df.all$cpg_cis
+df.all$cpg_cis_n<-gsub("No mqtl",paste0("no mQTL (n=",n$Freq[3],")"),df.all$cpg_cis_n)
+df.all$cpg_cis_n<-gsub("cis only",paste0("cis only (n=",n$Freq[1],")"),df.all$cpg_cis_n)
+df.all$cpg_cis_n<-gsub("cis\\+trans",paste0("cis+trans (n=",n$Freq[2],")"),df.all$cpg_cis_n)
+df.all$cpg_cis_n<-gsub("trans only",paste0("trans only (n=",n$Freq[4],")"),df.all$cpg_cis_n)
+
 p1 <- ggplot(df2, aes(x=meancpg)) +
 geom_histogram() +
-facet_wrap(~cpg_cis,scales="free_y") +
-theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
-labs( x="mean cpg")
+facet_wrap(~cpg_cis_n,scales="free_y") +
+theme(axis.title.x=element_text(size=8),axis.title.y=element_text(size=8),axis.text.x=element_text(size=8),axis.text.y=element_text(size=8),strip.text = element_text(size = 8)) +
+xlab("weighted mean by cpg")
 ggsave(plot=p1, file="./images/cpgmean.pdf", width=7, height=7)
+
+p1<-ggplot(df2,aes(x=meancpg,fill=relation.to.island)) + 
+geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+facet_wrap(~cpg_cis_n,scales="free_y") +
+ylab("Proportion CpGs") +
+xlab("weighted mean by cpg")
+ggsave(plot=p1, file="./images/cpgmean_cpgisland.pdf", width=7, height=7)
+
+
+df.all$facet = factor(df.all$cpg_cis_n, levels = c("no mQTL (n=230407)", "cis only (n=170986)", "cis+trans (n=11902)", "trans only (n=7214)"))
+
+p1<-ggplot(df.all,aes(x=meancpg,fill=relation.to.island)) + 
+geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+facet_wrap(~facet,scales="free_y",nr=2) +
+ylab("Proportion CpGs") +
+xlab("weighted mean by cpg")
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=7, height=7)
+
+
+g1<-grep("5'UTR",df.all$gene.region)
+g2<-grep("1stExon",df.all$gene.region)
+g3<-grep("TSS200",df.all$gene.region)
+g4<-grep("TSS1500",df.all$gene.region)
+g5<-grep("3'UTR",df.all$gene.region)
+g6<-grep("Body",df.all$gene.region)
+
+g7<-unique(c(g1,g2,g3,g4,g5,g6))
+g7<-data.frame(df.all[-g7,],gene.annotation="Intergenic")
+
+g1<-data.frame(df.all[grep("5'UTR",df.all$gene.region),],gene.annotation="5'UTR")
+g2<-data.frame(df.all[grep("1stExon",df.all$gene.region),],gene.annotation="1stExon")
+g3<-data.frame(df.all[grep("TSS200",df.all$gene.region),],gene.annotation="TSS200")
+g4<-data.frame(df.all[grep("TSS1500",df.all$gene.region),],gene.annotation="TSS1500")
+g5<-data.frame(df.all[grep("3'UTR",df.all$gene.region),],gene.annotation="3'UTR")
+g6<-data.frame(df.all[grep("Body",df.all$gene.region),],gene.annotation="Body")
+
+df7<-rbind(g1,g2,g3,g4,g5,g6,g7)
+
+p1<-ggplot(df7, aes(x = meancpg,fill=gene.annotation)) + 
+#geom_histogram(aes(y=..count../sum(..count..))) + 
+geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+facet_wrap(~facet,scales="free_y") +
+ylab("Proportion CpGs") +
+xlab("weighted mean by cpg")
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_generegion.pdf", width=7, height=7)
 
 p1 <- ggplot(df2, aes(x=as.factor(cpg_cis), y=sdcpg)) +
 geom_boxplot() +
@@ -201,9 +350,53 @@ theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x
 labs(x="Category", y="sd methylation")
 ggsave(plot=p1, file="./images/sdcpg_ciscategory.pdf", width=7, height=7)
 
-p1 <- ggplot(df2, aes(x=as.factor(cpg_cis), y=abs(max_abs_Effect))) +
+p1 <- ggplot(df7, aes(x=as.factor(cpg_cis), y=1,fill=gene.annotation)) +
+geom_bar(stat="identity") +
+scale_y_continuous(labels = percent_format())
+ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, height=7)
+
+p1<-ggplot(df7, aes(fill=gene.annotation, y=1, x=facet)) + 
+geom_bar( stat="identity", position="fill") +
+labs(x="Category", y="proportion CpGs")
+ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, height=7)
+
+
+table(df3$cpg_cis)
+
+#            All        cis only       cis+trans      trans only   cis+trans_cis 
+#         190102          170986           11902            7214           11902 
+#cis+trans_trans 
+#          11902 
+
+table(df.all$relation.to.island,df.all$cpg_cis)
+#cis only cis+trans No mqtl trans only
+#                 0         0      65          0
+#  Island     37287      3138   91635       3686
+#  N_Shelf     8981       508   10659        267
+#  N_Shore    26500      1887   26550        716
+#  OpenSea    69121      4444   71339       1762
+#  S_Shelf     8105       382    9566        203
+#  S_Shore    20992      1543   20593        580
+
+
+
+p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=min_maf)) +
 geom_boxplot() +
-theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+theme(axis.title.x=element_text(size=8),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="Category", y="min MAF")
+ggsave(plot=p1, file="./images/minmaf_cpg_ciscategory.pdf", width=7, height=7)
+
+p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=max_i2)) +
+geom_boxplot() +
+theme(axis.title.x=element_text(size=8),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
+labs(x="Category", y="max I2")
+ggsave(plot=p1, file="./images/maxi2_cpg_ciscategory.pdf", width=7, height=7)
+
+
+
+p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=abs(max_abs_Effect))) +
+geom_boxplot() +
+theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=8),axis.text.y=element_text(size=8)) +
 labs(x="Category", y="max abs Effect")
 ggsave(plot=p1, file="./images/effectsizescpg_ciscategory.pdf", width=7, height=7)
 
@@ -239,6 +432,12 @@ facet_wrap(~cpg_cis,scales="free_y") +
 theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(size=6),axis.text.y=element_text(size=6)) +
 labs( x="mean cpg")
 ggsave(plot=p1, file="./images/transeffectsizescpg_ciscategory.pdf", width=7, height=7)
+
+
+df5<-unique(data.frame(cpg=data$cpg,min_maf=data$min_maf,cpg_cis=data$cpg_cis,cis=data$cis))
+df6<-df5[which(df5$cpg$cpg_cis=="cis+trans"),]
+
+
 
 df2%>%group_by(cpg_cis)%>%summarize(mean=mean(meancpg))
 #A tibble: 4 x 2
@@ -321,7 +520,7 @@ l2<-gsub("tfbs_","",l)
 ov<-data.frame(r$cpg)
 n.out<-NULL
 for (i in 1:length(l)){
-for (i in 1:10){
+#for (i in 1:10){
 cat(i,"\n")
 bed<-read.table(paste0(path,"/",l[i]))
 bed$V1<-gsub("chrX","chr23",bed$V1)
