@@ -1,0 +1,165 @@
+---
+title: Community enrichments
+author: Gibran Hemani
+---
+
+1. Shared TFBS in LOLA
+2. Shared chromatin states
+3. Shared histone marks 
+4. Enrichment for GWAS
+5. Lookup eQTLs to find gene and run pathway enrichment
+
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+load("../results/lola_organised.rdata")
+```
+
+## 1. Chromatin states
+
+CpGs that are in communities appear to be systematically different from other CpGs that are in mQTLs
+
+```{r}
+s25_global_cpg$fdr <- p.adjust(10^-s25_global_cpg$pValueLog, "fdr")
+
+ggplot(subset(s25_global_cpg, !is.na(antibody)), aes(x=antibody, y=pValueLog)) +
+geom_jitter(size=0.5, aes(colour=tissue=="BLOOD", alpha=fdr < 0.05)) +
+theme(axis.text.x=element_text(angle=45)) +
+labs(x="Chromatin state")
+
+```
+
+Are CpGs in specific communities different from all CpGs in all communities?
+
+```{r}
+temp1 <- subset(s25_communities_cpg_tophits, fdr < 0.05)
+temp2 <- subset(s25_communities_cpg_tophits, fdr >= 0.05)
+ggplot(temp1, aes(x=antibody, y=pValueLog)) +
+geom_jitter(size=0.8, aes(colour=as.factor(userSet))) +
+geom_jitter(data=temp2, size=0.5, alpha=0.1) +
+theme(axis.text.x=element_text(angle=45)) +
+labs(x="Chromatin state", colour="Community")
+
+```
+
+## 2. Transcription factor binding sites
+
+CpGs that are in communities appear to be systematically different from other CpGs that are in mQTLs
+
+```{r}
+core_global_cpg$fdr <- p.adjust(10^-core_global_cpg$pValueLog, "fdr")
+core_global_cpg$antibody2 <- lapply(strsplit(core_global_cpg$antibody, split="_"), function(x) x[1]) %>% unlist
+
+ggplot(subset(core_global_cpg, !is.na(antibody2)), aes(x=antibody2, y=pValueLog)) +
+geom_point(size=0.5, aes(colour=tissue=="blood", alpha=fdr < 0.05)) +
+theme(axis.text.x=element_text(angle=90, size=5, vjust=0.5)) +
+labs(x="TFBS")
+
+```
+
+Are CpGs in specific communities different from all CpGs in all communities?
+
+
+```{r}
+core_communities_cpg_tophits$antibody2 <- lapply(strsplit(core_communities_cpg_tophits$antibody, split="_"), function(x) x[1]) %>% unlist
+temp1 <- subset(core_communities_cpg_tophits, fdr < 0.05)
+temp2 <- subset(core_communities_cpg_tophits, fdr >= 0.05)
+ggplot(temp1, aes(x=antibody2, y=pValueLog)) +
+geom_point(size=1.5, aes(colour=as.factor(userSet))) +
+geom_point(data=temp2, size=0.5, alpha=0.1) +
+theme(axis.text.x=element_text(angle=90, size=5)) +
+labs(x="TFBS", colour="Community")
+```
+
+
+## 3. Do SNPs influencing communities have coordinated influences on complex traits?
+
+
+
+```{r}
+
+load("../results/gwas_clusters.rdata")
+
+info <- read.csv("../../data/gwas/00info.csv")
+info <- data.frame(fn=gsub(".txt.gz", "", info$newfile), id=info$id)
+
+labels <- subset(res, !duplicated(i), select=c(i, fn))
+labels$fn <- gsub("../../data/gwas/", "", labels$fn)
+labels$fn <- gsub(".txt.gz", "", labels$fn)
+dat <- merge(dat, labels, by.x="id", by.y="i")
+dat$fisher <- unlist(dat$fisher)
+dat$fdr <- p.adjust(dat$fisher, "fdr")
+dat$bonferroni <- p.adjust(dat$fisher, "bonferroni")
+dat$bonferroni3 <- p.adjust(dat$binom4, "bonferroni")
+dat$label <- gsub("disease__", "", dat$fn)
+dat$label <- gsub("risk_factor__", "", dat$label)
+dat$label <- gsub("_", " ", dat$label)
+
+
+dat <- merge(dat, info, by="fn")
+
+library(TwoSampleMR)
+ao <- available_outcomes()
+ao <- subset(ao, select=c(id, subcategory))
+dat <- merge(dat, ao, by.x="id.y", by.y="id")
+
+dat$subcategory[dat$subcategory=="Hemodynamic"] <- "Haemotological"
+dat$subcategory[dat$subcategory=="Immune system"] <- "Autoimmune / inflammatory"
+dat$subcategory[dat$subcategory=="Diabetes"] <- "Glycemic"
+dat$subcategory[dat$subcategory=="Biomarker"] <- "Other"
+dat$subcategory[dat$subcategory=="Protein"] <- "Other"
+dat$subcategory[dat$subcategory=="Reproductive aging"] <- "Aging"
+dat$subcategory[dat$subcategory=="Lung disease"] <- "Other"
+dat$subcategory[dat$subcategory=="Autoimmune / inflammatory"] <- "Immune"
+dat$subcategory[dat$subcategory=="Psychiatric / neurological"] <- "Neurological"
+
+
+group_by(dat, clust) %>%
+summarise(
+	nsnp=mean(nsnp),
+	nsig=sum(fisher < 0.05),
+	fdr=sum(fdr < 0.05),
+	bonferroni=sum(bonferroni < 0.05),
+	minp=min(min_p, na.rm=TRUE)
+) %>% as.data.frame
+
+
+
+
+ggplot(subset(dat, !grepl("metabolites__", fn) & nsnp > 3), aes(x=label, y=-log10(binom4))) +
+geom_point(aes(colour=clust, size=nsnp)) +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+geom_hline(yintercept=-log10(0.05/nrow(dat)), linetype="dotted") +
+labs(x="", y="Enrichment", size="Number\nof SNPs in\ncommunity") +
+scale_colour_continuous(guide=FALSE) +
+facet_grid(. ~ subcategory, scale="free", space="free") +
+theme(legend.position="bottom", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 10))
+ggsave("../images/gwas_clusters_full.pdf", width=20, height=13)
+
+temp <- group_by(dat, id) %>%
+summarise(
+	nsnp=mean(nsnp),
+	nsig=sum(fisher < 0.05),
+	fdr=sum(fdr < 0.05),
+	bonferroni=sum(bonferroni3 < 0.05),
+	minp=min(min_p, na.rm=TRUE)
+) %>% filter(bonferroni > 0)
+
+ggplot(subset(dat, !grepl("metabolites__", fn) & nsnp >= 5 & id %in% temp$id), aes(x=label, y=-log10(binom4))) +
+geom_point(aes(colour=clust, size=nsnp)) +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+geom_hline(yintercept=-log10(0.05/nrow(dat)), linetype="dotted") +
+labs(x="", y="Enrichment -log10(p-value)", size="Number\nof SNPs in\ncommunity") +
+scale_colour_continuous(guide=FALSE) +
+coord_flip()
+ggsave("../images/gwas_clusters_filtered.pdf", width=12, height=10)
+
+
+
+
+```
+
+

@@ -1,0 +1,128 @@
+ID	Group	Name	Tissue	Type
+E017	IMR90	IMR90 fetal lung fibroblasts Cell Line	LUNG	CellLine
+E002	ESC	ES-WA7 Cells	ESC	PrimaryCulture
+E008	ESC	H9 Cells	ESC	PrimaryCulture
+E001	ESC	ES-I3 Cells	ESC	PrimaryCulture
+E015	ESC	HUES6 Cells	ESC	PrimaryCulture
+E014	ESC	HUES48 Cells	ESC	PrimaryCulture
+E016	ESC	HUES64 Cells	ESC	PrimaryCulture
+E003	ESC	H1 Cells	ESC	PrimaryCulture
+E024	ESC	ES-UCSF4  Cells	ESC	PrimaryCulture
+E020	iPSC	iPS-20b Cells	IPSC	PrimaryCulture
+E019	iPSC	iPS-18 Cells	IPSC	PrimaryCulture
+E018	iPSC	iPS-15b Cells	IPSC	PrimaryCulture
+E021	iPSC	iPS DF 6.9 Cells	IPSC	PrimaryCulture
+E022	iPSC	iPS DF 19.11 Cells	IPSC	PrimaryCulture
+E007	ES-deriv	H1 Derived Neuronal Progenitor Cultured Cells	ESC_DERIVED	ESCDerived
+E009	ES-deriv	H9 Derived Neuronal Progenitor Cultured Cells	ESC_DERIVED	ESCDerived
+E010	ES-deriv	H9 Derived Neuron Cultured Cells	ESC_DERIVED	ESCDerived
+E013	ES-deriv	hESC Derived CD56+ Mesoderm Cultured Cells	ESC_DERIVED	ESCDerived
+E012	ES-deriv	hESC Derived CD56+ Ectoderm Cultured Cells	ESC_DERIVED	ESCDerived
+E011	ES-deriv	hESC Derived CD184+ Endoderm Cultured Cells	ESC_DERIVED	ESCDerived
+E004	ES-deriv	H1 BMP4 Derived Mesendoderm Cultured Cells	ESC_DERIVED	ESCDerived
+E005	ES-deriv	H1 BMP4 Derived Trophoblast Cultured Cells	ESC_DERIVED	ESCDerived
+E006	ES-deriv	H1 Derived Mesenchymal Stem Cells	ESC_DERIVED	ESCDerived
+E062	Blood & T-cell	Primary mononuclear cells from peripheral blood	BLOOD	PrimaryCell
+E034	Blood & T-cell	Primary T cells from peripheral blood	BLOOD	PrimaryCell
+E045	Blood & T-cell	Primary T cells effector/memory enriched from peripheral blood	BLOOD	PrimaryCell
+E033	Blood & T-cell	Primary T cells from cord blood	BLOOD	PrimaryCell
+E044	Blood & T-cell	Primary T regulatory cells from peripheral blood	BLOOD	PrimaryCell
+E043	Blood & T-cell	Primary T helper cells from peripheral blood	BLOOD	PrimaryCell
+E039	Blood & T-cell	Primary T helper naive cells from peripheral blood	BLOOD	PrimaryCell
+E041	Blood & T-cell	Primary T helper cells PMA-I stimulated	BLOOD	PrimaryCell
+E042	Blood & T-cell	Primary T helper 17 cells PMA-I stimulated	BLOOD	PrimaryCell
+E040	Blood & T-cell	Primary T helper memory cells from peripheral blood 1	BLOOD	PrimaryCell
+E037	Blood & T-cell	Primary T helper memory cells from peripheral blood 2	BLOOD	PrimaryCell
+E048	Blood & T-cell	Primary T CD8+ memory cells from peripheral blood	BLOOD	PrimaryCell
+E038	Blood & T-cell	Primary T helper naive cells from peripheral blood	BLOOD	PrimaryCell
+E047	Blood & T-cell	Primary T CD8+ naive cells from peripheral blood	BLOOD	PrimaryCell
+E029	HSC & B-cell	Primary monocytes from peripheral blood	BLOOD	PrimaryCell
+E031	HSC & B-cell	Primary B cells from cord blood	BLOOD	PrimaryCell
+E035	HSC & B-cell	Primary hematopoietic stem cells	BLOOD	PrimaryCell
+E051	HSC & B-cell	Primary hematopoietic stem cells G-CSF-mobilized Male	BLOOD	PrimaryCell
+E050	HSC & B-cell	Primary hematopoietic stem cells G-CSF-mobilized Female	BLOOD	PrimaryCell
+E036	HSC & B-cell	Primary hematopoietic stem cells short term culture	BLOOD	PrimaryCell
+E032	HSC & B-cell	Primary B cells from peripheral blood	BLOOD	PrimaryCell
+E046	HSC & B-cell	Primary Natural Killer cells from peripheral blood	BLOOD	PrimaryCell
+E030	HSC & B-cell	Primary neutrophils from peripheral blood	BLOOD	PrimaryCell
+E026	Mesench	Bone Marrow Derived Cultured Mesenchymal Stem Cells	STROMAL_CONNECTIVE	PrimaryCulture
+E049	Mesench	Mesenchymal Stem Cell Derived Chondrocyte Cultured Cells	STROMAL_CONNECTIVE	PrimaryCulture
+E025	Mesench	Adipose Derived Mesenchymal Stem Cell Cultured Cells	FAT	PrimaryCulture
+E023	Mesench	Mesenchymal Stem Cell Derived Adipocyte Cultured Cells	FAT	PrimaryCulture
+E052	Myosat	Muscle Satellite Cultured Cells	MUSCLE	PrimaryCulture
+E055	Epithelial	Foreskin Fibroblast Primary Cells skin01	SKIN	PrimaryCulture
+E056	Epithelial	Foreskin Fibroblast Primary Cells skin02	SKIN	PrimaryCulture
+E059	Epithelial	Foreskin Melanocyte Primary Cells skin01	SKIN	PrimaryCulture
+E061	Epithelial	Foreskin Melanocyte Primary Cells skin03	SKIN	PrimaryCulture
+E057	Epithelial	Foreskin Keratinocyte Primary Cells skin02	SKIN	PrimaryCulture
+E058	Epithelial	Foreskin Keratinocyte Primary Cells skin03	SKIN	PrimaryCulture
+E028	Epithelial	Breast variant Human Mammary Epithelial Cells (vHMEC)	BREAST	PrimaryCulture
+E027	Epithelial	Breast Myoepithelial Primary Cells	BREAST	PrimaryCell
+E054	Neurosph	Ganglion Eminence derived primary cultured neurospheres	BRAIN	PrimaryCulture
+E053	Neurosph	Cortex derived primary cultured neurospheres	BRAIN	PrimaryCulture
+E112	Thymus	Thymus	THYMUS	PrimaryTissue
+E093	Thymus	Fetal Thymus	THYMUS	PrimaryTissue
+E071	Brain	Brain Hippocampus Middle	BRAIN	PrimaryTissue
+E074	Brain	Brain Substantia Nigra	BRAIN	PrimaryTissue
+E068	Brain	Brain Anterior Caudate	BRAIN	PrimaryTissue
+E069	Brain	Brain Cingulate Gyrus	BRAIN	PrimaryTissue
+E072	Brain	Brain Inferior Temporal Lobe	BRAIN	PrimaryTissue
+E067	Brain	Brain Angular Gyrus	BRAIN	PrimaryTissue
+E073	Brain	Brain_Dorsolateral_Prefrontal_Cortex	BRAIN	PrimaryTissue
+E070	Brain	Brain Germinal Matrix	BRAIN	PrimaryTissue
+E082	Brain	Fetal Brain Female	BRAIN	PrimaryTissue
+E081	Brain	Fetal Brain Male	BRAIN	PrimaryTissue
+E063	Adipose	Adipose Nuclei	FAT	PrimaryTissue
+E100	Muscle	Psoas Muscle	MUSCLE	PrimaryTissue
+E108	Muscle	Skeletal Muscle Female	MUSCLE	PrimaryTissue
+E107	Muscle	Skeletal Muscle Male	MUSCLE	PrimaryTissue
+E089	Muscle	Fetal Muscle Trunk	MUSCLE	PrimaryTissue
+E090	Muscle	Fetal Muscle Leg	MUSCLE_LEG	PrimaryTissue
+E083	Heart	Fetal Heart	HEART	PrimaryTissue
+E104	Heart	Right Atrium	HEART	PrimaryTissue
+E095	Heart	Left Ventricle	HEART	PrimaryTissue
+E105	Heart	Right Ventricle	HEART	PrimaryTissue
+E065	Heart	Aorta	VASCULAR	PrimaryTissue
+E078	Sm. Muscle	Duodenum Smooth Muscle	GI_DUODENUM	PrimaryTissue
+E076	Sm. Muscle	Colon Smooth Muscle	GI_COLON	PrimaryTissue
+E103	Sm. Muscle	Rectal Smooth Muscle	GI_RECTUM	PrimaryTissue
+E111	Sm. Muscle	Stomach Smooth Muscle	GI_STOMACH	PrimaryTissue
+E092	Digestive	Fetal Stomach	GI_STOMACH	PrimaryTissue
+E085	Digestive	Fetal Intestine Small	GI_INTESTINE	PrimaryTissue
+E084	Digestive	Fetal Intestine Large	GI_INTESTINE	PrimaryTissue
+E109	Digestive	Small Intestine	GI_INTESTINE	PrimaryTissue
+E106	Digestive	Sigmoid Colon	GI_COLON	PrimaryTissue
+E075	Digestive	Colonic Mucosa	GI_COLON	PrimaryTissue
+E101	Digestive	Rectal Mucosa Donor 29	GI_RECTUM	PrimaryTissue
+E102	Digestive	Rectal Mucosa Donor 31	GI_RECTUM	PrimaryTissue
+E110	Digestive	Stomach Mucosa	GI_STOMACH	PrimaryTissue
+E077	Digestive	Duodenum Mucosa	GI_DUODENUM	PrimaryTissue
+E079	Digestive	Esophagus	GI_ESOPHAGUS	PrimaryTissue
+E094	Digestive	Gastric	GI_STOMACH	PrimaryTissue
+E099	Other	Placenta Amnion	PLACENTA	PrimaryTissue
+E086	Other	Fetal Kidney	KIDNEY	PrimaryTissue
+E088	Other	Fetal Lung	LUNG	PrimaryTissue
+E097	Other	Ovary	OVARY	PrimaryTissue
+E087	Other	Pancreatic Islets	PANCREAS	PrimaryTissue
+E080	Other	Fetal Adrenal Gland	ADRENAL	PrimaryTissue
+E091	Other	Placenta	PLACENTA	PrimaryTissue
+E066	Other	Liver	LIVER	PrimaryTissue
+E098	Other	Pancreas	PANCREAS	PrimaryTissue
+E096	Other	Lung	LUNG	PrimaryTissue
+E113	Other	Spleen	SPLEEN	PrimaryTissue
+E114	ENCODE2012	A549 EtOH 0.02pct Lung Carcinoma Cell Line	LUNG	CellLine
+E115	ENCODE2012	Dnd41 TCell Leukemia Cell Line	BLOOD	CellLine
+E116	ENCODE2012	GM12878 Lymphoblastoid Cells	BLOOD	PrimaryCulture
+E117	ENCODE2012	HeLa-S3 Cervical Carcinoma Cell Line	CERVIX	CellLine
+E118	ENCODE2012	HepG2 Hepatocellular Carcinoma Cell Line	LIVER	CellLine
+E119	ENCODE2012	HMEC Mammary Epithelial Primary Cells	BREAST	PrimaryCulture
+E120	ENCODE2012	HSMM Skeletal Muscle Myoblasts Cells	MUSCLE	PrimaryCulture
+E121	ENCODE2012	HSMM cell derived Skeletal Muscle Myotubes Cells	MUSCLE	PrimaryCulture
+E122	ENCODE2012	HUVEC Umbilical Vein Endothelial Primary Cells	VASCULAR	PrimaryCulture
+E123	ENCODE2012	K562 Leukemia Cells	BLOOD	PrimaryCulture
+E124	ENCODE2012	Monocytes-CD14+ RO01746 Primary Cells	BLOOD	PrimaryCell
+E125	ENCODE2012	NH-A Astrocytes Primary Cells	BRAIN	PrimaryCulture
+E126	ENCODE2012	NHDF-Ad Adult Dermal Fibroblast Primary Cells	SKIN	PrimaryCulture
+E127	ENCODE2012	NHEK-Epidermal Keratinocyte Primary Cells	SKIN	PrimaryCulture
+E128	ENCODE2012	NHLF Lung Fibroblast Primary Cells	LUNG	PrimaryCulture
+E129	ENCODE2012	Osteoblast Primary Cells	BONE	PrimaryCulture
