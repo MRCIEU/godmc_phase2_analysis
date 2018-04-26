@@ -10,6 +10,9 @@ selcom <- subset(communities, cluster %in% comms$cluster) %>% arrange(cluster)
 
 # convert to rsids
 
+library(tidyr)
+selcom <- separate(selcom, snp, c("chr", "pos", "what"), sep=":", remove=FALSE)
+selcom <- subset(selcom, ! (chr == "chr6" & (pos > 29570005 & pos < 33377657)))
 
 snp_1kg <- fread("../../10_mr-cpg-gwas/data/eur.bim.orig")
 
@@ -63,11 +66,11 @@ for(i in 1:nrow(dat))
 }
 
 
-save(dat, selcom, res, file="../results/gwas_clusters.rdata")
+save(dat, selcom, res, file="../results/gwas_clusters_nochr6.rdata")
 
 library(ggplot2)
 library(dplyr)
-load("../results/gwas_clusters.rdata")
+load("../results/gwas_clusters_nochr6.rdata")
 
 info <- read.csv("../../data/gwas/00info.csv")
 info <- data.frame(fn=gsub(".txt.gz", "", info$newfile), id=info$id)
