@@ -10,9 +10,6 @@ selcom <- subset(communities, cluster %in% comms$cluster) %>% arrange(cluster)
 
 # convert to rsids
 
-library(tidyr)
-selcom <- separate(selcom, snp, c("chr", "pos", "what"), sep=":", remove=FALSE)
-selcom <- subset(selcom, ! (chr == "chr6" & (pos > 29570005 & pos < 33377657)))
 
 snp_1kg <- fread("../../10_mr-cpg-gwas/data/eur.bim.orig")
 
@@ -66,10 +63,11 @@ for(i in 1:nrow(dat))
 }
 
 
-save(dat, selcom, res, file="../results/gwas_clusters_nochr6.rdata")
+save(dat, selcom, res, file="../results/gwas_clusters.rdata")
 
 library(ggplot2)
 library(dplyr)
+library(ggrepel)
 load("../results/gwas_clusters_nochr6.rdata")
 
 info <- read.csv("../../data/gwas/00info.csv")
@@ -92,8 +90,10 @@ dat <- merge(dat, info, by="fn")
 
 library(TwoSampleMR)
 ao <- available_outcomes()
+#load("../data/outcomes.RData")
 ao <- subset(ao, select=c(id, subcategory))
-dat <- merge(dat, ao, by.x="id.y", by.y="id")
+#dat <- merge(dat, ao, by.x="id.y", by.y="id")
+dat <- merge(dat, ao, by.x="id.y", by.y="id",all.x=T)
 
 dat$subcategory[dat$subcategory=="Hemodynamic"] <- "Haemotological"
 dat$subcategory[dat$subcategory=="Immune system"] <- "Autoimmune / inflammatory"
@@ -116,17 +116,20 @@ summarise(
 ) %>% as.data.frame
 
 
+dat_sig <- subset(dat, !grepl("metabolites__", fn) & nsnp > 3 & binom4 < 0.05/nrow(dat))
+dat_nsig <- subset(dat, !grepl("metabolites__", fn) & nsnp > 3 & binom4 >= 0.05/nrow(dat))
 
-
-ggplot(subset(dat, !grepl("metabolites__", fn) & nsnp > 3), aes(x=label, y=-log10(binom4))) +
-geom_point(aes(colour=clust, size=nsnp)) +
+p1<-ggplot(subset(dat_nsig, !grepl("metabolites__", fn) & nsnp > 3), aes(x=label, y=-log10(binom4))) +
+geom_point(aes(size=nsnp)) +
+geom_point(data=dat_sig, aes(colour=clust, size=nsnp)) +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
 geom_hline(yintercept=-log10(0.05/nrow(dat)), linetype="dotted") +
 labs(x="", y="Enrichment", size="Number\nof SNPs in\ncommunity") +
 scale_colour_continuous(guide=FALSE) +
 facet_grid(. ~ subcategory, scale="free", space="free") +
-theme(legend.position="bottom", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 10))
-ggsave("../images/gwas_clusters_full.pdf", width=20, height=13)
+theme(legend.position="bottom", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 10)) +
+geom_label_repel(data=dat_sig, aes(label=clust))
+ggsave(p1,file="../images/gwas_clusters_full.pdf", width=20, height=13)
 
 temp <- group_by(dat, id) %>%
 summarise(
