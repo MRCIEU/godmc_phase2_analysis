@@ -122,6 +122,7 @@ m<-match(names(meanmean),data$cpg)
 df.all<-unique(data.frame(cpg=names(meanmean),meancpg=meanmean,sdcpg=sdmean,cpg_cis=data$cpg_cis[m]))
 m<-match(retaincpg,df.all$cpg)
 df.all<-df.all[m,]
+save(df.all,file="mean_allcpgs.Robj")
 
 data$MAF<-data$Freq1
 w<-which(data$MAF>0.5)
@@ -315,6 +316,13 @@ facet_wrap(~facet,scales="free_y",nr=2) +
 ylab("Proportion CpGs") +
 xlab("weighted mean by cpg")
 ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=7, height=7)
+
+p1<-ggplot(df.all,aes(x=meancpg,fill=type)) + 
+geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+facet_wrap(~facet,scales="free_y",nr=2) +
+ylab("Proportion CpGs") +
+xlab("weighted mean by cpg")
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_typei_ii.pdf", width=7, height=7)
 
 
 g1<-grep("5'UTR",df.all$gene.region)
