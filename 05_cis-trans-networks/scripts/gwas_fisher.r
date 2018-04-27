@@ -104,7 +104,7 @@ dat$subcategory[dat$subcategory=="Reproductive aging"] <- "Aging"
 dat$subcategory[dat$subcategory=="Lung disease"] <- "Other"
 dat$subcategory[dat$subcategory=="Autoimmune / inflammatory"] <- "Immune"
 dat$subcategory[dat$subcategory=="Psychiatric / neurological"] <- "Neurological"
-
+dat$subcategory[is.na(dat$subcategory)] <- "Kidney"
 
 group_by(dat, clust) %>%
 summarise(
@@ -119,17 +119,17 @@ summarise(
 dat_sig <- subset(dat, !grepl("metabolites__", fn) & nsnp > 3 & binom4 < 0.05/nrow(dat))
 dat_nsig <- subset(dat, !grepl("metabolites__", fn) & nsnp > 3 & binom4 >= 0.05/nrow(dat))
 
-p1<-ggplot(subset(dat_nsig, !grepl("metabolites__", fn) & nsnp > 3), aes(x=label, y=-log10(binom4))) +
+p1 <- ggplot(subset(dat_nsig, !grepl("metabolites__", fn) & nsnp > 3), aes(x=label, y=-log10(binom4))) +
 geom_point(aes(size=nsnp)) +
-geom_point(data=dat_sig, aes(colour=clust, size=nsnp)) +
+geom_point(data=dat_sig, aes(colour=as.factor(clust), size=nsnp)) +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
 geom_hline(yintercept=-log10(0.05/nrow(dat)), linetype="dotted") +
 labs(x="", y="Enrichment", size="Number\nof SNPs in\ncommunity") +
-scale_colour_continuous(guide=FALSE) +
+scale_colour_brewer(type="qual", guide=FALSE) +
 facet_grid(. ~ subcategory, scale="free", space="free") +
 theme(legend.position="bottom", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 10)) +
 geom_label_repel(data=dat_sig, aes(label=clust))
-ggsave(p1,file="../images/gwas_clusters_full.pdf", width=20, height=13)
+ggsave(p1, file="../images/gwas_clusters_full.pdf", width=20, height=13)
 
 temp <- group_by(dat, id) %>%
 summarise(
