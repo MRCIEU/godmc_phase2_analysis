@@ -1,7 +1,27 @@
+library(plyr)
 library(dplyr)
 library(TwoSampleMR)
 library(tidyr)
 library(RadialMR)
+
+remove_mhc <- function(x)
+{
+	require(tidyr)
+	x <- tidyr::separate(x, id, c("chr", "pos", "type"), sep=":", remove = FALSE)
+	x$pos <- as.numeric(x$pos)
+	x <- subset(x, ! (chr == "chr6" & (pos > 25000000 & pos < 35000000)))
+	return(x)
+}
+
+format_radial_dat <- function(dat)
+{
+	dat <- subset(dat, mr_keep)
+	format_radial(dat$beta.exposure, dat$beta.outcome, dat$se.exposure, dat$se.outcome, dat$SNP)
+}
+
+
+load("../results/mrbase_sig.rdata")
+load("../data/snps_gwas.rdata")
 
 do_mr <- function(a, b, chunk)
 {
@@ -42,6 +62,32 @@ do_mr <- function(a, b, chunk)
 				het <- mr_heterogeneity(dat, method_list=c("mr_ivw_radial")) %>%
 					subset(select=c(id.exposure, id.outcome, Q, Q_df, Q_pval))
 				mres <- merge(mres, het, by=c("id.exposure", "id.outcome"), all.x=TRUE)
+				outs <- plyr::ddply(dat, .(id.exposure, id.outcome, exposure, outcome), function(x)
+				{
+					datr <- format_radial_dat(x)
+					mod1 <- ivw_radial(datr, alpha=0.05, summary=FALSE)
+					nouts <- subset(mod1$data, Qj_Chi > 0.05/nrow(x))$SNP
+					datr <- subset(datr, SNP %in% nouts)
+					if(nrow(datr) > 1)
+					{
+						mod2 <- ivw_radial(datr, alpha=0.05, summary=FALSE)
+					} else {
+						mod2 <- mod1
+					}
+					data.frame(
+						nsnp = c(mod1$df + 1, mod2$df + 1),
+						b = c(mod1$coef[1], mod2$coef[1]),
+						se = c(mod1$coef[2], mod2$coef[2]),
+						pval = c(pnorm(mod1$coef[3], low=FALSE), pnorm(mod2$coef[3], low=FALSE)),
+						method = "IVW radial",
+						Q = c(mod1$qstatistic, mod2$qstatistic),
+						Q_df = c(mod1$df, mod2$df),
+						Q_pval = c(pchisq(mod1$qstatistic, mod1$df, low=F), pchisq(mod2$qstatistic, mod2$df, low=F)),
+						chunk = chunk,
+						what = c("all", "no_outliers")
+					)
+				})
+				mres <- bind_rows(mres, outs)
 			}
 			return(list(mres=mres, dat=dat))
 		} else {
@@ -52,19 +98,6 @@ do_mr <- function(a, b, chunk)
 	}
 }
 
-
-remove_mhc <- function(x)
-{
-	require(tidyr)
-	x <- tidyr::separate(x, id, c("chr", "pos", "type"), sep=":", remove = FALSE)
-	x$pos <- as.numeric(x$pos)
-	x <- subset(x, ! (chr == "chr6" & (pos > 25000000 & pos < 35000000)))
-	return(x)
-}
-
-
-load("../results/mrbase_sig.rdata")
-load("../data/snps_gwas.rdata")
 
 
 l <- list()
@@ -79,16 +112,16 @@ for(i in 1:length(chunks))
 	temp2 <- remove_mhc(temp)
 	temp3 <- subset(temp, !id %in% temp2$id)
 	m$all <- do_mr(temp, exp, chunks[i])$mres
-	m$all$what <- "all"
+	m$all$what2 <- "all"
 	if(nrow(temp2) > 0)
 	{
 		m$no_mhc <- do_mr(temp2, exp, chunks[i])$mres
-		m$no_mhc$what <- "no_mhc"
+		m$no_mhc$what2 <- "no_mhc"
 	}
 	if(nrow(temp3) > 0)
 	{
 		m$mhc <- do_mr(temp3, exp, chunks[i])$mres
-		m$mhc$what <- "mhc"
+		m$mhc$what2 <- "mhc"
 	}
 	l[[i]] <- bind_rows(m)
 }
@@ -100,51 +133,5 @@ sig$code <- paste(sig$id.exposure, sig$id.outcome)
 res <- subset(res, code %in% sig$code)
 save(res, file="../results/mrbase_sig_mhc.rdata")
 
+q()
 
-
-# How many have the same sign and good p-value after excluding mhc
-# How many have heterogeneity problems
-# How many are not just in MHC
-
-
-temp <- mutate(res, code=paste(id.exposure, id.outcome)) %>% select(code, b, what)
-temp <- spread(temp, key=what, value=b)
-key <- subset(res, !duplicated(code), select=c(code, id.exposure, id.outcome, exposure, outcome))
-temp <- merge(temp, key, by="code")
-cor(temp[,2:4], use="pair")
-temp2 <- subset(temp, !is.na(mhc) & !is.na(no_mhc))
-sign_agreement <- group_by(temp2, exposure) %>%
-	summarise(n=n(), prop_sign=round(sum(sign(mhc) == sign(no_mhc)) / n() * 100)/100) %>% as.data.frame %>% arrange(n)
-
-
-temp <- mutate(res, code=paste(id.exposure, id.outcome)) %>% select(code, pval, what)
-temp <- spread(temp, key=what, value=pval)
-key <- subset(res, !duplicated(code), select=c(code, id.exposure, id.outcome, exposure, outcome))
-temp <- merge(temp, key, by="code")
-cor(temp[,2:4], use="pair")
-temp2 <- subset(temp, !is.na(mhc) & !is.na(no_mhc))
-sig_agreement <- group_by(temp2, exposure) %>%
-	summarise(
-		prop_sig_all=sum(all < 1e-5)/n(),
-		prop_sig_mhc=sum(mhc < 1e-5)/n(),
-		prop_sig_no_mhc=sum(no_mhc < 1e-5)/n()
-	) %>% 
-	as.data.frame
-
-temp <- mutate(res, code=paste(id.exposure, id.outcome)) %>% select(code, Q_pval, what)
-temp <- spread(temp, key=what, value=Q_pval)
-key <- subset(res, !duplicated(code), select=c(code, id.exposure, id.outcome, exposure, outcome))
-temp <- merge(temp, key, by="code")
-cor(temp[,2:4], use="pair")
-temp2 <- subset(temp, !is.na(mhc) & !is.na(no_mhc))
-qsig_agreement <- group_by(temp2, exposure) %>%
-	summarise(n=n(),
-		prop_sig_all=sum(all < 0.05)/n(),
-		prop_sig_no_mhc=sum(no_mhc < 0.05)/n()
-	) %>% 
-	as.data.frame %>% arrange(n)
-
-
-
-temp <- subset(res, res$what == "no_mhc" & res$Q_pval > 0.05 & res$pval < 1e-7, na.rm=T)
-table(temp$exposure) %>% as.data.frame %>% arrange(Freq)
