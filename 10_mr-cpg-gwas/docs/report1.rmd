@@ -11,8 +11,8 @@ library(TwoSampleMR)
 library(ggplot2)
 library(ggthemes)
 
-threshold1 <- 0.05 / (300000 * 698)
-threshold2 <- 0.05 / (300000)
+threshold1 <- 0.05 / (190000 * 122)
+threshold2 <- 0.05 / (190000)
 
 fn <- read.csv("../../data/gwas/00info.csv")
 
@@ -21,7 +21,7 @@ load("../../data/misc/cpg_pos.rdata")
 
 
 ao <- available_outcomes() %>% filter(id %in% res$outcome)
-sig <- res[res$H4 > 0.8 & res$p < threshold1,]
+sig <- res[res$H4 > 0.8 & res$p < threshold1 & res$nsnp >= 10,]
 sig <- subset(sig, !duplicated(paste(exposure, outcome)))
 sig <- merge(sig, subset(ao, select=c(id, trait, category, subcategory)), by.x="outcome", by.y="id")
 sig <- inner_join(sig, cpgpos, by=c("exposure"="cpg"))
@@ -78,47 +78,102 @@ geom_smooth(method="lm")
 
 Chromosome 6 clearly has far more associations than expected by chance. Potentially unreliable because colocalisation analysis will not be able perform correctly with high LD regions. 
 
-Which traits are these MHC associations?
+Which traits are these MHC associations (where the CpG is in the MHC)?
 
 ```{r}
+load("../../results/16/16_clumped.rdata")
+table(sig$snp %in% snp_1kg$V2)
+temp <- subset(snp_1kg, V2 %in% sig$snp, select=c(V1, V2, V4, snp))
+names(temp) <- c("snpchr", "snp", "snppos", "snpid")
+sig <- merge(sig, temp, by="snp")
+
 sig %>% 
 filter(category != "Metabolites") %>% 
-filter(cpgchrn == 6 & cpgpos > 25000000 & cpgpos < 35000000) %>%
+filter(snpchr == 6 & snppos > 25000000 & snppos < 35000000) %>%
 group_by(trait) %>% 
 summarise(cat=first(subcategory), n=n()) %>% 
 arrange(desc(n)) %>% kable
 
-sig6 <- filter(sig, !(cpgchrn == 6 & cpgpos > 25000000 & cpgpos < 35000000))
+sig6 <- filter(sig, category != "Metabolites" & !(snpchr == 6 & snppos > 28000000 & snppos < 33000000))
 ```
+
+
+```{r}
+sig6$cis <- with(sig6, cpgchrn == snpchr & abs(cpgpos - snppos) < 1000000)
+table(sig6$cis)
+```
+
 
 How many of the `r length(unique(sig$exposure))` CpGs that have a causal effect also have a trans association?
 
-```{r}
-load("../../results/16/16_clumped.rdata")
-temp <- subset(clumped, cpg %in% sig$exposure)
-trans <- filter(temp, !cis)
-cis <- filter(temp, cis)
-nrow(trans %>% filter(!duplicated(cpg)))
-```
-
-## Follow up
-
-1. Get the trans SNPs for the CpG-trait pairs
-2. Extract those SNPs from the GWAS summary data
-3. Test for concordance of direction with the original cis effect
-
 
 ```{r}
-sigt <- filter(sig, exposure %in% trans$cpg)
-temp <- data_frame(transsnp=trans$snp, exposure=trans$cpg)
-to_extractt <- inner_join(sigt, temp, by="exposure")
+temp <- subset(clumped, cpg %in% sig6$exposure)
 
-sigc <- filter(sig, exposure %in% cis$cpg)
-temp <- data_frame(transsnp=cis$snp, exposure=cis$cpg)
-to_extractc <- inner_join(sigc, temp, by="exposure")
+code1 <- paste(temp$snp, temp$cpg)
+code2 <- paste(sig6$snpid, sig6$exposure)
 
-save(to_extractt, file="../results/to_extractt.rdata")
-save(to_extractc, file="../results/to_extractc.rdata")
+table(code2 %in% code1)
+table(code1 %in% code2)
+
+
+# Which CpGs have a second SNP
+temp2 <- subset(temp, ! code1 %in% code2)
+temp3 <- subset(snp_1kg, snp %in% temp2$snp, select=c(V2, snp))
+names(temp3) <- c("rsid", "snp")
+temp3 <- merge(temp2, temp3, by="snp")
+
+# Which CpGs match with which traits
+temp4 <- subset(sig6, select=c(exposure, outcome))
+temp4 <- merge(temp4, temp3, by.x="exposure", by.y="cpg")
+
+# Extract
+
+out <- unique(temp4$outcome)
+l <- list()
+for(i in 1:length(out))
+{
+	message(i)
+	x <- subset(temp4, outcome == out[i])	
+	l[[i]] <- extract_outcome_data(x$rsid, unique(x$outcome))
+}
+
+outcome <- bind_rows(l)
+exposure <- format_data(
+	temp4,
+	snp_col="rsid",
+	phenotype_col="exposure",
+	effect_allele_col = "Allele1",
+	other_allele_col = "Allele2",
+	eaf_col = "Freq1",
+	beta_col = "Effect",
+	se_col = "StdErr",
+	pval_col = "pval",
+	samplesize_col = "TotalSampleSize"
+)
+
+dat <- harmonise_data(exposure, outcome)
+dattemp <- subset(dat, !duplicated(paste(id.exposure, id.outcome)))
+dattemp <- merge(dattemp, temp3, by.x="SNP", by.y="rsid")
+mr_new <- mr(dat, method_list = c("mr_wald_ratio", "mr_ivw"))
+mr_new <- merge(mr_new, subset(dattemp, select=c(id.exposure, id.outcome, snp)), by=c("id.exposure", "id.outcome"))
+temp6 <- with(sig, data_frame(exposure = exposure, id.outcome=outcome, outcome=trait, b1=b, se1=se, p1=p, snp1=snpid))
+temp7 <- with(mr_new, data_frame(exposure=exposure, id.outcome=id.outcome, outcome=outcome, b2=b, se2=se, p2=pval, snp2=snp))
+temp8 <- inner_join(temp6, temp7, by=c("id.outcome", "exposure"))
+
+temp8$same_sign <- sign(temp8$b1) == sign(temp8$b2)
+temp8$fdr2 <- p.adjust(temp8$p2, "fdr")
+temp8$sig2a <- temp8$p2 < 0.05
+temp8$sig2b <- temp8$fdr2 < 0.05
+
+table(temp8$same_sign)
+table(temp8$sig2a)
+table(temp8$sig2b)
+table(temp8$sig2b, temp8$same_sign)
+
+subset(temp8, sig2b & same_sign) %>% arrange(outcome.x) %>% as.data.frame %>% dplyr::select(snp1, snp2, outcome.y, exposure)
+
+save(dat, mr_new, temp8, file="../results/mr_concordance.rdata")
 ```
 
 
