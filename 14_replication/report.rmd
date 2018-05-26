@@ -1,0 +1,310 @@
+---
+title: Replication of GoDMC results in Genomic Scotland
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+Genomic Scotland have a sample size of ~5000. They had precomputed mQTL results:
+
+* Created methylation residuals accounting for covariates and complex family structure
+* Rank transformed residuals CpGs (though may have started with M values)
+* Retained SNP-CpG pairs with p < 1e-3
+
+We sent them ~285k mQTLs from GoDMC to replicate
+
+They only analysed
+
+* SNPs (not INDELS)
+* chr 1-22
+
+This reduced to 209k mQTLs (? need to check)
+
+*174k were present in both GoDMC and GS*
+
+- 158k cis
+- 15k trans
+
+---
+
+## Replication rates
+
+```{r, echo=FALSE}
+suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
+suppressWarnings(suppressPackageStartupMessages(library(magrittr)))
+suppressWarnings(suppressPackageStartupMessages(library(data.table)))
+suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
+suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
+suppressWarnings(suppressPackageStartupMessages(library(knitr)))
+opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
+
+gs <- fread("gunzip -c GS_replication.tsv.gz", he=T)
+load("../results/16/16_clumped.rdata")
+clumped$cist <- "cis"
+clumped$cist[!clumped$cis] <- "trans"
+clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
+
+temp <- inner_join(
+	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis)),
+	subset(gs, select=c(snpid, cpg, a1, a0, beta1, se, p, r2, n)),
+	by=c("snp"="snpid", "cpg"="cpg")
+)
+
+
+temp$Allele1 <- toupper(temp$Allele1)
+temp$Allele2 <- toupper(temp$Allele2)
+
+# table(temp$Allele1 == temp$a1 | temp$Allele2 == temp$a1)
+temp <- subset(temp, Allele1 == a1 | Allele2 == a1)
+index <- temp$Allele1 != temp$a1
+temp$beta1[index] <- temp$beta1[index] * -1
+temp2 <- temp$a0[index]
+temp$a0[index] <- temp$a1[index]
+temp$a1[index] <- temp2
+# table(temp$Allele1 == temp$a1)
+
+# plot(temp$beta1 ~ temp$Effect)
+
+temp$gs.sig <- FALSE
+temp$gs.sig[temp$cis] <- temp$p[temp$cis] < 0.05 / sum(clumped$cis)
+temp$gs.sig[!temp$cis] <- temp$p[!temp$cis] < 0.05 / sum(clumped$cis)
+
+temp$cist <- "cis"
+temp$cist[!temp$cis] <- "trans"
+```
+
+Is replication 'significant'? Correct for original number of cis and trans separately
+
+```{r, echo=FALSE}
+
+rep1 <- group_by(temp, cist) %>%
+	summarise(nsig = sum(gs.sig), total_avail=n())
+rep2 <- group_by(clumped, cist) %>%
+	summarise(total_tested=n())
+rep3 <- inner_join(rep1, rep2, by=c("cist"))
+rep3$rr <- rep3$nsig / rep3$total_tested
+
+kable(rep3)
+```
+
+## Effect size concordance
+
+```{r, echo=FALSE, dev="png"}
+ggplot(temp, aes(x=Effect, y=beta1)) +
+geom_point(aes(colour=gs.sig)) +
+facet_grid(. ~ cist) +
+labs(x="GoDMC effect size", y="GS effect size")
+```
+
+## Expected vs observed replication rates
+
+The probability of replication is based on the true effect size, the standard errors for the discovery and replication estimates, and the significance level for replication. Similarly, we can estimate the number of SNPs that should have the same sign. 
+
+If we use Bonferroni correction for replication, what proportion would we expect to be significant, and in the same direction?
+
+```{r, echoo=FALSE}
+preplication <- function(b, se_disc, se_rep, alpha)
+{
+	p_sign <- pnorm(-abs(b) / se_disc) * pnorm(-abs(b) / se_rep) + ((1 - pnorm(-abs(b) / se_disc)) * (1 - pnorm(-abs(b) / se_rep)))
+	p_sig <- pnorm(-abs(b) / se_disc + qnorm(alpha / 2)) + (1 - pnorm(-abs(b) / se_disc - qnorm(alpha / 2)))
+	message("Total: ", length(b))
+	message("Expected sign: ", sum(p_sign))
+	message("Expected sig: ", sum(p_sig))
+	return(list(sum(p_sign), sum(p_sig), data_frame(sig=p_sig, sign=p_sign)))
+}
+
+
+r <- preplication(temp$Effect, temp$StdErrMRE, temp$se, 0.05/nrow(clumped))
+# sum(temp$gs.sig)
+
+x1 <- group_by(temp, cist) %>%
+summarise(
+	obs_significant = sum(gs.sig), 
+	exp_significant = preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))[1]
+)
+
+x2 <- group_by(temp) %>%
+summarise(
+	obs_significant = sum(gs.sig), 
+	exp_significant = preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))[1]
+)
+
+x2$cist <- "all"
+x <- rbind(x1, x2)
+kable(x)
+
+# winners_curse <- function(b, alpha, n, m, sigma, tausq, M)
+# {
+# 	v <- sqrt(sigma^2 / (2 * n * m * (1 - m)))
+# 	X <- rnorm(M, b, v)
+# 	tplus <- pnorm(1 - alpha / 2) - X / v
+# 	tneg <- tplus * -1
+# 	g1 <- X / (1 - (pnorm(tplus) - pnorm(tneg)))
+# 	g2 <- 1 / (1 - (pnorm(tplus) - pnorm(tneg)))
+# 	print(b)
+# 	return(mean(g1) / mean(g2))
+
+# }
+
+# winners_curse(clumped$Effect[1], 1e-02, clumped$TotalSampleSize[1], clumped$Freq1[1], 1, 1, 10000000)
+# winners_curse(0.01, 1e-2, clumped$TotalSampleSize[1], clumped$Freq1[1], 1, 1, 10000000)
+```
+
+## Strand issues?
+
+```{r, echo=FALSE}
+temp2 <- subset(temp, gs.sig)
+temp2$wrong_dir <- temp2 %$% {sign(Effect) != sign(beta1)}
+temp2$allele_codes <- temp2 %$% {paste(Allele1, Allele2)}
+```
+
+There are `r sum(temp2$wrong_dir)` mQTLs that have significant replication in the wrong direction. Is this due to palindromic SNPs?
+
+```{r, echo=FALSE}
+group_by(temp2, allele_codes) %>%
+summarise(
+	ncorrect=sum(!wrong_dir), 
+	nwrong=sum(wrong_dir), 
+	prop=sum(wrong_dir)/n()
+) %>% kable
+```
+
+There doesn't seem to be a strong relationship with palendromic SNPs. Is there a difference in effect sizes between the replications in the correct vs incorrect directions?
+
+```{r, echo=FALSE}
+group_by(temp2, wrong_dir) %>%
+summarise(
+	mean_eff = mean(abs(Effect)),
+	mean_n = mean(TotalSampleSize),
+	mean_isq = mean(HetISq)
+) %>% kable
+```
+
+It appears that the effect sizes are on average smaller, which is consistent with them being liable to give the wrong direction. There is also much higher heterogeneity in the discovery, which suggests it could be biological or something to do with the way the data is being treated at those CpGs. What proportion of mQTLs would we expect with wrong sign and significant?
+
+
+```{r, echo=FALSE}
+r <- temp %$% preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))[[3]]
+exp_wrong_sig <- sum((1 - r$sign) * r$sig)
+```
+
+Sum of `(1-prob(correct sign)) * (prob(significant)) = ` `r exp_wrong_sig`
+
+This is a much lower number than observed. Perhaps the SNPs that are leading to these results are more likely to be multi allelic?
+
+```{r, echo=FALSE}
+#wrong_snps <- subset(temp2, wrong_dir)$snp %>% unique
+#wrong_rsids <- subset(snp_1kg, snp %in% wrong_snps)$V2
+```
+
+## Variance explained
+
+Using an independent replication allows unbiased estimate of phenotypic variance explained
+
+```{r, echo=FALSE}
+
+ggplot(temp, aes(x=r2)) +
+geom_density(aes(fill=cist), alpha=0.3)
+```
+
+We previously calculated (with low precision) the SNP h2 of each CpG
+
+```{r, echo=FALSE}
+load("~/repo/methylation_residuals/hsq_ct_aries.RData")
+dat$cpg <- as.character(dat$CPG)
+dat <- subset(dat, timepoint == "FOM", select=c(hsq1, hsq2, cpg))
+dat$hsqtot <- dat$hsq1 + dat$hsq2
+dat <- gather(dat, key=what, val=hsq, -cpg)
+
+temp2 <- group_by(temp, cpg) %>%
+	summarise(r2=sum(r2))
+temp2$what <- "hsqtot"
+
+temp3 <- group_by(temp, cpg, cis) %>%
+	summarise(r2=sum(r2))
+temp3$what <- "hsq1"
+temp3$what[!temp3$cis] <- "hsq2"
+temp3 <- subset(temp3, select=-c(cis))
+
+temp4 <- bind_rows(temp3, temp2)
+temp4 <- merge(dat, temp4, by=c("cpg", "what"), all.x=TRUE)
+temp4$r2[is.na(temp4$r2)] <- 0
+
+out <- group_by(temp4, what) %>%
+	summarise(mean = mean(hsq-r2), median = median(hsq-r2))
+out$what <- c("cis", "trans", "total")
+# kable(out)
+```
+
+
+How does the SNP h2 (estimated in ARIES) relate to the variance explained by clumped SNPs (Genomic Scotland)
+
+```{r, echo=FALSE, eval=TRUE, dev="png"}
+temp5 <- subset(temp4, what=="hsqtot")
+temp5$ord <- rank(temp5$hsq)
+temp5 <- gather(subset(temp5, select=c(hsq, r2, ord)), key=what, value=value, -ord)
+temp5$what[temp5$what == "r2"] <- "gs_r2"
+temp5 <- temp5[nrow(temp5):1, ]
+ggplot(temp5, aes(x=ord, y=value)) +
+geom_point(aes(colour=what)) +
+geom_smooth(data=subset(temp5, what=="gs_r2"))
+```
+
+
+```{r, echo=FALSE, eval=FALSE, dev="png"}
+temp5 <- group_by(temp4, what) %>%
+	mutate(ord = rank(hsq)/n()) 
+
+temp5 <- subset(temp5, select=c(what, hsq, r2, ord)) %>%
+	group_by(what) %>%
+	do({
+		gather(., key=key, value=value, -ord)
+	})
+temp5 <- temp5[nrow(temp5):1, ]
+ggplot(temp5[sample(1:nrow(temp5), 100000), aes(x=ord, y=value)) +
+geom_point(aes(colour=key)) +
+geom_smooth(data=subset(temp5, what=="gs_r2")) +
+facet_grid(what ~ .)
+```
+
+Use Van Dongen heritability estimates using twins
+
+```{r, echo=FALSE}
+load("vanDongen_h2gt50_probes.RData")
+p <- sum(r$cgid %in% temp2$cpg)
+```
+
+* There are `r nrow(r)` CpGs with significant h2 estimates in van Dongen. 
+* `r p` were present in the GS replication dataset
+
+What proportion of the h2 is explained by mQTLs?
+
+```{r, echo=FALSE}
+vd <- inner_join(temp2, r, by=c("cpg"="cgid"))
+vd$ord <- rank(vd$h2_twinAE)
+
+vd2 <- gather(subset(vd, select=c(r2, h2_twinAE, ord)),key, value, -ord)
+vd$prop <- vd$r2 / vd$h2_twinAE
+vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
+
+group_by(vd3, key) %>%
+summarise(mean=mean(value), median=median(value)) %>%
+kable
+
+```
+
+
+```{r, }
+ggplot(vd2, aes(x=ord, y=value)) +
+geom_point(aes(colour=key)) +
+geom_smooth(data=subset(vd2, key=="r2"))
+```
+
+###
+
+library(xlsx)
