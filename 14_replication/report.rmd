@@ -28,6 +28,8 @@ This reduced to 209k mQTLs (? need to check)
 
 ---
 
+The expected replication rates between 
+
 ## Replication rates
 
 ```{r, echo=FALSE}
@@ -44,24 +46,108 @@ load("../results/16/16_clumped.rdata")
 clumped$cist <- "cis"
 clumped$cist[!clumped$cis] <- "trans"
 clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
-
+clumped$code <- clumped %$% paste(snp, cpg)
 temp <- inner_join(
-	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis)),
+	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
 	subset(gs, select=c(snpid, cpg, a1, a0, beta1, se, p, r2, n)),
 	by=c("snp"="snpid", "cpg"="cpg")
 )
-
-
 temp$Allele1 <- toupper(temp$Allele1)
 temp$Allele2 <- toupper(temp$Allele2)
-
-# table(temp$Allele1 == temp$a1 | temp$Allele2 == temp$a1)
 temp <- subset(temp, Allele1 == a1 | Allele2 == a1)
 index <- temp$Allele1 != temp$a1
 temp$beta1[index] <- temp$beta1[index] * -1
 temp2 <- temp$a0[index]
 temp$a0[index] <- temp$a1[index]
 temp$a1[index] <- temp2
+
+tempsig <- subset(temp, pval < 1e-8 & cis | pval < 1e-14 & !cis)
+
+psig <- function(b, se_disc, alpha)
+{
+	p_sig <- pnorm(-abs(b) / se_disc + qnorm(alpha / 2)) + (1 - pnorm(-abs(b) / se_disc - qnorm(alpha / 2)))
+	return(p_sig)
+}
+
+temp$prep1 <- psig(temp$Effect, temp$StdErrMRE, 1e-3)
+temp$prep2 <- psig(temp$Effect, temp$StdErrMRE, 0.05/209034)
+
+
+
+
+untemp <- subset(clumped, !code %in% temp$code)
+mean(abs(untemp$Effect))
+mean(abs(temp$Effect))
+sum(untemp$pval < 1e-14)/nrow(untemp)
+sum(temp$pval < 1e-14)/nrow(temp)
+
+set.seed(1)
+untemp2 <- untemp[sample(209034 - nrow(temp), replace=FALSE), ]
+clumpedr <- subset(clumped, code %in% temp$code)
+clumpedr$what <- "available"
+untemp2$what <- "unavailable"
+clumpedr <- rbind(clumpedr, untemp2)
+table(clumpedr$what)
+temp2 <- merge(
+	subset(clumpedr, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code, what)),
+	subset(gs, select=c(snpid, cpg, a1, a0, beta1, se, p, r2, n)),
+	by.x=c("snp", "cpg"),
+	by.y=c("snpid", "cpg"),
+	all.x=TRUE
+)
+temp2$Allele1 <- toupper(temp2$Allele1)
+temp2$Allele2 <- toupper(temp2$Allele2)
+ind <- temp2$what == "unavailable"
+temp2$a1[ind] <- temp2$Allele1[ind]
+temp2$a2[ind] <- temp2$Allele2[ind]
+temp2$beta1[ind] <- 0
+temp2$se[ind] <- 
+
+
+
+temp$prep1 <- psig(temp$Effect, temp$StdErrMRE, 1e-3)
+temp2$prep1 <- psig(temp2$Effect, temp2$StdErrMRE, 1e-3)
+temp$prep2 <- psig(temp$Effect, temp$StdErrMRE, 0.05/209034)
+temp2$prep2 <- psig(temp2$Effect, temp2$StdErrMRE, 0.05/209034)
+
+group_by(temp) %>% summarise(
+	prepsum=sum(prep1),
+	n=n(),
+	prepprop=prepsum/n
+)
+group_by(temp2) %>% summarise(
+	prepsum=sum(prep1),
+	n=n(),
+	prepprop=prepsum/n
+)
+group_by(temp) %>% summarise(
+	prepsum=sum(prep2),
+	n=n(),
+	prepprop=prepsum/n
+)
+group_by(temp2) %>% summarise(
+	prepsum=sum(prep2),
+	n=sum(p < 0.05/209034, na.rm=T),
+	prepprop=prepsum/n
+)
+
+p(sign | 1e-3) = p(1e-3 | sign) * p(sign) / p(1e-3)
+clumped$prep1 <- psig(clumped$Effect*0.5, clumped$StdErrMRE, 1e-3)
+
+group_by(temp, what) %>% summarise(
+	prepsum=sum(prep1),
+	n=n(),
+	prepprop=prepsum/n
+)
+
+group_by(temp, what) %>% summarise(
+	a = sum(sign(Effect) == sign(beta1)),
+	n = n(),
+	prop = a/n
+)
+
+
+# table(temp$Allele1 == temp$a1 | temp$Allele2 == temp$a1)
 # table(temp$Allele1 == temp$a1)
 
 # plot(temp$beta1 ~ temp$Effect)
@@ -91,7 +177,7 @@ kable(rep3)
 ## Effect size concordance
 
 ```{r, echo=FALSE, dev="png"}
-ggplot(temp, aes(x=Effect, y=beta1)) +
+ggplot(subset(temp), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=gs.sig)) +
 facet_grid(. ~ cist) +
 labs(x="GoDMC effect size", y="GS effect size")
@@ -115,7 +201,7 @@ preplication <- function(b, se_disc, se_rep, alpha)
 }
 
 
-r <- preplication(temp$Effect, temp$StdErrMRE, temp$se, 0.05/nrow(clumped))
+r <- subset(temp, what=="available") %$% preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))
 # sum(temp$gs.sig)
 
 x1 <- group_by(temp, cist) %>%
@@ -180,6 +266,7 @@ There doesn't seem to be a strong relationship with palendromic SNPs. Is there a
 group_by(temp2, wrong_dir) %>%
 summarise(
 	mean_eff = mean(abs(Effect)),
+	se_eff = sd(abs(Effect)) / sqrt(n()),
 	mean_n = mean(TotalSampleSize),
 	mean_isq = mean(HetISq)
 ) %>% kable
@@ -189,7 +276,7 @@ It appears that the effect sizes are on average smaller, which is consistent wit
 
 
 ```{r, echo=FALSE}
-r <- temp %$% preplication(Effect, StdErrMRE, se, 0.05/nrow(clumped))[[3]]
+r <- temp %$% preplication(beta1, StdErrMRE, se, 0.05/nrow(clumped))[[3]]
 exp_wrong_sig <- sum((1 - r$sign) * r$sig)
 ```
 
@@ -230,6 +317,10 @@ temp3 <- group_by(temp, cpg, cis) %>%
 temp3$what <- "hsq1"
 temp3$what[!temp3$cis] <- "hsq2"
 temp3 <- subset(temp3, select=-c(cis))
+
+group_by(temp3, what) %>% summarise(m=mean(r2), mf={a = 420509-n(); mean(c(r2, rep(0,a)), na.rm=T)})
+group_by(temp2) %>% summarise(m=mean(r2), mf={a = 420509-nrow(temp2); mean(c(r2, rep(0,a)), na.rm=T)})
+	
 
 temp4 <- bind_rows(temp3, temp2)
 temp4 <- merge(dat, temp4, by=c("cpg", "what"), all.x=TRUE)
@@ -275,28 +366,43 @@ facet_grid(what ~ .)
 Use Van Dongen heritability estimates using twins
 
 ```{r, echo=FALSE}
-load("vanDongen_h2gt50_probes.RData")
-p <- sum(r$cgid %in% temp2$cpg)
+# load("vanDongen_h2gt50_probes.RData")
+vandongen <- read.csv("vanDongen_HeritabilityofDNAmethylation.csv")
+p <- sum(vandongen$cgid %in% temp2$cpg)
 ```
 
-* There are `r nrow(r)` CpGs with significant h2 estimates in van Dongen. 
+* There are `r nrow(vandongen)` CpGs with significant h2 estimates in van Dongen. 
 * `r p` were present in the GS replication dataset
 
 What proportion of the h2 is explained by mQTLs?
 
 ```{r, echo=FALSE}
-vd <- inner_join(temp2, r, by=c("cpg"="cgid"))
+vd <- inner_join(temp2, vandongen, by=c("cpg"="cgid"))
 vd$ord <- rank(vd$h2_twinAE)
 
-vd2 <- gather(subset(vd, select=c(r2, h2_twinAE, ord)),key, value, -ord)
+vd %>% filter(h2_twinAE != 0) %>%
+	group_by()
+
+```
+
+```{r, echo=FALSE}
+ggplot(subset(vd, !is.na(h2_twinAE) & !is.na(r2)), aes(x=as.factor(h2_twinAE), y=r2)) +
+geom_boxplot(outlier.size=0.01) +
+theme(axis.text.x=element_text(angle=90, size=3)) +
+labs(x="Twin heritability estimate", y="Variance explained in GS replication")
+```
+
+```{r, echo=FALSE}
+vd2 <- gather(subset(vd, h2_twinAE != 0, select=c(r2, h2_twinAE, ord)),key, value, -ord)
+vd <- subset(vd, h2_twinAE != 0)
 vd$prop <- vd$r2 / vd$h2_twinAE
 vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 
-group_by(vd3, key) %>%
-summarise(mean=mean(value), median=median(value)) %>%
-kable
-
+	group_by(vd3, key) %>%
+	summarise(mean=mean(value), median=median(value)) %>%
+	kable
 ```
+
 
 
 ```{r, }
