@@ -52,6 +52,7 @@ How many traits can a single CpG influence?
 
 ```{r}
 hist(table(sig$exposure), breaks=max(table(sig$exposure)))
+hist(table(sigm$exposure), breaks=max(table(sigm$exposure)))
 ```
 
 How many associations per category of trait?
@@ -82,6 +83,7 @@ Which traits are these MHC associations (where the CpG is in the MHC)?
 
 ```{r}
 load("../../results/16/16_clumped.rdata")
+load("../data/snp_1kg.rdata")
 table(sig$snp %in% snp_1kg$V2)
 temp <- subset(snp_1kg, V2 %in% sig$snp, select=c(V1, V2, V4, snp))
 names(temp) <- c("snpchr", "snp", "snppos", "snpid")
@@ -98,14 +100,37 @@ sig6 <- filter(sig, category != "Metabolites" & !(snpchr == 6 & snppos > 2800000
 ```
 
 
+
+How many of the colocalised SNPs also appear in CpG networks
+
 ```{r}
-sig6$cis <- with(sig6, cpgchrn == snpchr & abs(cpgpos - snppos) < 1000000)
-table(sig6$cis)
+load("../../05_cis-trans-networks/results/communities.rdata")
+coloc_snps <- unique(sig6$snpid)
+tab <- matrix(c(
+	sum(coloc_snps %in% communities$snp), sum(coloc_snps %in% clumped$snp), 
+	length(coloc_snps) - sum(coloc_snps %in% communities$snp), length(unique(clumped$snp)) - sum(coloc_snps %in% clumped$snp)
+), 2, 2)
+fisher.test(tab)
+chisq.test(tab)
+
+coloc_cpgs <- unique(sig6$exposure)
+tabc <- matrix(c(
+	sum(coloc_cpgs %in% communities$cpg), sum(coloc_cpgs %in% clumped$cpg), 
+	length(coloc_cpgs) - sum(coloc_cpgs %in% communities$cpg), length(unique(clumped$cpg)) - sum(coloc_cpgs %in% clumped$cpg)
+), 2, 2)
+fisher.test(tabc)
+chisq.test(tabc)
+
 ```
 
 
 How many of the `r length(unique(sig$exposure))` CpGs that have a causal effect also have a trans association?
 
+
+```{r}
+sig6$cis <- with(sig6, cpgchrn == snpchr & abs(cpgpos - snppos) < 1000000)
+table(sig6$cis)
+```
 
 ```{r}
 temp <- subset(clumped, cpg %in% sig6$exposure)
