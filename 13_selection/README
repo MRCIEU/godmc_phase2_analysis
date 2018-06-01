@@ -1,0 +1,22 @@
+#compile.snpcpgpval.sh - compile.snpcpgpval_addcistrans.R
+#ld_regions.r - submit.snpsets0.sh
+#addcg_cpgfrq.R - submit.snpsetscpgfrq.sh
+#ld_regions_makecontrols.R - submit.snpsets.sh
+#extractcontrols.R - submit.snpsets1.sh
+
+#cg_cpgfrq_GARFIELD.R - submit.preparegarfield_properties.sh
+#preparegarfield_selection0.R -submit.preparegarfield_properties2.sh
+#preparegarfield_selection.R - submit.preparegarfield_selection.v2.sh
+
+qsub submit.garfield_selection.v2_sds.sh
+qsub submit.garfield_selection.v2_ihs.sh
+qsub submit.garfield_selection.v2_fst.sh
+qsub submit.garfield_selection.v2_xpehhchb.sh
+qsub submit.garfield_selection.v2_xpehhyri.sh
+
+qsub submit.garfield_selection.v2_segmentation.sh
+qsub submit.garfield_selection.v2_segmentation_cis.sh
+qsub submit.garfield_selection.v2_segmentation_ambivalent.sh
+qsub submit.garfield_selection.v2_segmentation_trans.sh
+
+#submit.garfield_selection.v2_plot.sh
