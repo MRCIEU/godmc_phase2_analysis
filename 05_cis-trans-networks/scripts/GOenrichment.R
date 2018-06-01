@@ -17,11 +17,68 @@ clusters<-df[which(df$Freq>10),1] #165
 go.res<-list()
 for (i in 1:length(clusters)){
 cat(i,"\n")
+if((i!=149) && (i!=159)){
 sigCpGs<-unique(as.character(communities[which(communities$cluster==clusters[i]),1]))
 go.res[[i]] <- gometh(sig.cpg=sigCpGs, all.cpg=unique(communities$cpg))
 print(table(go.res[[i]]$FDR<0.05))
-}
+}}
 save(go.res,file="../results/goenrichments.rdata")
+
+rm<-c(149,159)
+clusters<-clusters[-rm]
+
+l.out<-NULL
+for (i in 1:length(go.res)){
+l<-length(which(go.res[[i]]$FDR<0.05))
+l.out<-rbind(l.out,l)
+}
+w<-which(l.out>0) #11 clusters have FDR<0.05 for GO enrichment
+
+clusters<-clusters[w]
+
+df.out<-data.frame()
+for (j in 1:length(w)){
+k<-w[j]
+w1<-which(go.res[[k]]$FDR<0.05)
+df<-data.frame(cluster=clusters[j],go.res[[k]][w1,])
+df.out<-rbind(df.out,df)
+}
+save(df.out,file="../results/goenrichments_fdr0.05.rdata")
+
+t<-table(df.out$cluster)
+t[t>0]
+
+#2: transcription
+#8: chromatin assembly
+#20 embryonic skeletal system development
+#25: transcription
+#41: norepinephrine secretion
+#86: immune response
+#122: immune response
+#126: circadian behavior
+#202: embryonic morphogenesis
+#258: thyroid hormone generation
+#298: cell adhesion
+
+####
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+library("IlluminaHumanMethylationEPICanno.ilm10b2.hg19")
+library(org.Hs.eg.db)
+library(limma)
+library(missMethyl)
+ann <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+
+sigcpgs<-communities[communities$cluster==8,"cpg"]
+allcpgs<-unique(communities$cpg)
+
+mappedEz <- getMappedEntrezIDs(sigcpgs,allcpgs,array.type="450k")
+mappedEz$sig.eg
+
+
+#Community 149 and 159 give the following error.
+#Error in BiasedUrn::pWNCHypergeo(S[i, 1 + j], S[i, "N"], Total - S[i,  : 
+#  Invalid value for odds
+
 #g8[g8$FDR<0.05,]
 #                                               Term Ont  N DE         P.DE
 #GO:0006323                            DNA packaging  BP 49  5 2.381259e-05
