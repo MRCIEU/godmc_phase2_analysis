@@ -18,10 +18,10 @@ f.all$min_log10pval<--log10(as.numeric(f.all$min_log10pval))
 w<-which(f.all$mqtl_clumped=="TRUE")
 f.all2<-f.all[w,]
 
-r2<-read.table("./height_sds/vars.GIANT_HEIGHT_mqtl",sep=" ",he=T)
+r2<-read.table("./height_sds/vars.EXTREME_HEIGHT_mqtl_6cols",sep=" ",he=T)
 r2[,8]<-gsub("\\([^\\)]+\\)","",as.character(r2[,5])) #260 #40
 
-r3<-read.table("./height_sds/vars.GIANT_HEIGHT_sds",sep=" ",he=T)
+r3<-read.table("./height_sds/vars.EXTREME_HEIGHT_sds",sep=" ",he=T)
 r3[,8]<-gsub("\\([^\\)]+\\)","",as.character(r3[,5]))
 
 mqtl<-paste0("chr",unique(r2[,8]),":SNP")
@@ -34,6 +34,7 @@ w<-which(f.all$SNP%in%mqtl)
 f.all$height_mqtl[w]<-"height mqtl"
 
 sds<-paste0("chr",r3[,8],":SNP")
+print(sds)
 w<-which(f.all$SNP%in%sds)
 f.all$height_mqtl[w]<-"height mqtl sds"
 #ES = 2β^2f(1 − f)
@@ -47,41 +48,54 @@ ggsave(p1,file="Mqtl_GeneticVariance.pdf")
 
 #how much of the height variance
 
-h<-read.table("GIANT_HEIGHT_Wood_et_al_2014_publicrelease_HapMapCeuFreq.txt.gz",he=T)
+h<-read.table("./height_sds/GIANT_EXTREME_HEIGHT_Stage1_Berndt2013_publicrelease_HapMapCeuFreq.txt.gz",he=T)
 bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
 m<-match(h$MarkerName,bim$V2)
 h<-data.frame(SNP=paste0("chr",bim[m,1],":",bim[m,4],":SNP"),h)
 h$b_sq<-h$b^2
-h$MAF<-h$Freq.Allele1.HapMapCEU
+h$MAF<-h$Allele1_Freq_HapMapCEU
 w<-which(h$MAF>0.5)
 h$MAF[w]<-1-h$MAF[w]
 h$es<-(2*h$b_sq)*(h$MAF*(1-h$MAF))
 #r<-read.table("/panfs/panasas01/sscm/epzjlm/repo/goya/godmc/resources/genetics/wood.height.snps_af0.1.txt",he=F,stringsAsFactors=F)
-r<-read.table("height_snps.txt",he=F,sep="\t")
+r<-read.table("./height_sds/extreme_height_snps.txt",he=F,sep="\t")
 
 h$height_mqtl<-"no_mqtl"
 w<-which(h$MarkerName%in%r$V1)
-h$height_mqtl[w]<-"height SNPs (n=697)"
+h$height_mqtl[w]<-"extreme height SNPs (n=60)"
 h_all<-h[w,]
 
 w<-which(h$SNP%in%mqtl)
-h$height_mqtl[w]<-"height mqtl (n=39)"
+h$height_mqtl[w]<-"extreme height mqtl (n=48)"
 h_all2<-h[w,]
 
 w<-which(h$SNP%in%sds)
-h$height_mqtl[w]<-"height mqtl sds (n=5)"
+h$height_mqtl[w]<-"extreme height mqtl sds (n=4)"
 h_all3<-h[w,]
 
 h_all<-rbind(h_all,h_all2,h_all3)
 
-#table(h_all$height_mqtl)
 
-#    height mqtl height mqtl sds     height SNPs 
-#             39               5             697 
+table(h_all$height_mqtl)
+
+#extreme height mqtl sds (n=4)    extreme height SNPs (n=60) 
+#                            8                            60 
+#                  height mqtl 
+#                           38 
 
 p1<-ggplot(h_all, aes(es, colour=height_mqtl)) +
 geom_density() +
 labs(x="Genetic Variance")
-ggsave(p1,file="Height_GeneticVariance.pdf")
+ggsave(p1,file="ExtremeHeight_GeneticVariance.pdf")
+
+library(dplyr)
+h_all%>%group_by(height_mqtl)%>%summarise(es=mean(es,na.rm=T))
+
+# A tibble: 3 x 2
+#                    height_mqtl          es
+#                          <chr>       <dbl>
+#1    extreme height mqtl (n=48) 0.015082114
+#2 extreme height mqtl sds (n=4) 0.013163220
+#3    extreme height SNPs (n=60) 0.005124636
 
 
