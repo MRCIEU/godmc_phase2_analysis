@@ -175,3 +175,53 @@ ggsave(p, file="../images/real_vs_perm4.pdf")
 
 
 l %>% group_by(type2, perm == 0) %>% summarise(n=n(), m=mean(sddif), s=sd(sddif), ma=max(sddif), np=sum(sddif>20))
+
+
+
+
+
+### Clustering the bipartite graph
+
+library(ggnetwork)
+library(igraph)
+library(tnet)
+library(intergraph)
+
+dw2 <- dw
+dw2[dw2 != 0] <- 1
+rownames(dw2) <- paste("SNP", rownames(dw2))
+colnames(dw2) <- paste("CpG", colnames(dw2))
+n <- ggnetwork(dw2)
+
+ggplot(n, aes(x, y, xend = xend, yend = yend)) + 
+  geom_edges(color = "grey50") + 
+  geom_nodelabel(data = n[ !grepl("SNP", n$vertex.names), ],
+                 aes(label = vertex.names),
+                 color = "grey50", label.size = NA) +
+  geom_nodelabel(data = n[ grepl("SNP", n$vertex.names), ],
+                 aes(label = vertex.names),
+                 color = "steelblue", fontface = "bold") +
+  theme_blank()
+
+
+n <- dw2 %*% t(dw2) %>%
+  graph_from_adjacency_matrix(mode = "undirected", diag = FALSE, weighted = TRUE)
+
+
+V(n)$group <- cluster_louvain(n) %>%
+  membership %>%
+  as.character
+
+temp <- as_adjacency_matrix(n, attr = "weight", sparse = FALSE) %>%
+  degree_w 
+V(n)$degree <- temp[,3]
+
+
+ggplot(ggnetwork(n, layout = "kamadakawai"),
+       aes(x, y, xend = xend, yend = yend)) +
+  geom_edges(aes(alpha = weight)) +
+  geom_nodelabel(aes(label = vertex.names, size = degree, color = group)) +
+  scale_alpha_continuous(guide = FALSE) +
+  scale_color_brewer(palette = "Set1", guide = FALSE) +
+  scale_size_continuous(range = c(3, 6), guide = FALSE) +
+  theme_blank()
