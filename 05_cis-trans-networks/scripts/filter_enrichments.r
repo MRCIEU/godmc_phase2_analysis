@@ -1,7 +1,13 @@
 library(ggplot2)
 library(dplyr)
 
+load("../results/communities.rdata")
+ncomm<-communities %>%
+  group_by(cluster) %>%
+  summarize(n=n())
 
+length(which(ncomm$n>2))
+#1331
 #load("../results/gwas_clusters.rdata")
 load("../results/gwas_clusters_nochr6.rdata")
 

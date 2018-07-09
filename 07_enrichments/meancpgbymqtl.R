@@ -56,6 +56,8 @@ data[,cpgchr:=gsub("24","Y",cpgchr),]
 
 data[,cpg_cis:=ifelse(all(cis),"cis only",ifelse(all(!cis),"trans only","cis+trans")),by=c("cpg")]
 r<-unique(data.frame(cpg=data$cpg,cpgchr=data$cpgchr,min=as.numeric(data$cpgpos),max=as.numeric(data$cpgpos),cpg_cis=data$cpg_cis))
+gr_cpg_a = with(r,GRanges(seqnames=cpgchr,ranges=IRanges(min,max),strand=Rle("+")))
+
 r$cpgchr<-gsub("chrX","chr23",r$cpgchr)
 r$cpgchr<-gsub("chrY","chr24",r$cpgchr)
 
@@ -127,6 +129,7 @@ save(df.all,file="mean_allcpgs.Robj")
 data$MAF<-data$Freq1
 w<-which(data$MAF>0.5)
 data$MAF[w]<-1-data$MAF[w]
+
 
 ###
 data2<-data[ , (min_pval = min(pval)), by = cpg]
@@ -310,6 +313,45 @@ ggsave(plot=p1, file="./images/cpgmean_cpgisland.pdf", width=7, height=7)
 
 df.all$facet = factor(df.all$cpg_cis_n, levels = c("no mQTL (n=230407)", "cis only (n=170986)", "cis+trans (n=11902)", "trans only (n=7214)"))
 
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+library("IlluminaHumanMethylationEPICanno.ilm10b2.hg19")
+library(org.Hs.eg.db)
+library(limma)
+library(missMethyl)
+library(scales)
+ann <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+#m<-match(df.all$cpg,ann$Name)
+#df.all<-data.frame(df.all,ann[,"Regulatory_Feature_Group"])
+df.all<-data.frame(merge(df.all,ann[,c(4,32)],by.x="cpg",by.y="Name",all.x=T))
+
+load("cpgbysegstate.Robj")
+m<-match(st$cpg,df.all$cpg)
+df.all2<-data.frame(df.all[m,],st)
+w<-which(is.na(df.all2$facet))
+df.all2<-df.all2[-w,]
+
+p1<-ggplot(df.all2,aes(x=meancpg,fill=state)) + 
+geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+facet_wrap(~facet,scales="free_y",nr=2) +
+ylab("Proportion CpGs") +
+xlab("weighted mean by cpg")
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_state.pdf", width=7, height=7)
+
+p1<-ggplot(df.all2, aes(fill=state, y=1, x=facet)) + 
+geom_bar( stat="identity", position="fill") +
+labs(x="Category", y="proportion CpGs")
+ggsave(plot=p1, file="./images/statecpg_ciscategory.pdf", width=7, height=7)
+
+p1 <- ggplot(df7, aes(x=as.factor(cpg_cis), y=1,fill=gene.annotation)) +
+geom_bar(stat="identity") +
+scale_y_continuous(labels = percent_format())
+ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, height=7)
+
+p1<-ggplot(df7, aes(fill=gene.annotation, y=1, x=facet)) + 
+geom_bar( stat="identity", position="fill") +
+labs(x="Category", y="proportion CpGs")
+ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, height=7)
+
 p1<-ggplot(df.all,aes(x=meancpg,fill=relation.to.island)) + 
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
 facet_wrap(~facet,scales="free_y",nr=2) +
@@ -323,6 +365,13 @@ facet_wrap(~facet,scales="free_y",nr=2) +
 ylab("Proportion CpGs") +
 xlab("weighted mean by cpg")
 ggsave(plot=p1, file="./images/cpgmean_nomqtl_typei_ii.pdf", width=7, height=7)
+
+p1<-ggplot(df.all,aes(x=meancpg,fill=Regulatory_Feature_Group)) + 
+geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
+facet_wrap(~facet,scales="free_y",nr=2) +
+ylab("Proportion CpGs") +
+xlab("weighted mean by cpg")
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_regulatoryfeature.pdf", width=7, height=7)
 
 
 g1<-grep("5'UTR",df.all$gene.region)
@@ -575,5 +624,53 @@ names(ov)<-c("cpg",l2)
 m<-match(ov$cpg, df$cpg)
 ov<-data.frame(df[m,],ov)
 save(ov,file=paste0(chr,".Robj"))
+#
+library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+library("BSgenome.Hsapiens.UCSC.hg19")
+library(GenomicRanges)
+library(data.table)
+
+load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/chrom_states/25states/25states_files.RData")
+f<-ret
+spl<-do.call("rbind",strsplit(f$filename,split="_"))
+f$dataSource<-spl[,1]
+f$seg_code<-gsub(".bed","",spl[,5])
+
+state<-read.table("/panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/segmentations/output_annotations/states.txt",he=T)
+state$STATE<-paste0("E",state$STATE)
+m<-match(f$seg_code,state$STATE)
+f$seg_explanation<-state[m,"NO."]
+
+tiss<-read.table("jul2013.roadmapData_tissues.txt",sep="\t",he=T)
+m<-match(f$dataSource,as.character(tiss$ID),)
+f$tissue<-tiss[m,"Tissue"]
+w<-which(f$tissue=="BLOOD")
+
+load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/chrom_states/25states/25states.RData")
+
+#gr_range = with(Illumina450_dt,GRanges(seqnames=chr,ranges=IRanges(cpgstart_pre,cpgend_pre)))
+Illumina450=IlluminaHumanMethylation450kanno.ilmn12.hg19@data$Locations
+Illumina450_dt=as.data.table(Illumina450)
+Illumina450_dt[,cpgID:=row.names(Illumina450),]
+
+gr_cpg = with(Illumina450_dt,GRanges(seqnames=chr,ranges=IRanges(pos,pos)))
+
+#overlap<-findOverlaps(gr_cpg,ret)
+#overlap=as.data.table(findOverlaps(gr_cpg, ret))
+#overlap_red=overlap[,list(subjectHit=min(subjectHits),NsubjectHits=.N),by=queryHits]
+#Illumina450_dt[,cpgstart:=start(gr_range[overlap_red$subjectHit])]
+#Illumina450_dt[,cpgend:=end(gr_range[overlap_red$subjectHit])]
+#Illumina450_dt[,NsubjectHits:=overlap_red$NsubjectHits]
+
+ov<-as(findOverlaps(gr_cpg,ret), "List")
+ov<-data.frame(ov)
+ov<-ov[which(ov$value%in%w),]
+df<-data.frame(ov,Illumina450_dt[ov$group])
+df<-data.frame(df,f[df$value])
+st<-unique(data.frame(cpg=df$cpgID,state=df$seg_explanation,tissue=df$tissue))
+save(st,file="cpgbysegstate.Robj")
+
+
+
 
 

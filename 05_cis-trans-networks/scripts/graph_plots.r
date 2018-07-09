@@ -2,6 +2,20 @@ library(igraph)
 library(dplyr)
 library(purrr)
 
+load("../results/gwas_clusters_nochr6.rdata")
+info <- read.csv("../../data/gwas/00info.csv")
+info <- data.frame(fn=gsub(".txt.gz", "", info$newfile), id=info$id)
+
+labels <- subset(res, !duplicated(i), select=c(i, fn))
+labels$fn <- gsub("../../data/gwas/", "", labels$fn)
+labels$fn <- gsub(".txt.gz", "", labels$fn)
+dat <- merge(dat, labels, by.x="id", by.y="i")
+sign<-0.05/nrow(dat)
+g<-grep("metabolites__",dat$fn)
+gwa<-dat[-g,]
+gwa<-gwa[which(gwa$binom4<sign),]
+gwa.clust<-unique(gwa$clust)
+
 load("../results/graph.rdata")
 
 memcount <- group_by(mem, cluster) %>%
@@ -62,6 +76,22 @@ for(i in 1:20)
 	dev.off()
 }
 
+
+for(i in 1:length(gwa.clust))
+{
+	message(i)
+	temp <- extract_subset(gr, dat, mem$cpg[mem$cluster == gwa.clust[i]])
+	pdf(paste0("../images/cluster", gwa.clust[i], ".pdf"))
+	plot(temp$gr, 
+		layout=layout.fruchterman.reingold, 
+		vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+		vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
+		vertex.label=NA, 
+		edge.arrow.size=0, 
+		edge.color=as.numeric(as.factor(E(temp$gr)$type))
+	)
+	dev.off()
+}
 
 temp <- extract_subset(gr, dat, mem$cpg[mem$cluster == 41])
 pdf(paste0("../images/cluster", 41, ".pdf"))

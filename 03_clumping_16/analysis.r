@@ -770,7 +770,7 @@ p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
   stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance od SNP from CpG",y="-log10 (mqtl Pvalue)")
+  labs(x="Distance of SNP from CpG",y="-log10 (mQTL Pvalue)")
   scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256))
 
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
@@ -924,18 +924,39 @@ ylab("Beta coefficient")
 ggsave(p1,file="./images/tau2catvsbeta.pdf",height=6,width=16)
 
 temp4$studycount<-factor(temp4$studycount,levels=temp4$studycount[order(as.numeric(as.character(temp4$studycount)))])
-p1<-ggplot(temp4, aes(x=studycount, y=tausq)) +
+p1<-ggplot(temp4, aes(x=factor(studycount), y=tausq)) +
 geom_boxplot() +
 #geom_text(data=temp4, aes(x=temp4$tausq,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
 ylab("Tau^2") 
 ggsave(p1,file="./images/tau2vsstudycount.pdf",height=6,width=16)
 
-p1<-ggplot(temp4, aes(x=studycount, y=HetISq)) +
+p1<-ggplot(temp4, aes(x=factor(studycount), y=HetISq)) +
 geom_boxplot() +
 #geom_text(data=temp4, aes(x=temp4$tausq,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
 ylab("I2") 
 ggsave(p1,file="./images/i2vsstudycount.pdf",height=6,width=16)
 
+p1<-ggplot(clumped2, aes(x=factor(studycount), y=HetISq)) +
+geom_boxplot() +
+#geom_text(data=temp4, aes(x=temp4$tausq,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
+ylab("I2") 
+ggsave(p1,file="./images/i2vsstudycount_all.pdf",height=6,width=16)
+
+p1<-ggplot(clumped2, aes(x=factor(studycount), y=tausq)) +
+geom_boxplot() +
+#geom_text(data=temp4, aes(x=temp4$tausq,y = (maxbeta_tau+0.01),label = Ncattau2),vjust = 0,size=3) +
+ylab("I2") 
+ggsave(p1,file="./images/tausqvsstudycount_all.pdf",height=6,width=16)
+
+isq_studycount<-clumped2 %>%
+  dplyr::group_by(factor(studycount)) %>%
+  dplyr::summarise(HetISq = mean(HetISq))
+
+tausq_studycount<-clumped2 %>%
+  dplyr::group_by(studycount) %>%
+  dplyr::summarise(HetISq = mean(tausq))
+
+data.frame(isq_studycount,tausq_studycount)
 #
 temp4$qcat<-cut(as.numeric(as.character(temp4$HetChiSq)), breaks = seq(0,2000,by=10))
 w<-which(is.na(temp4$qcat))
