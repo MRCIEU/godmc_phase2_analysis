@@ -10,9 +10,9 @@ load("../data/annotations.rdata")
 
 # Get tissue types for encode
 
-t1 <- html("https://genome.ucsc.edu/cgi-bin/hgEncodeVocab?ra=encode/cv.ra&type=Cell+Line&tier=1&bgcolor=FFFEE8") %>% html_nodes("table") %>% .[[1]] %>% html_table()
-t2 <- html("https://genome.ucsc.edu/cgi-bin/hgEncodeVocab?ra=encode/cv.ra&type=Cell+Line&tier=2&bgcolor=FFFEE8") %>% html_nodes("table") %>% .[[1]] %>% html_table()
-t3 <- html("https://genome.ucsc.edu/cgi-bin/hgEncodeVocab?ra=encode/cv.ra&type=Cell+Line&tier=3&bgcolor=FFFEE8") %>% html_nodes("table") %>% .[[1]] %>% html_table()
+t1 <- read_html("https://genome.ucsc.edu/cgi-bin/hgEncodeVocab?ra=encode/cv.ra&type=Cell+Line&tier=1&bgcolor=FFFEE8") %>% html_nodes("table") %>% .[[1]] %>% html_table()
+t2 <- read_html("https://genome.ucsc.edu/cgi-bin/hgEncodeVocab?ra=encode/cv.ra&type=Cell+Line&tier=2&bgcolor=FFFEE8") %>% html_nodes("table") %>% .[[1]] %>% html_table()
+t3 <- read_html("https://genome.ucsc.edu/cgi-bin/hgEncodeVocab?ra=encode/cv.ra&type=Cell+Line&tier=3&bgcolor=FFFEE8") %>% html_nodes("table") %>% .[[1]] %>% html_table()
 
 encode <- bind_rows(t1, t2, t3)
 
@@ -121,8 +121,8 @@ plotweb(dw, text.rot=90,
 )
 dev.off()
 
-blood <- subset(anno, tissue == "blood")$index
-notblood <- anno$index[!anno$index %in% blood]
+bloodi <- subset(anno, tissue == "blood")$index
+notbloodi <- anno$index[!anno$index %in% blood]
 
 l <- list()
 for(i in 0:100)
@@ -132,8 +132,8 @@ for(i in 0:100)
 	difres$sddif2 <- difres$sddif
 	difres$sddif2[difres$val < difres$Mean] <- difres$sddif2[difres$val < difres$Mean] * -1
 	difres$type <- "Other - other"
-	difres$type[difres$Var1 %in% blood & difres$Var2 %in% blood] <- "Blood - blood"
-	difres$type[difres$Var1 %in% notblood & difres$Var2 %in% notblood] <- "Blood - other"
+	difres$type[difres$Var1 %in% bloodi & difres$Var2 %in% bloodi] <- "Blood - blood"
+	difres$type[difres$Var1 %in% notbloodi & difres$Var2 %in% notbloodi] <- "Blood - other"
 	l[[i+1]] <- data.frame(perm=i, type=difres$type, sddif=difres$sddif, sddif2=difres$sddif2)
 }
 
@@ -176,6 +176,16 @@ ggsave(p, file="../images/real_vs_perm4.pdf")
 
 l %>% group_by(type2, perm == 0) %>% summarise(n=n(), m=mean(sddif), s=sd(sddif), ma=max(sddif), np=sum(sddif>20))
 
+
+
+
+### Counts
+
+load("../data/trans_clumped.rdata")
+clumped <- merge(clumped, snpres, by="snp")
+clumped <- merge(clumped, cpgres, by="cpg")
+
+temp <- subset(snpres, anno %in% blood$index)
 
 
 
