@@ -48,7 +48,7 @@ ggsave(p1,file="Mqtl_GeneticVariance.pdf")
 #how much of the height variance
 
 h<-read.table("GIANT_HEIGHT_Wood_et_al_2014_publicrelease_HapMapCeuFreq.txt.gz",he=T)
-bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep=" ",he=F)
+bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
 m<-match(h$MarkerName,bim$V2)
 h<-data.frame(SNP=paste0("chr",bim[m,1],":",bim[m,4],":SNP"),h)
 h$b_sq<-h$b^2
@@ -61,15 +61,15 @@ r<-read.table("height_snps.txt",he=F,sep="\t")
 
 h$height_mqtl<-"no_mqtl"
 w<-which(h$MarkerName%in%r$V1)
-h$height_mqtl[w]<-"height SNPs"
+h$height_mqtl[w]<-"height SNPs (n=697)"
 h_all<-h[w,]
 
 w<-which(h$SNP%in%mqtl)
-h$height_mqtl[w]<-"height mqtl"
+h$height_mqtl[w]<-"height mqtl (n=39)"
 h_all2<-h[w,]
 
 w<-which(h$SNP%in%sds)
-h$height_mqtl[w]<-"height mqtl sds"
+h$height_mqtl[w]<-"height mqtl sds (n=5)"
 h_all3<-h[w,]
 
 h_all<-rbind(h_all,h_all2,h_all3)

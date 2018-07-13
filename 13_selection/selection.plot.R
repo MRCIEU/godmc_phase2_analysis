@@ -76,15 +76,87 @@ f.all2<-f.all[w,]
 
 m<-max(-log10(df2$Pvalue))
 
-p1<-ggplot(df2,aes(x=Annotation,y=-log10(Pvalue),size=logOddsRatio,fill=Type))+
-  geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+
-  geom_point(alpha=0.7,shape=21,stroke=1)+
-  ylim(0,(m+3))+
-  facet_wrap(~Category,scale="free_x",ncol=1)+
-  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5,size=15),legend.position="bottom")+
-  scale_size(range=c(1,8))+
-  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))
+f.all2_cis<-f.all2[f.all2$Category=="cisonly",]
 
+f.all2_sds<-f.all2[which(f.all2$sds=="1"),]
+hla<-which(f.all2_sds$snpchr=="chr6"&f.all2_sds$min>29570005&f.all2_sds$max<33377657)
+lct<-which(f.all2_sds$snpchr=="chr2"&f.all2_sds$min>134608646&f.all2_sds$max<138608646)
+w<-c(hla,lct)
+f.all2_sds<-f.all2_sds<-f.all2_sds[-w,]
+
+p1<-ggplot(f.all2, aes(x=sds_score, y=abs(max_abs_Effect))) +
+  stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE,n=200) + 
+  geom_point(size=0.5) +
+  facet_wrap(~Category,scale="free_x",ncol=1)+
+  stat_density2d(geom="tile", aes(fill=..density..^0.25,alpha=ifelse(..density..^0.25<0.4,0,1)), contour=FALSE) + 
+  scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256))+
+  xlim(-10,10)
+  ggsave(p1,file="./images/selection_smoothscatter.pdf")
+
+dat_sig <- subset(dat, !grepl("metabolites__", fn) & nsnp > 3 & binom4 < 0.05/nrow(dat))
+dat_nsig <- subset(dat, !grepl("metabolites__", fn) & nsnp > 3 & binom4 >= 0.05/nrow(dat))
+
+p1 <- ggplot(subset(dat_nsig, !grepl("metabolites__", fn) & nsnp > 3), aes(x=label, y=-log10(binom4))) +
+geom_point(aes(size=nsnp)) +
+geom_point(data=dat_sig, aes(colour=as.factor(clust), size=nsnp)) +
+
+#lct 134608646-138608646
+#hla 29570005-33377657
+#wdfy4 49893518-50191001
+
+w<-which(!is.na(f.all2$sds_score))
+table(f.all2$Category[w])
+
+#cisonly cis+trans transonly 
+#    92651     26972       380 
+
+hla<-which(f.all2$snpchr=="chr6"&f.all2$min>24570005&f.all2$max<38377657)
+lct<-which(f.all2$snpchr=="chr2"&f.all2$min>129608646&f.all2$max<143608646)
+wdfy4<-which(f.all2$snpchr=="chr10"&f.all2$min>44893518&f.all2$max<55191001)
+w<-c(hla,lct,wdfy4)
+hla<-f.all2[hla,]
+lct<-f.all2[lct,]
+wdfy4<-f.all2[wdfy4,]
+
+
+p2<-ggplot(f.all2[-w,], aes(sds_score, abs(max_abs_Effect))) +
+geom_point(alpha=0.2,size=0.5) +
+geom_point(data=hla,aes(colour="HLA"),size=0.5) +
+geom_point(data=lct,aes(colour="LCT"),size=0.5) +
+geom_point(data=wdfy4,aes(colour="WDFY4"),size=0.5) +
+
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+facet_wrap(~Category,scale="free_x",ncol=3)+
+geom_smooth(method="lm", colour="red") +
+#geom_smooth(method="lm", formula=sds_score ~ MAF) +
+labs(x="sds_score", y="max Effect size (SD)") +
+xlim(-10,10)
+ggsave(p2,file="./images/selection_sds.png",height=2,width=8)
+
+#w<-which(!is.na(f.all2$Fst_score))
+#table(f.all2$Category[w])
+
+#cisonly cis+trans transonly 
+#   142247     61544       700 
+
+p2<-ggplot(f.all2[-w,], aes(Fst_score, abs(max_abs_Effect))) +
+geom_point(alpha=0.2,size=0.5) +
+geom_point(data=hla,aes(colour="HLA"),size=0.5) +
+geom_point(data=lct,aes(colour="LCT"),size=0.5) +
+geom_point(data=wdfy4,aes(colour="WDFY4"),size=0.5) +
+
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+facet_wrap(~Category,scale="free_x",ncol=3)+
+geom_smooth(method="lm", colour="red") +
+#geom_smooth(method="lm", formula=sds_score ~ MAF) +
+labs(x="Fst_score", y="max Effect size (SD)") +
+xlim(0,0.8)
+ggsave(p2,file="./images/selection_fst.png",height=2,width=8)
+
+
+#
 p2<-ggplot(f.all2, aes(sds_score, abs(max_abs_Effect),colour=Category)) +
 geom_point(alpha=0.2) +
 # stat_density_2d(aes(fill = ..level..), geom="polygon") +
@@ -239,9 +311,15 @@ max(f.all$sds_score,na.rm=T)
 f.all2$sds_scoresq<-f.all2$sds_score^2
 hla<-which(f.all2$snpchr=="chr6"&f.all2$min>29570005&f.all2$max<33377657)
 lct<-which(f.all2$snpchr=="chr2"&f.all2$min>134608646&f.all2$max<138608646)
+
 excl<-c(hla,lct)
 f.all3<-f.all2[-excl,]
-f.all4<-f.all2[-hla,]
+
+hla<-which(f.all2$snpchr=="chr6"&f.all2$min>24570005&f.all2$max<38377657)
+lct<-which(f.all2$snpchr=="chr2"&f.all2$min>129608646&f.all2$max<143608646)
+wdfy4<-which(f.all2$snpchr=="chr10"&f.all2$min>44893518&f.all2$max<55191001)
+excl<-c(hla,lct,wdfy4)
+f.all4<-f.all2[-excl,]
 
 w1<-which(f.all2$snp_cis=="TRUE") #5138085
 w2<-which(f.all2$snp_cis=="FALSE") #95610
@@ -292,12 +370,27 @@ summary(lm(data=f.all3,abs(max_abs_Effect)~sds_score+MAF))
 #sds_score    0.0024532  0.0007265   3.377 0.000733 ***
 #MAF         -0.3292750  0.0056566 -58.211  < 2e-16 ***
 
+summary(lm(data=f.all4,abs(max_abs_Effect)~sds_score+MAF))
+
+#Coefficients:
+#              Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)  0.5832948  0.0016531 352.852   <2e-16 ***
+#sds_score   -0.0010067  0.0007537  -1.336    0.182    
+#MAF         -0.3159541  0.0056771 -55.654   <2e-16 ***
+
 summary(lm(data=f.all3,abs(max_abs_Effect)~sds_scoresq+MAF))
 #Coefficients:
 #              Estimate Std. Error t value Pr(>|t|)    
 #(Intercept)  0.5781901  0.0017017  339.77   <2e-16 ***
 #sds_scoresq  0.0091772  0.0003769   24.35   <2e-16 ***
 #MAF         -0.3246689  0.0056435  -57.53   <2e-16 ***
+
+summary(lm(data=f.all4,abs(max_abs_Effect)~sds_scoresq+MAF))
+
+#Coefficients:
+#             Estimate Std. Error t value Pr(>|t|)    
+#(Intercept) 0.4981521  0.0009257 538.155  < 2e-16 ***
+#sds_scoresq 0.0031628  0.0005370   5.889 3.88e-09 ***
 
 #cis
 summary(lm(data=f.all2[w1,],abs(max_abs_Effect)~sds_score))
@@ -477,5 +570,3 @@ ggsave(p2, file="./images/sdspval.pdf", width=10, height=10)
 #
 w<-which(abs(f.all2$sds_score)>4)
 f.all2[w,"SNP"]
-
-
