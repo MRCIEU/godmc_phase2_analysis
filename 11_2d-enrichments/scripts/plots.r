@@ -9,6 +9,69 @@ load("../results/difres/difres0.rdata")
 load("../data/annotations.rdata")
 load("../data/blood.rdata")
 
+
+load("../data/blood.rdata")
+tfbs <- subset(anno, collection == "encode_tfbs")
+
+l <- data_frame(
+  perm = 0:100,
+  max=NA,
+  sum20=NA,
+  maxtfbs=NA,
+  sum20tfbs=NA,
+  maxblood=NA,
+  sum20blood=NA
+)
+
+for(i in 0:100)
+{
+  message(i)
+  load(paste0("../results/difres/difres", i, ".rdata"))
+  a <- subset(difres, Var1 %in% tfbs$index & Var2 %in% tfbs$index)
+  b <- subset(difres, Var1 %in% blood$index & Var2 %in% blood$index)
+  l$max[i+1] <- max(difres$sddif)
+  l$sum20[i+1] <- sum(difres$sddif>20)
+  l$maxtfbs[i+1] <- max(a$sddif)
+  l$sum20tfbs[i+1] <- sum(a$sddif>20)
+  l$maxblood[i+1] <- max(b$sddif)
+  l$sum20blood[i+1] <- sum(b$sddif>20)
+}
+
+# What is the 95% FDR for tfbs and blood
+
+load("../results/difres/difres0.rdata")
+difres$snpanno <- anno$antibody2[difres$Var1]
+difres$cpganno <- anno$antibody2[difres$Var2]
+difres$sddif2 <- difres$sddif
+difres$sddif2[difres$val < difres$Mean] <- difres$sddif2[difres$val < difres$Mean] * -1
+
+summary(difres$sddif2)
+# hist(difres$sddif2)
+# All values that are 'depleted' are not significant
+a <- subset(difres, Var1 %in% tfbs$index & Var2 %in% tfbs$index)
+b <- subset(difres, Var1 %in% blood$index & Var2 %in% blood$index)
+thresh_tfbs <- l$maxtfbs[-1] %>% sort(decreasing = TRUE) %>% .[5]
+thresh_blood <- l$maxblood[-1] %>% sort(decreasing = TRUE) %>% .[5]
+sum(a$sddif > thresh_tfbs)
+sum(b$sddif > thresh_blood)
+
+sum(a$sddif > thresh_tfbs) / nrow(tfbs)^2
+sum(b$sddif > thresh_blood) / nrow(blood)^2
+
+sum(a$sddif2 > thresh_tfbs) / nrow(tfbs)^2
+sum(b$sddif2 > thresh_blood) / nrow(blood)^2
+
+sum(a$sddif > max(l$maxtfbs[-1])) / nrow(tfbs)^2
+sum(b$sddif > max(l$maxblood[-1])) / nrow(blood)^2
+
+arrange(b, sddif2) %>% head
+
+
+##############
+
+
+
+
 temp <- subset(difres, Var1 %in% blood$index & Var2 %in% blood$index & sddif > 22, select=c(snpanno, cpganno, sddif))
 temp <- subset(temp, !is.na(snpanno) & !is.na(cpganno))
 temp <- cSplit(temp, "snpanno", sep = ";", direction = "long")
@@ -17,13 +80,14 @@ temp <- group_by(temp, cpganno, snpanno) %>%
  	summarise(sddif = mean(sddif), count=n())
 
 
-temp <- subset(difres, sddif > 22, select=c(snpanno, cpganno, sddif))
+blood2 <- subset(blood, collection == "encode_tfbs")
+temp <- subset(difres, Var1 %in% blood2$index & Var2 %in% blood2$index & sddif > 12, select=c(snpanno, cpganno, sddif)) %>% arrange(desc(sddif)) %>% subset(!duplicated(paste(snpanno, cpganno)))
 temp <- subset(temp, !is.na(snpanno) & !is.na(cpganno))
 temp <- cSplit(temp, "snpanno", sep = ";", direction = "long")
 temp <- cSplit(temp, "cpganno", sep = ";", direction = "long")
 temp <- group_by(temp, cpganno, snpanno) %>%
  	summarise(sddif = mean(sddif), count=n())
-
+dim(temp)
 
 # temp2 <- subset(temp, !snpanno %in% cpganno)
 # a <- gvisSankey(temp2[,c("snpanno", "cpganno", "sddif")])
@@ -68,8 +132,8 @@ plotweb(dw, text.rot=90,
 )
 dev.off()
 
-bloodi <- subset(anno, tissue == "blood")$index
-notbloodi <- anno$index[!anno$index %in% blood]
+bloodi <- subset(anno, index %in% blood2$index)$index
+notbloodi <- subset(anno, index %in% tfbs$index & !index %in% blood2$index)$index
 
 l <- list()
 for(i in 0:100)
@@ -132,7 +196,7 @@ load("../data/trans_clumped.rdata")
 clumped <- merge(clumped, snpres, by="snp")
 clumped <- merge(clumped, cpgres, by="cpg")
 
-temp <- subset(snpres, anno %in% blood$index)
+temp <- subset(snpres, anno %in% blood2$index)
 
 
 
@@ -148,17 +212,34 @@ dw2 <- dw
 dw2[dw2 != 0] <- 1
 rownames(dw2) <- paste("SNP", rownames(dw2))
 colnames(dw2) <- paste("CpG", colnames(dw2))
-n <- ggnetwork(dw2)
-
+n <- ggnetwork(dw2, layout = "kamadakawai")
+n$vn <- as.character(n$vertex.names)
+n$vn <- gsub("SNP ", "", n$vn)
+n$vn <- gsub("CpG ", "", n$vn)
 ggplot(n, aes(x, y, xend = xend, yend = yend)) + 
   geom_edges(color = "grey50") + 
   geom_nodelabel(data = n[ !grepl("SNP", n$vertex.names), ],
-                 aes(label = vertex.names),
-                 color = "grey50", label.size = NA) +
+                 aes(label = vn),
+                 color = "red", fontface="bold") +
   geom_nodelabel(data = n[ grepl("SNP", n$vertex.names), ],
-                 aes(label = vertex.names),
+                 aes(label = vn),
                  color = "steelblue", fontface = "bold") +
   theme_blank()
+ggsave("../images/bipartite_network.pdf")
+
+
+
+## examples
+
+# irf1 - ezh2 - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5501188/ (ezh2 mediates silencing of irf1)
+# irf1 - smc3 - cohesin
+# irf1 - bcl3 - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4133603/ (co-downregulated during inflammation in macrophages)
+# irf1 - atf3 - atf3 is a negative regulator of cytokines which induce irf1 https://www.ncbi.nlm.nih.gov/pubmed/7688150 https://www.ncbi.nlm.nih.gov/pubmed/16688168
+# irf1 - max
+# irf1 - tr4
+
+
+
 
 
 n <- dw2 %*% t(dw2) %>%
@@ -182,3 +263,13 @@ ggplot(ggnetwork(n, layout = "kamadakawai"),
   scale_color_brewer(palette = "Set1", guide = FALSE) +
   scale_size_continuous(range = c(3, 6), guide = FALSE) +
   theme_blank()
+
+
+
+## pull out top hits
+
+load("../results/difres/difres0.rdata")
+top <- subset(difres, sddif > 10 & Var1 %in% blood2$index & Var2 %in% blood2$index)
+top <- merge(top, subset(anno, select=c(index, antibody2)), by.x="Var1", by.y="index")
+top <- merge(top, subset(anno, select=c(index, antibody2)), by.x="Var2", by.y="index")
+top <- arrange(top, desc(sddif))
