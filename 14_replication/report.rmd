@@ -180,7 +180,8 @@ kable(rep3)
 ggplot(subset(temp), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=gs.sig)) +
 facet_grid(. ~ cist) +
-labs(x="GoDMC effect size", y="GS effect size")
+labs(x="GoDMC effect size", y="GS effect size", colour="Significant\nreplication")
+ggsave("images/replication.png", width=12, height=6)
 ```
 
 ## Expected vs observed replication rates
@@ -430,6 +431,7 @@ ggplot(subset(mc, !is.na(h2_cc) & !is.na(r2)), aes(x=as.factor(h2_cc_r), y=r2)) 
 geom_boxplot(outlier.size=0.01) +
 theme(axis.text.x=element_text(angle=90, size=3)) +
 labs(x="Pedigree heritability estimate", y="Variance explained in GS replication")
+
 ```
 
 ```{r, echo=FALSE}
@@ -447,4 +449,40 @@ Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, m
 
 
 ## Create tables
-## save plots
+
+```{r}
+# Replication
+
+tab1 <- with(temp, data_frame(
+	snp=snp, cpg=cpg, effect_allele=Allele1, other_allele=Allele2, discovery_beta=Effect, discovery_se=StdErr, discovery_n=TotalSampleSize, discovery_pval=pval, discovery_isq=HetISq, cis=cis,
+	replication_beta=beta1, replication_se=se, replication_n=n, replication_pval=p, replication_rsq=r2
+))
+
+tab2l <- tidyr::gather(tab2, key="key", value="value", h2_mcrae, h2_vandongen)
+tab2l$key[tab2l$key=="h2_mcrae"] <- "Family"
+tab2l$key[tab2l$key=="h2_vandongen"] <- "Twin"
+
+p1 <- ggplot(tab2l, aes(x=as.factor(round(value, 2)), y=r2)) +
+geom_boxplot(outlier.size=0.01, aes(fill=key)) +
+theme(axis.text.x=element_text(angle=90, size=3)) +
+labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
+ggsave(p1, file="images/h2_vs_r2.pdf", width=11, height=5.5)
+
+# h2
+
+tab2a <- with(mcrae, data_frame(
+	cpg=cpg, h2_mcrae=h2_cc
+))
+
+tab2b <- with(vandongen, data_frame(
+	cpg=cgid, h2_vandongen=h2_twinAE
+))
+
+tab2 <- inner_join(tab2a, tab2b, by="cpg")
+tab2 <- inner_join(subset(temp2, select=-c(what)), tab2, by=c("cpg"="cpg"))
+
+write.csv(tab1, file="results/replication.csv")
+write.csv(tab2, file="results/variance_explained.csv")
+
+```
+
