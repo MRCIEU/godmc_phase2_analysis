@@ -101,7 +101,7 @@ ind <- temp2$what == "unavailable"
 temp2$a1[ind] <- temp2$Allele1[ind]
 temp2$a2[ind] <- temp2$Allele2[ind]
 temp2$beta1[ind] <- 0
-temp2$se[ind] <- 
+# temp2$se[ind] <- 
 
 
 
@@ -131,20 +131,20 @@ group_by(temp2) %>% summarise(
 	prepprop=prepsum/n
 )
 
-p(sign | 1e-3) = p(1e-3 | sign) * p(sign) / p(1e-3)
+#p(sign | 1e-3) = p(1e-3 | sign) * p(sign) / p(1e-3)
 clumped$prep1 <- psig(clumped$Effect*0.5, clumped$StdErrMRE, 1e-3)
 
-group_by(temp, what) %>% summarise(
-	prepsum=sum(prep1),
-	n=n(),
-	prepprop=prepsum/n
-)
+# group_by(temp, what) %>% summarise(
+# 	prepsum=sum(prep1),
+# 	n=n(),
+# 	prepprop=prepsum/n
+# )
 
-group_by(temp, what) %>% summarise(
-	a = sum(sign(Effect) == sign(beta1)),
-	n = n(),
-	prop = a/n
-)
+# group_by(temp, what) %>% summarise(
+# 	a = sum(sign(Effect) == sign(beta1)),
+# 	n = n(),
+# 	prop = a/n
+# )
 
 
 # table(temp$Allele1 == temp$a1 | temp$Allele2 == temp$a1)
@@ -180,7 +180,8 @@ kable(rep3)
 ggplot(subset(temp), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=gs.sig)) +
 facet_grid(. ~ cist) +
-labs(x="GoDMC effect size", y="GS effect size")
+labs(x="GoDMC effect size", y="GS effect size", colour="Significant\nreplication")
+ggsave("images/replication.png", width=12, height=6)
 ```
 
 ## Expected vs observed replication rates
@@ -296,7 +297,9 @@ Using an independent replication allows unbiased estimate of phenotypic variance
 ```{r, echo=FALSE}
 
 ggplot(temp, aes(x=r2)) +
-geom_density(aes(fill=cist), alpha=0.3)
+geom_density(aes(fill=cist), alpha=0.3) +
+labs(x="CpG variance explained", fill="mQTLs")
+ggsave("images/varexp.pdf")
 ```
 
 We previously calculated (with low precision) the SNP h2 of each CpG
@@ -357,7 +360,7 @@ temp5 <- subset(temp5, select=c(what, hsq, r2, ord)) %>%
 		gather(., key=key, value=value, -ord)
 	})
 temp5 <- temp5[nrow(temp5):1, ]
-ggplot(temp5[sample(1:nrow(temp5), 100000), aes(x=ord, y=value)) +
+ggplot(temp5[sample(1:nrow(temp5), 100000),], aes(x=ord, y=value)) +
 geom_point(aes(colour=key)) +
 geom_smooth(data=subset(temp5, what=="gs_r2")) +
 facet_grid(what ~ .)
@@ -395,7 +398,7 @@ labs(x="Twin heritability estimate", y="Variance explained in GS replication")
 ```{r, echo=FALSE}
 vd2 <- gather(subset(vd, h2_twinAE != 0, select=c(r2, h2_twinAE, ord)),key, value, -ord)
 vd <- subset(vd, h2_twinAE != 0)
-vd$prop <- vd$r2 / vd$h2_twinAE
+vd$prop <- (vd$r2 / vd$h2_twinAE)
 vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 
 	group_by(vd3, key) %>%
@@ -403,14 +406,104 @@ vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 	kable
 ```
 
+Correlation between variance explained in GoDMC and h2_twin: `r cor(vd$r2, vd$h2_twinAE)`
 
+Do the same with McRae pedigree-based h2 estimates
 
-```{r, }
-ggplot(vd2, aes(x=ord, y=value)) +
-geom_point(aes(colour=key)) +
-geom_smooth(data=subset(vd2, key=="r2"))
+```{r, echo=FALSE}
+# load("vanDongen_h2gt50_probes.RData")
+mcrae <- fread("https://static-content.springer.com/esm/art%3A10.1186%2Fgb-2014-15-5-r73/MediaObjects/13059_2013_3271_MOESM1_ESM.txt")
+names(mcrae) <- c("cpg", "chr", "pos", "ncpg", "probetype", "classification", "nsnp", "h2", "h2_cc")
+p <- sum(mcrae$cpg %in% temp2$cpg)
 ```
 
-###
+* There are `r nrow(mcrae)` CpGs with significant h2 estimates in McRae. 
+* `r p` were present in the GS replication dataset
 
-library(xlsx)
+What proportion of the h2 is explained by mQTLs?
+
+```{r, echo=FALSE}
+mc <- inner_join(temp2, mcrae, by=c("cpg"="cpg"))
+mc$ord <- rank(mc$h2_cc)
+mc$h2_cc_r <- round(mc$h2_cc, 2)
+```
+
+```{r, echo=FALSE}
+ggplot(subset(mc, !is.na(h2_cc) & !is.na(r2)), aes(x=as.factor(h2_cc_r), y=r2)) +
+geom_boxplot(outlier.size=0.01) +
+theme(axis.text.x=element_text(angle=90, size=3)) +
+labs(x="Pedigree heritability estimate", y="Variance explained in GS replication")
+
+```
+
+```{r, echo=FALSE}
+mc2 <- gather(subset(mc, h2_cc != 0, select=c(r2, h2_cc, ord)),key, value, -ord)
+mc <- subset(mc, h2_cc != 0)
+mc$prop <-(mc$r2 / mc$h2_cc)
+mc3 <- gather(subset(mc, select=c(r2, h2_cc, prop, ord)),key, value, -ord)
+
+	group_by(mc3, key) %>%
+	summarise(mean=mean(value), median=median(value)) %>%
+	kable
+```
+
+Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, mc$h2_cc)`
+
+Visualise proportion variance explained
+
+```{r}
+mc4 <- group_by(subset(mc, h2_cc_r!=0), h2_cc_r) %>%
+summarise(n=n(), r2=mean(r2), propm=mean(prop), propsd=sd(prop))
+mc4$propb <- pmin(mc4$propm, 1)
+
+range01 <- function(x) pmax(pmin(x, 1), 0)
+
+ggplot(mc4, aes(x=h2_cc_r, y=propb)) +
+geom_errorbar(aes(ymin=range01(propb-propsd), ymax=range01(propm+propsd))) +
+geom_point(aes(size=n, colour=n)) +
+# ylim(0, 1) +
+labs(x="Estimated heritability (binned)", y="Proportion of variance explained", size="Number of CpGs in bin", colour="Number of CpGs in bin") +
+scale_color_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
+scale_size_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
+guides(color= guide_legend(), size=guide_legend())
+ggsave("images/prop_h2_explained.pdf")
+```
+
+## Create tables
+
+```{r}
+# Replication
+
+tab1 <- with(temp, data_frame(
+	snp=snp, cpg=cpg, effect_allele=Allele1, other_allele=Allele2, discovery_beta=Effect, discovery_se=StdErr, discovery_n=TotalSampleSize, discovery_pval=pval, discovery_isq=HetISq, cis=cis,
+	replication_beta=beta1, replication_se=se, replication_n=n, replication_pval=p, replication_rsq=r2
+))
+
+tab2l <- tidyr::gather(tab2, key="key", value="value", h2_mcrae, h2_vandongen)
+tab2l$key[tab2l$key=="h2_mcrae"] <- "Family"
+tab2l$key[tab2l$key=="h2_vandongen"] <- "Twin"
+
+p1 <- ggplot(tab2l, aes(x=as.factor(round(value, 2)), y=r2)) +
+geom_boxplot(outlier.size=0.01, aes(fill=key)) +
+theme(axis.text.x=element_text(angle=90, size=3)) +
+labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
+ggsave(p1, file="images/h2_vs_r2.pdf", width=11, height=5.5)
+
+# h2
+
+tab2a <- with(mcrae, data_frame(
+	cpg=cpg, h2_mcrae=h2_cc
+))
+
+tab2b <- with(vandongen, data_frame(
+	cpg=cgid, h2_vandongen=h2_twinAE
+))
+
+tab2 <- inner_join(tab2a, tab2b, by="cpg")
+tab2 <- inner_join(subset(temp2, select=-c(what)), tab2, by=c("cpg"="cpg"))
+
+write.csv(tab1, file="results/replication.csv")
+write.csv(tab2, file="results/variance_explained.csv")
+
+```
+

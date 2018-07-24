@@ -94,14 +94,6 @@ anno$antibody2 <- sapply(strsplit(as.character(anno$antibody2), split="\\("), fu
 anno$antibody2 <- gsub("eGFP-", "", anno$antibody2)
 
 
-difres$snpanno <- anno$antibody2[difres$Var1]
-difres$cpganno <- anno$antibody2[difres$Var2]
-difres$sddif2 <- difres$sddif
-difres$sddif2[difres$val < difres$Mean] <- difres$sddif2[difres$val < difres$Mean] * -1
-
-summary(difres$sddif2)
-# hist(difres$sddif2)
-# All values that are 'depleted' are not significant
 
 blood <- subset(anno, tissue == "blood")
 

@@ -124,8 +124,17 @@ dat <- group_by(dat, creg) %>%
 # gr2 <- graph_from_data_frame(dat2, directed=TRUE)
 # gr3 <- graph_from_data_frame(dat3, directed=TRUE)
 gr <- graph_from_data_frame(dat, directed=TRUE)
-
 wc <- cluster_walktrap(gr, steps=20)
+
+
+# Is HLA driving communities?
+
+dat6 <- subset(dat, !creg_chr %in% "chr6" & !tcpg_chr %in% "chr6" & !grepl("chr6", snp))
+gr6 <- graph_from_data_frame(dat6, directed=TRUE)
+wc6 <- cluster_walktrap(gr6, steps=20)
+
+length(wc) # 1615
+length(wc6) # 1472
 
 # # Simplifying doesn't work:
 # gr2a <- igraph::simplify(gr2)
