@@ -48,7 +48,7 @@ clumped$cist[!clumped$cis] <- "trans"
 clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
 clumped$code <- clumped %$% paste(snp, cpg)
 temp <- inner_join(
-	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
+	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Freq1, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
 	subset(gs, select=c(snpid, cpg, a1, a0, beta1, se, p, r2, n)),
 	by=c("snp"="snpid", "cpg"="cpg")
 )
@@ -60,6 +60,7 @@ temp$beta1[index] <- temp$beta1[index] * -1
 temp2 <- temp$a0[index]
 temp$a0[index] <- temp$a1[index]
 temp$a1[index] <- temp2
+temp$rsqdisc <- 2 * temp$Freq1 * (1-temp$Freq1) * temp$Effect^2
 
 tempsig <- subset(temp, pval < 1e-8 & cis | pval < 1e-14 & !cis)
 

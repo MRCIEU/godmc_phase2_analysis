@@ -2,6 +2,8 @@
 # BMI, HDL, LDL, trigs
 # 
 
+library(TwoSampleMR)
+ao <- available_outcomes()
 library(dplyr)
 
 ewas <- read.table("../data/EWAS_Catalog_20-02-2018.txt.gz", he=T, sep="\t", stringsAsFactors=FALSE)
@@ -12,8 +14,6 @@ traits2 <- read.csv("../../data/gwas/00info.csv")
 traits2$id_10 <- 1:nrow(traits2)
 load("../data/snps_gwas.rdata")
 
-library(TwoSampleMR)
-ao <- available_outcomes()
 ao$name <- paste(ao$trait, "||", ao$consortium, "||", ao$year, "||", ao$unit)
 traits <- unique(subset(a, data_source.exposure == "mrbase")$exposure)
 table(traits %in% ao$name)
@@ -42,9 +42,9 @@ a0 <- merge(subset(a0, select=c(exposure, id_06)), temp, by.x="exposure", by.y="
 temp <- subset(a0, !is.na(id_06) | !is.na(id_10))
 
 # Some traits are duplicated, look by eye to remove the out of date ones
-data.frame(substr(as.character(a1$exposure), start=1, stop=50), a1$n)
 remove_ids <- c(148,147,141,142,137,138,136,134,124,114,111,106,85,86,87,63,64,56,57,33,34,30,20,21,22,18,14,7)
 a1 <- a0[-remove_ids,]
+data.frame(substr(as.character(a1$exposure), start=1, stop=50), a1$n)
 
 
 
