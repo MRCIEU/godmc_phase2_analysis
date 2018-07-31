@@ -3,15 +3,15 @@
 #PBS -N hi-c-Rao_clean
 #PBS -o /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/norm_clean-output
 #PBS -e /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/norm_clean-error
-#PBS -l walltime=50:00:00
-#PBS -l nodes=1:ppn=1
-#PBS -t 201-253
+#PBS -l walltime=200:00:00
+#PBS -l nodes=1:ppn=2
+#PBS -t 18
 ## PBS -t 101-200
 ## PBS -t 201-253
 #PBS -S /bin/bash
 
 ## NOTE: Submit 50 jobs to each array to prevent no space on device error: 
-## chr[1, 2 & 3] + chr[i] interactions take >50 hours to normalise 
+## some chr[1, 2 & 3] + chr[i] interactions take >200 hours to normalise 
 
 set -e
 
@@ -31,7 +31,6 @@ start_time=`date +%s`
 # divide 59 by ((40000/1000)+1=41) 41st line and ((41000/1000)+1=42) 42nd line
 # therefore = 59/(line_i*line_j)
 # KR vectors i=first chr (left) and j=second chr (right)
-# Look at O/E and if this should be done
 # All data 1kb matrix resolution and > MAPQE30
 
 
@@ -55,10 +54,10 @@ for x in ${dir[@]}; do
 echo $x
 cd ~/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/$x/MAPQGE30/
 pwd
-rm -f norm.i norm.j
+rm -f norm.j
 
-sort -gk 1 *.RAWobserved > ${x}_1kb.RAWobservedi
-sort -gk 2 *.RAWobserved > ${x}_1kb.RAWobservedj
+#sort -gk 1 *.RAWobserved > ${x}_1kb.RAWobservedi
+#sort -gk 2 *.RAWobserved > ${x}_1kb.RAWobservedj
 
 awk '{ print $1/1000+1 }' ${x}_1kb.RAWobservedi > lines_i
 awk '{ print $2/1000+1 }' ${x}_1kb.RAWobservedj > lines_j
