@@ -25,7 +25,7 @@ load_permutations <- function()
 
 	res <- reshape2::melt(real)
 
-	for(i in 1:100)
+	for(i in 1:1000)
 	{
 		message(i)
 		load(paste0("../results/matrix/m", i, ".rdata"))

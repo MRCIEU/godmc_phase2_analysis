@@ -48,7 +48,7 @@ clumped$cist[!clumped$cis] <- "trans"
 clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
 clumped$code <- clumped %$% paste(snp, cpg)
 temp <- inner_join(
-	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
+	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Freq1, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
 	subset(gs, select=c(snpid, cpg, a1, a0, beta1, se, p, r2, n)),
 	by=c("snp"="snpid", "cpg"="cpg")
 )
@@ -60,6 +60,7 @@ temp$beta1[index] <- temp$beta1[index] * -1
 temp2 <- temp$a0[index]
 temp$a0[index] <- temp$a1[index]
 temp$a1[index] <- temp2
+temp$rsqdisc <- 2 * temp$Freq1 * (1-temp$Freq1) * temp$Effect^2
 
 tempsig <- subset(temp, pval < 1e-8 & cis | pval < 1e-14 & !cis)
 
@@ -298,7 +299,9 @@ Using an independent replication allows unbiased estimate of phenotypic variance
 ```{r, echo=FALSE}
 
 ggplot(temp, aes(x=r2)) +
-geom_density(aes(fill=cist), alpha=0.3)
+geom_density(aes(fill=cist), alpha=0.3) +
+labs(x="CpG variance explained", fill="mQTLs")
+ggsave("images/varexp.pdf")
 ```
 
 We previously calculated (with low precision) the SNP h2 of each CpG
@@ -397,7 +400,7 @@ labs(x="Twin heritability estimate", y="Variance explained in GS replication")
 ```{r, echo=FALSE}
 vd2 <- gather(subset(vd, h2_twinAE != 0, select=c(r2, h2_twinAE, ord)),key, value, -ord)
 vd <- subset(vd, h2_twinAE != 0)
-vd$prop <- pmin(vd$r2 / vd$h2_twinAE, 1)
+vd$prop <- (vd$r2 / vd$h2_twinAE)
 vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 
 	group_by(vd3, key) %>%
@@ -438,7 +441,7 @@ labs(x="Pedigree heritability estimate", y="Variance explained in GS replication
 ```{r, echo=FALSE}
 mc2 <- gather(subset(mc, h2_cc != 0, select=c(r2, h2_cc, ord)),key, value, -ord)
 mc <- subset(mc, h2_cc != 0)
-mc$prop <- pmin(mc$r2 / mc$h2_cc, 1)
+mc$prop <-(mc$r2 / mc$h2_cc)
 mc3 <- gather(subset(mc, select=c(r2, h2_cc, prop, ord)),key, value, -ord)
 
 	group_by(mc3, key) %>%
@@ -448,6 +451,25 @@ mc3 <- gather(subset(mc, select=c(r2, h2_cc, prop, ord)),key, value, -ord)
 
 Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, mc$h2_cc)`
 
+Visualise proportion variance explained
+
+```{r}
+mc4 <- group_by(subset(mc, h2_cc_r!=0), h2_cc_r) %>%
+summarise(n=n(), r2=mean(r2), propm=mean(prop), propsd=sd(prop))
+mc4$propb <- pmin(mc4$propm, 1)
+
+range01 <- function(x) pmax(pmin(x, 1), 0)
+
+ggplot(mc4, aes(x=h2_cc_r, y=propb)) +
+geom_errorbar(aes(ymin=range01(propb-propsd), ymax=range01(propm+propsd))) +
+geom_point(aes(size=n, colour=n)) +
+# ylim(0, 1) +
+labs(x="Estimated heritability (binned)", y="Proportion of variance explained", size="Number of CpGs in bin", colour="Number of CpGs in bin") +
+scale_color_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
+scale_size_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
+guides(color= guide_legend(), size=guide_legend())
+ggsave("images/prop_h2_explained.pdf")
+```
 
 ## Create tables
 
