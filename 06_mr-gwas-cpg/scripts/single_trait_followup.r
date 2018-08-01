@@ -168,4 +168,74 @@ lambda(subset(res, outcome %in% cpglist)$pval)
 load("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/joehanes.rdata")
 
 
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+ann <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+ann <- subset(ann, select=c(chr, pos))
+chr6_cpgs <- rownames(ann)[ann$chr == "chr6"]
+tr <- data.frame(id=1:length(traits), trait=traits)
+lam <- expand.grid(chr6=c(TRUE, FALSE), id=1:length(traits), ncpg=NA, nsnp=NA, minp=NA, nsig=NA, lambda=NA, proppos=NA, pdir=NA)
+lam <- merge(lam, tr, by="id")
+for(i in 1:nrow(lam))
+{
+	message(i)
+	if(lam$chr6[i])
+	{
+		load(paste0("../results/out/gwas", lam$trait[i], ".rdata"))
+	} else {
+		res <- subset(res, !outcome %in% chr6_cpgs)
+	}
+	if(nrow(res) > 0)
+	{
+		res$fdr <- p.adjust(res$pval, "fdr")
+		lam$ncpg[i] <- nrow(res)
+		lam$nsnp[i] <- max(res$nsnp)
+		lam$minp[i] <- min(res$pval)
+		lam$nsig[i] <- sum(res$fdr < 0.05)
+		lam$lambda[i] <- lambda(res$pval)[1]
+		lam$proppos[i] <- sum(sign(res$b)==1) / nrow(res)
+		lam$pdir[i] <- binom.test(x=sum(sign(res$b) == 1), n=nrow(res), p=0.5)$p.value
+	}
+}
+lam <- merge(lam, tr, by)
 
+save(lam, file="../results/lambda.rdata")
+load("../results/lambda.rdata")
+
+table(lam$pdir < 0.05)
+hist(lam$proppos)
+plot(lambda ~ I(abs(0.5 - proppos)), subset(lam, !chr6))
+summary(lm(lambda ~ I(abs(0.5 - proppos)), subset(lam, !chr6)))
+
+lama <- subset(lam, chr6)
+lamb <- subset(lam , !chr6)
+plot(lama$proppos, lamb$proppos)
+library(ggplot2)
+ggplot(lam, aes(x=lambda, y=nsig)) +
+geom_point(aes(colour=chr6))
+
+# need to exclude chr6 - leading to massive numbers of hits
+summary(lm(lambda ~ I(abs(0.5 - proppos)), lamb))
+plot(nsig ~ lambda, lamb)
+
+subset(lamb, lambda > 1.05)
+lamb$phen <- do.call(c, lapply(as.character(lamb$trait), function(x) strsplit(x, split="\\|")[[1]][1])) %>% gsub(" $", "", .)
+lamb <- lamb %>% arrange(desc(lambda)) %>% subset(!duplicated(phen))
+lamb$phen <- as.factor(lamb$phen)
+lamb$phen <- factor(lamb$phen, levels=lamb$phen[order(lamb$lambda)])
+ggplot(lamb %>% arrange(lambda), aes(x=phen, y=lambda)) +
+geom_point() +
+geom_hline(yintercept=1, linetype="dotted") +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+labs(x="Phenotype", y="Inflation factor")
+
+
+subset(lamb, lambda>1.05)
+
+load("../results/out/gwas32.rdata")
+
+res <- res[sample(1:nrow(res)), ]
+res$cut <- cut(1:nrow(res), 500)
+lam32 <- res %>% group_by(cut) %>%
+summarise(lambda=lambda(pval)[1])
+
+hist(lam32$lambda, breaks=30)
