@@ -227,15 +227,123 @@ geom_point() +
 geom_hline(yintercept=1, linetype="dotted") +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
 labs(x="Phenotype", y="Inflation factor")
+ggsave("../images/lambda.pdf", width=15, height=8)
+
+library(ggrepel)
+lamb$imbalance <- abs(lamb$proppos - 0.5)
+ggplot(lamb, aes(x=lambda, y=imbalance)) +
+geom_point() +
+geom_smooth(method="lm") +
+geom_label_repel(data=subset(lamb, lambda > 1.05 & imbalance > 0.06), aes(label=phen), size=2) +
+labs(x="p-value inflation", y="Enrichment of positive or negative causal effects")
+ggsave("../images/lambda_vs_imbalance.pdf")
+
+
+
 
 
 subset(lamb, lambda>1.05)
 
-load("../results/out/gwas32.rdata")
+lambtop <- subset(lamb, lambda > 1.05)
+lambtop
 
-res <- res[sample(1:nrow(res)), ]
-res$cut <- cut(1:nrow(res), 500)
-lam32 <- res %>% group_by(cut) %>%
-summarise(lambda=lambda(pval)[1])
+l <- list()
+for(i in 1:nrow(lambtop))
+{
+	message(i)
+	load(paste0("../results/out/gwas", lambtop$id[i], ".rdata"))
+	res <- res[sample(1:nrow(res)), ]
+	res$cut <- cut(1:nrow(res), 500)
+	out <- res %>% group_by(cut) %>%
+	summarise(lambda=lambda(pval)[1])
+	out$id <- lambtop$id[i]
+	out$phen <- lambtop$phen[i]
+	l[[i]] <- out
+}
+lambdatop <- bind_rows(l)
+save(lambdatop, file="../results/lambda_top.rdata")
+load("../results/lambda_top.rdata")
+
+ggplot(lambdatop, aes(x=lambda)) +
+geom_histogram() +
+geom_vline(data=lambtop, aes(xintercept=lambda), colour="red") +
+geom_vline(xintercept=1, linetype="dotted") +
+facet_wrap(~ phen) +
+theme(strip.text=element_text(size=6))
+ggsave("../images/lambda_top.pdf")
 
 hist(lam32$lambda, breaks=30)
+
+
+library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+ann <- getAnnotation(IlluminaHumanMethylation450kanno.ilmn12.hg19)
+ann <- subset(ann, select=c(chr, pos))
+
+load("../results/out/gwas32.rdata")
+ann$cpg <- rownames(ann)
+res <- merge(res, ann, by.x="outcome", by.y="cpg")
+res$chr <- gsub("chr", "", res$chr)
+res$chr[res$chr == "X"] <- 23
+res$chr[res$chr == "Y"] <- 24
+res$chr <- as.numeric(res$chr)
+
+ggplot(res %>% as.data.frame, aes(x=pos, y=-log10(pval) * sign(b))) +
+geom_point() +
+geom_hline(yintercept=-log10(0.05/nrow(res))) +
+geom_hline(yintercept=log10(0.05/nrow(res))) +
+facet_grid(. ~ chr, space="free", scale="free") +
+theme_bw() +
+theme(axis.text.x=element_blank(), axis.ticks.x = element_blank()) +
+labs(x="", y="Signed -log10 p-value of causal effect")
+ggsave("../images/manhattan_menarche.png", width=15, height=6)
+
+load("../results/out/gwas100.rdata")
+ann$cpg <- rownames(ann)
+res <- merge(res, ann, by.x="outcome", by.y="cpg")
+res$chr <- gsub("chr", "", res$chr)
+res$chr[res$chr == "X"] <- 23
+res$chr[res$chr == "Y"] <- 24
+res$chr <- as.numeric(res$chr)
+res$pval[res$pval < 1e-40] <- 1e-40
+ggplot(res %>% as.data.frame, aes(x=pos, y=-log10(pval) * sign(b))) +
+geom_point() +
+geom_hline(yintercept=-log10(0.05/nrow(res))) +
+geom_hline(yintercept=log10(0.05/nrow(res))) +
+facet_grid(. ~ chr, space="free", scale="free") +
+theme_bw() +
+theme(axis.text.x=element_blank(), axis.ticks.x = element_blank()) +
+labs(x="", y="Signed -log10 p-value of causal effect")
+ggsave("../images/manhattan_cpd.png", width=15, height=6)
+
+load("../results/out/gwas102.rdata")
+ann$cpg <- rownames(ann)
+res <- merge(res, ann, by.x="outcome", by.y="cpg")
+res$chr <- gsub("chr", "", res$chr)
+res$chr[res$chr == "X"] <- 23
+res$chr[res$chr == "Y"] <- 24
+res$chr <- as.numeric(res$chr)
+res$pval[res$pval < 1e-40] <- 1e-40
+ggplot(res %>% as.data.frame, aes(x=pos, y=-log10(pval) * sign(b))) +
+geom_point() +
+geom_hline(yintercept=-log10(0.05/nrow(res))) +
+geom_hline(yintercept=log10(0.05/nrow(res))) +
+facet_grid(. ~ chr, space="free", scale="free") +
+theme_bw() +
+theme(axis.text.x=element_blank(), axis.ticks.x = element_blank()) +
+labs(x="", y="Signed -log10 p-value of causal effect")
+ggsave("../images/manhattan_faod.png", width=15, height=6)
+
+
+ao <- available_outcomes()
+exp <- subset(ao, grepl("Cigaret", trait))$id %>% extract_instruments()
+subset(ao, grepl("menarche", trait))
+out <- extract_outcome_data(exp$SNP, 1095)
+dat <- harmonise_data(exp, out)
+
+mr(dat)
+
+exp <- extract_instruments(1095)
+out <- extract_outcome_data(exp$SNP, 961)
+dat <- harmonise_data(exp, out)
+mr(dat)
+

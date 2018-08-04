@@ -24,7 +24,6 @@ load("../results/mrbase_sig_mhc.rdata")
 load("../results/mrbase_sig.rdata")
 
 sig$code <- paste(sig$id.exposure, sig$id.outcome)
-
 a0 <- filter(a, data_source.exposure == "mrbase") %>% group_by(id.exposure, exposure) %>% summarise(n=n()) %>% arrange(exposure, n)
 
 # Some traits are duplicated, look by eye to remove the out of date ones
