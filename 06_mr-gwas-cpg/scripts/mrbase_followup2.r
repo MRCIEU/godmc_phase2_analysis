@@ -55,41 +55,9 @@ do_mr <- function(a, b, chunk)
 		if(nrow(dat) > 0)
 		{
 			message("Analysing")
-			mres <- suppressMessages(mr(dat, metho=c("mr_ivw_radial", "mr_wald_ratio", "mr_sign")))
-			mres <- subset(mres, ! method %in% "Inverse variance weighted")
+			mres <- suppressMessages(mr(dat, metho=c("mr_ivw", "mr_wald_ratio", "mr_sign")))
+			# mres <- subset(mres, ! method %in% "Inverse variance weighted")
 			mres$chunk <- chunk
-			if(any(! mres$method == "Wald ratio"))
-			{
-				het <- mr_heterogeneity(dat, method_list=c("mr_ivw_radial")) %>%
-					subset(select=c(id.exposure, id.outcome, Q, Q_df, Q_pval))
-				mres <- merge(mres, het, by=c("id.exposure", "id.outcome"), all.x=TRUE)
-				outs <- plyr::ddply(dat, .(id.exposure, id.outcome, exposure, outcome), function(x)
-				{
-					datr <- format_radial_dat(x)
-					mod1 <- ivw_radial(datr, alpha=0.05, weights = 3)
-					nouts <- subset(mod1$data, Qj_Chi > 0.05/nrow(x))$SNP
-					datr <- subset(datr, SNP %in% nouts)
-					if(nrow(datr) > 1)
-					{
-						mod2 <- ivw_radial(datr, alpha=0.05, weights = 3)
-					} else {
-						mod2 <- mod1
-					}
-					data.frame(
-						nsnp = c(mod1$df + 1, mod2$df + 1),
-						b = c(mod1$coef[1], mod2$coef[1]),
-						se = c(mod1$coef[2], mod2$coef[2]),
-						pval = c(pnorm(abs(mod1$coef[3]), low=FALSE), pnorm(abs(mod2$coef[3]), low=FALSE)),
-						method = "IVW radial",
-						Q = c(mod1$qstatistic, mod2$qstatistic),
-						Q_df = c(mod1$df, mod2$df),
-						Q_pval = c(pchisq(mod1$qstatistic, mod1$df, low=F), pchisq(mod2$qstatistic, mod2$df, low=F)),
-						chunk = chunk,
-						what = c("all", "no_outliers")
-					)
-				})
-				mres <- bind_rows(mres, outs)
-			}
 			return(list(mres=mres, dat=dat))
 		} else {
 			return(NULL)
