@@ -13,186 +13,6 @@ remove_mhc <- function(x)
 	return(x)
 }
 
-mr_sign <- function(b_exp, b_out, se_exp=NULL, se_out=NULL, parameters=NULL)
-{
-	b_exp[b_exp == 0] <- NA
-	b_out[b_out == 0] <- NA
-	if(sum(!is.na(b_exp) & !is.na(b_out)) < 6)
-	{
-		return(list(b=NA, se=NA, pval=NA, nsnp=NA))
-	}
-	x <- sum(sign(b_exp) == sign(b_out), na.rm=TRUE)
-	n <- sum(!is.na(b_exp) & !is.na(b_out))
-
-	out <- binom.test(x=x, n=n, p=0.5)
-	b <- (out$estimate - 0.5) * 2
-	names(b) <- NULL
-	pval <- out$p.value
-	return(list(b=b, se=NA, pval=pval, nsnp=n))
-}
-mr_method_list <- function()
-{
-	a <- list(
-		list(
-			obj="mr_wald_ratio",
-			name="Wald ratio",
-			PubmedID="",
-			Description="",
-			use_by_default=TRUE,
-			heterogeneity_test=FALSE
-		),
-		# list(
-		# 	obj="mr_meta_fixed_simple",
-		# 	name="Fixed effects meta analysis (simple SE)",
-		# 	PubmedID="",
-		# 	Description="",
-		# 	use_by_default=FALSE,
-		# 	heterogeneity_test=FALSE
-		# ),
-		# list(
-		# 	obj="mr_meta_fixed",
-		# 	name="Fixed effects meta analysis (delta method)",
-		# 	PubmedID="",
-		# 	Description="",
-		# 	use_by_default=FALSE,
-		# 	heterogeneity_test=TRUE
-		# ),
-		# list(
-		# 	obj="mr_meta_random",
-		# 	name="Random effects meta analysis (delta method)",
-		# 	PubmedID="",
-		# 	Description="",
-		# 	use_by_default=FALSE,
-		# 	heterogeneity_test=TRUE
-		# ),
-		list(
-			obj="mr_two_sample_ml",
-			name="Maximum likelihood",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=TRUE
-		),
-		list(
-			obj="mr_egger_regression",
-			name="MR Egger",
-			PubmedID="26050253",
-			Description="",
-			use_by_default=TRUE,
-			heterogeneity_test=TRUE
-		),
-		list(
-			obj="mr_egger_regression_bootstrap",
-			name="MR Egger (bootstrap)",
-			PubmedID="26050253",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_simple_median",
-			name="Simple median",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_weighted_median",
-			name="Weighted median",
-			PubmedID="",
-			Description="",
-			use_by_default=TRUE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_penalised_weighted_median",
-			name="Penalised weighted median",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_ivw",
-			name="Inverse variance weighted",
-			PubmedID="",
-			Description="",
-			use_by_default=TRUE,
-			heterogeneity_test=TRUE
-		),
-		list(
-			obj="mr_ivw_mre",
-			name="Inverse variance weighted (multiplicative random effects)",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_ivw_fe",
-			name="Inverse variance weighted (fixed effects)",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_simple_mode",
-			name="Simple mode",
-			PubmedID="",
-			Description="",
-			use_by_default=TRUE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_weighted_mode",
-			name="Weighted mode",
-			PubmedID="",
-			Description="",
-			use_by_default=TRUE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_weighted_mode_nome",
-			name="Weighted mode (NOME)",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_simple_mode_nome",
-			name="Simple mode (NOME)",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_raps",
-			name="Robust adjusted profile score (RAPS)",
-			PubmedID="",
-			Description="",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		),
-		list(
-			obj="mr_sign",
-			name="Sign concordance test",
-			PubmedID="",
-			Description="Tests for concordance of signs between exposure and outcome",
-			use_by_default=FALSE,
-			heterogeneity_test=FALSE
-		)
-	)
-	a <- lapply(a, as.data.frame)
-	a <- plyr::rbind.fill(a)
-	a <- as.data.frame(lapply(a, as.character), stringsAsFactors=FALSE)
-	a$heterogeneity_test <- as.logical(a$heterogeneity_test)
-	a$use_by_default <- as.logical(a$use_by_default)
-	return(a)
-}
 
 format_radial_dat <- function(dat)
 {
@@ -246,12 +66,12 @@ do_mr <- function(a, b, chunk)
 				outs <- plyr::ddply(dat, .(id.exposure, id.outcome, exposure, outcome), function(x)
 				{
 					datr <- format_radial_dat(x)
-					mod1 <- ivw_radial(datr, alpha=0.05, summary=FALSE)
+					mod1 <- ivw_radial(datr, alpha=0.05, weights = 3)
 					nouts <- subset(mod1$data, Qj_Chi > 0.05/nrow(x))$SNP
 					datr <- subset(datr, SNP %in% nouts)
 					if(nrow(datr) > 1)
 					{
-						mod2 <- ivw_radial(datr, alpha=0.05, summary=FALSE)
+						mod2 <- ivw_radial(datr, alpha=0.05, weights = 3)
 					} else {
 						mod2 <- mod1
 					}
@@ -259,7 +79,7 @@ do_mr <- function(a, b, chunk)
 						nsnp = c(mod1$df + 1, mod2$df + 1),
 						b = c(mod1$coef[1], mod2$coef[1]),
 						se = c(mod1$coef[2], mod2$coef[2]),
-						pval = c(pnorm(mod1$coef[3], low=FALSE), pnorm(mod2$coef[3], low=FALSE)),
+						pval = c(pnorm(abs(mod1$coef[3]), low=FALSE), pnorm(abs(mod2$coef[3]), low=FALSE)),
 						method = "IVW radial",
 						Q = c(mod1$qstatistic, mod2$qstatistic),
 						Q_df = c(mod1$df, mod2$df),
