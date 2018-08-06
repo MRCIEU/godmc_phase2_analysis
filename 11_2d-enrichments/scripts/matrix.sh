@@ -6,8 +6,9 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=28
 #SBATCH --time=0-20:00:00
-#SBATCH --array=0-100%50
+#SBATCH --array=101-1000
 #SBATCH --output=job_reports/slurm-%A_%a.out
+#SBATCH --partition=mrcieu
 
 echo "Running on ${HOSTNAME}"
 module add R/3.2.3-foss-2016a

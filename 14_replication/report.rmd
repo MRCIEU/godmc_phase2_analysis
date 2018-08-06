@@ -48,7 +48,7 @@ clumped$cist[!clumped$cis] <- "trans"
 clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
 clumped$code <- clumped %$% paste(snp, cpg)
 temp <- inner_join(
-	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
+	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Freq1, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetISq, cis, code)),
 	subset(gs, select=c(snpid, cpg, a1, a0, beta1, se, p, r2, n)),
 	by=c("snp"="snpid", "cpg"="cpg")
 )
@@ -60,6 +60,7 @@ temp$beta1[index] <- temp$beta1[index] * -1
 temp2 <- temp$a0[index]
 temp$a0[index] <- temp$a1[index]
 temp$a1[index] <- temp2
+temp$rsqdisc <- 2 * temp$Freq1 * (1-temp$Freq1) * temp$Effect^2
 
 tempsig <- subset(temp, pval < 1e-8 & cis | pval < 1e-14 & !cis)
 
@@ -179,9 +180,10 @@ kable(rep3)
 ```{r, echo=FALSE, dev="png"}
 ggplot(subset(temp), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=gs.sig)) +
-facet_grid(. ~ cist) +
-labs(x="GoDMC effect size", y="GS effect size", colour="Significant\nreplication")
-ggsave("images/replication.png", width=12, height=6)
+facet_grid(cist ~ .) +
+labs(x="GoDMC effect size", y="GS effect size", colour="Significant\nreplication") +
+theme(legend.position="top")
+ggsave("images/replication.png", width=4, height=8)
 ```
 
 ## Expected vs observed replication rates
@@ -479,16 +481,6 @@ tab1 <- with(temp, data_frame(
 	replication_beta=beta1, replication_se=se, replication_n=n, replication_pval=p, replication_rsq=r2
 ))
 
-tab2l <- tidyr::gather(tab2, key="key", value="value", h2_mcrae, h2_vandongen)
-tab2l$key[tab2l$key=="h2_mcrae"] <- "Family"
-tab2l$key[tab2l$key=="h2_vandongen"] <- "Twin"
-
-p1 <- ggplot(tab2l, aes(x=as.factor(round(value, 2)), y=r2)) +
-geom_boxplot(outlier.size=0.01, aes(fill=key)) +
-theme(axis.text.x=element_text(angle=90, size=3)) +
-labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
-ggsave(p1, file="images/h2_vs_r2.pdf", width=11, height=5.5)
-
 # h2
 
 tab2a <- with(mcrae, data_frame(
@@ -500,7 +492,35 @@ tab2b <- with(vandongen, data_frame(
 ))
 
 tab2 <- inner_join(tab2a, tab2b, by="cpg")
-tab2 <- inner_join(subset(temp2, select=-c(what)), tab2, by=c("cpg"="cpg"))
+tab2 <- merge(tab2, subset(temp2, select=-c(what)), by="cpg", all.x=TRUE)
+tab2$r2[is.na(tab2$r2)] <- 0
+
+tab2l <- tidyr::gather(tab2, key="key", value="value", h2_mcrae, h2_vandongen)
+tab2l$key[tab2l$key=="h2_mcrae"] <- "Family"
+tab2l$key[tab2l$key=="h2_vandongen"] <- "Twin"
+
+p1 <- ggplot(tab2l, aes(x=as.factor(round(value*2, 1)/2), y=r2)) +
+geom_boxplot(outlier.size=0.01, aes(fill=key)) +
+theme(axis.text.x=element_text(angle=90, size=3)) +
+labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
+ggsave(p1, file="images/h2_vs_r2.png", width=9, height=4)
+
+mqtlcount <- group_by(clumped, cpg) %>% summarise(mqtls=n())
+tab2l <- merge(tab2l, mqtlcount, by="cpg", all.x=TRUE)
+tab2l$mqtls[is.na(tab2l$mqtls)] <- 0
+
+p1 <- ggplot(tab2l, aes(x=as.factor(mqtls), y=value)) +
+geom_boxplot(outlier.size=0.01, aes(fill=key)) +
+theme(axis.text.x=element_text(angle=90)) +
+labs(x="Number of mQTLs per CpG", y="Heritability estimate", fill="Heritability\nstudy design")
+ggsave(p1, file="images/mqtl_vs_h2.png", width=9, height=4)
+
+
+p1 <- ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
+geom_boxplot(outlier.size=0.01, aes(fill=key)) +
+theme(axis.text.x=element_text(angle=90)) +
+labs(x="Variance explained in GS replication", y="Heritability estimate", fill="Heritability\nstudy design")
+ggsave(p1, file="images/r2_vs_h2.png", width=9, height=4)
 
 write.csv(tab1, file="results/replication.csv")
 write.csv(tab2, file="results/variance_explained.csv")
