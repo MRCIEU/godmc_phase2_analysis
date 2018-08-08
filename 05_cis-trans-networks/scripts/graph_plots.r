@@ -42,6 +42,7 @@ extract_subset <- function(gr, dat, cpg_list)
 	c <- graph_from_data_frame(keep)
 	V(c)$what <- "CpG"
 	V(c)[grepl("chr", V(c)$name)]$what <- "SNP"
+	V(c)$color <- ifelse(grepl("SNP", names(V(c))), 2, 3)
 	return(list(gr=c, dat=keep))
 }
 
@@ -52,7 +53,7 @@ temp <- extract_subset(gr, dat, names(temp[[1]]))
 pdf(file="../images/plot_longest1.pdf")
 plot(temp$gr, 
 	layout=layout.fruchterman.reingold, 
-	vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+	# vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
 	vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
 	vertex.label=NA, 
 	edge.arrow.size=0, 
@@ -67,7 +68,7 @@ for(i in 1:20)
 	pdf(paste0("../images/cluster", memcount$cluster[i], ".pdf"))
 	plot(temp$gr, 
 		layout=layout.fruchterman.reingold, 
-		vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+		# vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
 		vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
 		vertex.label=NA, 
 		edge.arrow.size=0, 
@@ -84,7 +85,7 @@ for(i in 1:length(gwa.clust))
 	pdf(paste0("../images/cluster", gwa.clust[i], ".pdf"))
 	plot(temp$gr, 
 		layout=layout.fruchterman.reingold, 
-		vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+		# vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
 		vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
 		vertex.label=NA, 
 		edge.arrow.size=0, 
@@ -97,7 +98,7 @@ temp <- extract_subset(gr, dat, mem$cpg[mem$cluster == 41])
 pdf(paste0("../images/cluster", 41, ".pdf"))
 plot(temp$gr, 
 	layout=layout.fruchterman.reingold, 
-	vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+	# vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
 	vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
 	vertex.label=NA, 
 	edge.arrow.size=0, 
@@ -115,51 +116,73 @@ hg19chr <- GRanges(seqnames=c("chr1", "chr2", "chr3", "chr4", "chr5", "chr6", "c
 	IRanges(rep(1,23),
 		c(249250621,243199373,198022430,191154276,180915260,171115067,155270560,146364022,141213431,135534747,135006516,133851895,115169878,107349540,102531392,90354753,81195210,78077248,63025520,59128983,48129895, 51304566, 159138663)
 	)
+	seqlengths(hg19chr) <- c(249250621,243199373,198022430,191154276,180915260,171115067,155270560,146364022,141213431,135534747,135006516,133851895,115169878,107349540,102531392,90354753,81195210,78077248,63025520,59128983,48129895, 51304566, 159138663)
 )
 
-extract_subset_granges <- function(gr, dat, cpg_list)
+extract_subset_granges <- function(gr, dat, cpg_list, hg19chr)
 {
 	keep <- subset(dat, creg %in% cpg_list | tcpg %in% cpg_list)
 	keep <- tidyr::separate(keep, snp, c("snpchr", "snppos", "snptype"), sep=":", remove=FALSE)
 	g1 <- GRanges(seqnames=keep$creg_chr, IRanges(keep$creg_pos, keep$creg_pos))
 	g2 <- GRanges(seqnames=keep$tcpg_chr, IRanges(keep$tcpg_pos, keep$tcpg_pos))
+	g1 <- c(hg19chr, g1)
+	g2 <- c(hg19chr, g2)
+	g1$topos <- g2
+	g1 <- g1[-c(1:length(hg19chr))]
+
 	temp <- subset(keep, !duplicated(snp))
 	g3 <- GRanges(seqnames=temp$snpchr, IRanges(as.numeric(temp$snppos), as.numeric(temp$snppos)))
-	g3$y <- 0
+	g3$what <- "snp"
+	temp <- subset(keep, !duplicated(creg))
+	g4 <- GRanges(seqnames=temp$creg_chr, IRanges(as.numeric(temp$creg_pos), as.numeric(temp$creg_pos)))
+	g4$what <- "creg"
+	temp <- subset(keep, !duplicated(tcpg))
+	g5 <- GRanges(seqnames=temp$tcpg_chr, IRanges(as.numeric(temp$tcpg_pos), as.numeric(temp$tcpg_pos)))
+	g5$what <- "tcpg"
 
-	g1$topos <- g2
-	return(list(links=g1, snp=g3))
+	g3$y <- 0
+	g4$y <- 0
+	g5$y <- 0
+	pos <- c(g3,g4,g5)
+	h <- hg19chr
+	h$what <- NA
+	h$y <- NA
+	pos <- c(h, pos)
+	return(list(links=g1, pos=pos))
 }
 
 temp <- farthest.nodes(gr)
 temp <- all_simple_paths(gr, temp$vertices[1], temp$vertices[2])
-temp <- extract_subset_granges(gr, dat, names(temp[[1]]))
+temp <- extract_subset_granges(gr, dat, names(temp[[1]]), hg19chr)
 
 dev.new()
-ggbio() + 
-	circle(temp$links, geom = "link", linked.to = "topos", alpha=0.1) +
-	circle(temp$snp, geom = "point", aes(y=y)) +
-	circle(hg19chr, geom = "ideo", fill = "gray70", trackWidth=0.1)
+
+plot_circle <- function(temp, hg19chr)
+{
+	ggplot() + 
+		layout_circle(temp$links, geom = "ideo", fill = "black", radius = 8.4, trackWidth = 0.2) +
+		layout_circle(temp$links, geom = "link", linked.to = "topos", radius=6) +
+		layout_circle(temp$pos[-c(1:23)], geom = "point", aes(y=y, colour=what), size=6, radius=6) + 
+		scale_colour_manual(values=c("#9ecae1", "#a1d99b", "#31a354")) +
+		theme(legend.position="none")
+
+}
+plot_circle(temp, hg19chr)
 
 for(i in 1:20)
 {
 	message(i)
-	temp <- extract_subset_granges(gr, dat, mem$cpg[mem$cluster == memcount$cluster[i]])
+	message(memcount$cluster[i])
+	temp <- extract_subset_granges(gr, dat, mem$cpg[mem$cluster == memcount$cluster[i]], hg19chr)
 	pdf(paste0("../images/cluster_circle", memcount$cluster[i], ".pdf"))
-	p <- ggbio() + 
-		circle(temp$links, geom = "link", linked.to = "topos", alpha=0.1) +
-		circle(temp$snp, geom = "point", aes(y=y)) +
-		circle(hg19chr, geom = "ideo", fill = "gray70", trackWidth=0.1)
+	p <- plot_circle(temp, hg19chr)
 	print(p)
 	dev.off()
 }
 
-temp <- extract_subset_granges(gr, dat, mem$cpg[mem$cluster == 41])
+temp <- extract_subset_granges(gr, dat, mem$cpg[mem$cluster == 41], hg19chr)
 pdf(paste0("../images/cluster_circle", 41, ".pdf"))
-p <- ggbio() + 
-	circle(temp$links, geom = "link", linked.to = "topos", alpha=0.1) +
-	circle(temp$snp, geom = "point", aes(y=y)) +
-	circle(hg19chr, geom = "ideo", fill = "gray70", trackWidth=0.1)
+p <- plot_circle(temp, hg19chr)
 print(p)
 dev.off()
 
