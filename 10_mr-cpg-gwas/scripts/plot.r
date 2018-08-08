@@ -42,6 +42,7 @@ ressig1 <- subset(res, (method == "Wald ratio" | method == "Inverse variance wei
 ressig1$sig <- ressig1$code %in% subset(mult, sig2 & sig3)$code
 ressig1 <- inner_join(ressig1, cpgpos, by=c("outcome"="cpg"))
 ressig1$chr <- as.numeric(gsub("chr", "", ressig1$cpgchr))
+ressig1$trait <- strsplit(ressig1$exposure, split="\\|") %>% sapply(function(x) x[1]) %>% gsub(" $", "", .)
 # ressig2 <- subset(res, method == "Inverse variance weighted" & pval < threshold2)
 # ressig2$nom <- strsplit(ressig2$exposure, split=" ") %>% sapply(function(x) x[1])
 ressig1$pval[ressig1$pval < 1e-100] <- 1e-100
@@ -58,8 +59,8 @@ cpgpos <- subset(cpgpos, !is.na(chr) & chr %in% 1:23)
 rand1 <- data_frame(cpg=cpgpos$cpg, trait="a", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="cpg to trait", sig=FALSE, cpgpos=cpgpos$cpgpos)
 rand2 <- data_frame(cpg=cpgpos$cpg, trait="b", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="trait to cpg", sig=FALSE, cpgpos=cpgpos$cpgpos)
 temp <- rbind(
-	data_frame(cpg=res2$exposure, trait=res2$outcome, cpgpos=res2$cpgpos, chr=res2$chr, p=res2$p, what="cpg to trait", sig=res2$H4 > 0.8 & res2$conc),
-	data_frame(cpg=ressig1$outcome, trait=ressig1$exposure, cpgpos=ressig1$cpgpos, chr=ressig1$chr, p=ressig1$pval, what="trait to cpg", sig=ressig1$sig),
+	data_frame(cpg=res2$exposure, trait=res2$trait, cpgpos=res2$cpgpos, chr=res2$chr, p=res2$p, what="cpg to trait", sig=res2$H4 > 0.8 & res2$conc),
+	data_frame(cpg=ressig1$outcome, trait=ressig1$trait, cpgpos=ressig1$cpgpos, chr=ressig1$chr, p=ressig1$pval, what="trait to cpg", sig=ressig1$sig),
 	data_frame(
 		cpg=res$outcome, trait=res$exposure, cpgpos=res$cpgpos, chr=res$chr, p=res$pval, what="trait to cpg", sig=FALSE
 		),
@@ -68,23 +69,35 @@ temp <- rbind(
 
 temp$p[temp$p < 1e-60] <- 1e-60
 temp$pval <- -log10(temp$p)
-temp$chrcol <- ifelse(temp$chr %% 2 == 0, "#333333", "#666666")
+temp$chrcol <- temp$chr %% 2 == 0
 
-# temp$pval[temp$what=="trait"] <- temp$pval[temp$what=="trait"] * -1
+library(TwoSampleMR)
+ao <- available_outcomes()
+
+sigtraits <- subset(temp, sig)$trait %>% unique %>% as.character
+cats <- subset(ao, trait %in% sigtraits, select=c(trait, subcategory))
+cats$subcategory[cats$subcategory == "NA"] <- "Anthropometric"
+cats$subcategory[cats$subcategory == "Other"] <- "Metabolite"
+cats$subcategory[cats$subcategory == "Nucleotide"] <- "Metabolite"
+cats$subcategory[cats$subcategory == "Lipid"] <- "Metabolite"
+cats <- subset(cats, !duplicated(paste(trait, subcategory))) %>% arrange(trait)
+temp <- merge(temp, cats, by=c("trait"), all.x=TRUE)
 
 ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval)) +
-geom_point(size=0.2, aes(colour=chrcol)) +
+geom_point(data=temp %>% filter(chrcol), size=0.2, colour="#bbbbbb") +
+geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
-geom_point(data=temp %>% filter(sig), size=1, colour="red", alpha=1) +
+geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
 facet_grid(what ~ chr, scale="free", space="free") +
-scale_colour_manual(values=c("#bbbbbb", "#888888")) +
+scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9")) +
 # theme_tufte() +
 scale_y_continuous(breaks=seq(0, 100, 20)) +
 labs(x="CpG position", y="-log10 p", colour="") +
 ylim(0, 60) +
 geom_hline(yintercept=-log10(threshold2), linetype="dotted") +
+# geom_text_repel(data=temp %>% filter(sig), aes(label=trait), size=1) +
 theme(
-	legend.position="none",
+	# legend.position="none",
 	axis.text.x=element_blank(),
 	axis.ticks.x=element_blank(),
 	panel.grid=element_blank(),
@@ -95,5 +108,36 @@ theme(
 	strip.background=element_rect(fill="white", linetype="blank"),
 )
 ggsave(file="../images/bidirectional_manhattan2.png", width=10, height=6)
+
+temp$pval2 <- temp$pval
+temp$pval2[temp$what=="trait to cpg"] <- temp$pval[temp$what=="trait to cpg"] * -1
+temp$chrcol[temp$what=="trait to cpg"] <- !temp$chrcol[temp$what=="trait to cpg"]
+ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval2)) +
+geom_point(data=temp %>% filter(chrcol), size=0.2, colour="#bbbbbb") +
+geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
+geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
+geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
+facet_grid(. ~ chr, scale="free", space="free") +
+scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9")) +
+scale_y_continuous(breaks=seq(-100, 100, 20)) +
+labs(x="CpG position", y="", colour="") +
+ylim(-60, 60) +
+geom_hline(yintercept=-log10(threshold2), linetype="dotted") +
+geom_hline(yintercept=log10(threshold2), linetype="dotted") +
+geom_hline(yintercept=0, linetype="solid") +
+guides(colour=guide_legend(ncol=3)) +
+theme(
+	legend.position="top",
+	axis.text=element_blank(),
+	axis.ticks=element_blank(),
+	panel.grid=element_blank(),
+	panel.background=element_rect(fill="white", linetype="blank"),
+	panel.spacing=unit(0, "lines"),
+	panel.border=element_blank(),
+	strip.text=element_blank(),
+	strip.background=element_rect(fill="white", linetype="blank"),
+)
+ggsave(file="../images/bidirectional_manhattan3.png", width=10, height=6)
+
 
 
