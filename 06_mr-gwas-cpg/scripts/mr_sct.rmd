@@ -1,0 +1,59 @@
+---
+title: The MR sign concordance test
+---
+
+The ideal scenario for a MR analysis is in which there are multiple independent SNPs instrumenting the exposure. Here, each SNP acts as a proxy for a randomised controlled trial, and each SNP can provide an independent causal effect estimate through the Wald ratio. The effect estimate will be unbiased if, for example, the SNP only influences the outcome through the exposure (i.e. there is no horizontal pleiotropy). If all SNPs provide unbiased causal effect estimates, or if bias across all SNPs is random in direction and magnitude, meta-analysing across the effect estimates will give an overall unbiased estimate of the causal effect that is more precise than any individual SNP.
+
+Proving that the bias from each SNP is absent or perfectly balanced is difficult, and if this assumption is not satisfied then the average effect across all SNPs will be inevitably biased. Heterogeneity tests can determine whether there are differences between each SNP's estimate that goes beyond that expected due to their standard errors. When substantial heterogeneity is present, it is prudent to follow up with additional meta-analysis strategies that are robust to different patterns of pleiotropy manifesting across the SNPs. However, generally these strategies operate by averaging across all SNPs (e.g. IVW, MR-Egger), or averaging across a subset of SNPs (e.g. weighted median, weighted mode). Under 
+
+In our analysis we performed MR of 122 traits against 345,109 CpGs (42,103,298 analyses). Systematically searching for putative results of interest requires prioritising associations that are not due to obvious violations. A chief source of bias arises if one of many instruments for a trait happen to be close to a variant that has a very large effect on the CpG level. This can arise due to e.g.
+
+- Being close to a cis mQTL for the CpG
+- Being located within the MHC region, which has large effects on many CpGs
+- Being located close to a SNP influencing smoking, which has a consequentially large influence on CpG levels.
+
+The available methods, which average across the Wald ratios from all instruments, are all susceptible to SNPs that might have very large effects on the outcome. This is even true for the weighted median and weighted mode estimators, because the weights are based on the precision of the SNP-outcome association, and a single SNP could comprise half or the majority of the weight if it has a particularly large effect.
+
+We used a novel method, the sign concordance test (MR-SCT), to bypass this issue that is simple and rapid enough to be used as a screen for putative associations that can be taken forward for followup analysis. 
+
+
+
+
+
+```{r}
+library(TwoSampleMR)
+library(dplyr)
+library(ggplot2)
+load("../results/mr_sct_bmi.rdata")
+
+temp <- mr(dat, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+temp$what <- "real"
+temp$eff <- 0
+temp$snp <- NA
+res <- rbind(temp, res)
+
+res <- subset(res, method != "Unweighted regression")
+ress <- group_by(res, method, what, eff) %>%
+summarise(nsig=sum(pval < 0.05))
+# ggplot(res, aes(x=method, y=-log10(pval))) +
+# geom_boxplot(aes(fill=as.factor(eff))) +
+# facet_grid(what ~ ., scale="free_y") +
+# theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+
+```
+
+```{r}
+ggplot(res, aes(x=method, y=b)) +
+geom_boxplot(aes(fill=as.factor(eff))) +
+facet_grid(what ~ ., scale="free_y") +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+labs(fill="Outlier factor", y="Effect estimate")
+
+
+ggplot(ress, aes(x=method, y=nsig/nrow(dat))) +
+geom_bar(stat="identity", position="dodge", aes(fill=as.factor(eff)), width=0.3) +
+facet_grid(what ~ ., scale="free_y") +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+labs(fill="Outlier factor", y="Proportion with p < 0.05")
+
+```
