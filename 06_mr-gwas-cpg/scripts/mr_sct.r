@@ -38,4 +38,56 @@ for(i in 1:nrow(dat))
 	out[[i]]$snp <- i
 }
 res <- bind_rows(out)
-save(res, dat, file="../results/mr_sct_bmi.rdata")
+
+
+
+
+temp <- mr(dat, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+temp$what <- "real"
+temp$eff <- 0
+temp$snp <- NA
+res <- rbind(temp, res)
+
+res <- subset(res, method != "Unweighted regression")
+ress <- group_by(res, method, what, eff) %>%
+summarise(nsig=sum(pval < 0.05))
+
+
+set.seed(1)
+
+# Extract SNP effects from MR-Base
+a <- extract_instruments(2)
+b <- extract_outcome_data(a$SNP, 7)
+dat2 <- harmonise_data(a,b)
+
+# Permute SNP-outcome effects
+dat2$beta.outcome <- sample(dat2$beta.outcome)
+
+# Get MR estimates
+temp2 <- mr(dat2, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+
+# Plot
+o2 <- mr_forest_plot(mr_singlesnp(dat2, all_method = c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode")))[[1]] +
+labs(x="MR effect size estimates") + theme(axis.text.y=element_text(size=5))
+
+dat3 <- dat2
+dat3$se.outcome[25] <- dat3$se.outcome[25] / 5
+temp3 <- mr(dat3, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+
+dat3$outlier <- FALSE
+dat3$outlier[25] <- TRUE
+dat3$waldratio <- dat3$beta.outcome / dat3$beta.exposure
+
+o3 <- mr_forest_plot(mr_singlesnp(dat3, all_method = c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode")))[[1]] + geom_point(data=dat3[dat3$outlier,], aes(y=SNP, x=waldratio), colour="black", size=2) + geom_point(data=dat3[dat3$outlier,], aes(y=SNP, x=waldratio), colour="yellow", size=1) +
+labs(x="MR effect size estimates") + theme(axis.text.y=element_text(size=5))
+
+
+
+
+
+
+
+
+save(res, dat, o3, o2, file="../results/mr_sct_bmi.rdata")
+
+

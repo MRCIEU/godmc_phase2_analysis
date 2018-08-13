@@ -1,24 +1,12 @@
 ---
 title: The MR sign concordance test
+author: Gibran Hemani
 ---
 
-The ideal scenario for a MR analysis is in which there are multiple independent SNPs instrumenting the exposure. Here, each SNP acts as a proxy for a randomised controlled trial, and each SNP can provide an independent causal effect estimate through the Wald ratio. The effect estimate will be unbiased if, for example, the SNP only influences the outcome through the exposure (i.e. there is no horizontal pleiotropy). If all SNPs provide unbiased causal effect estimates, or if bias across all SNPs is random in direction and magnitude, meta-analysing across the effect estimates will give an overall unbiased estimate of the causal effect that is more precise than any individual SNP.
-
-Proving that the bias from each SNP is absent or perfectly balanced is difficult, and if this assumption is not satisfied then the average effect across all SNPs will be inevitably biased. Heterogeneity tests can determine whether there are differences between each SNP's estimate that goes beyond that expected due to their standard errors. When substantial heterogeneity is present, it is prudent to follow up with additional meta-analysis strategies that are robust to different patterns of pleiotropy manifesting across the SNPs. However, generally these strategies operate by averaging across all SNPs (e.g. IVW, MR-Egger), or averaging across a subset of SNPs (e.g. weighted median, weighted mode). Under 
-
-In our analysis we performed MR of 122 traits against 345,109 CpGs (42,103,298 analyses). Systematically searching for putative results of interest requires prioritising associations that are not due to obvious violations. A chief source of bias arises if one of many instruments for a trait happen to be close to a variant that has a very large effect on the CpG level. This can arise due to e.g.
-
-- Being close to a cis mQTL for the CpG
-- Being located within the MHC region, which has large effects on many CpGs
-- Being located close to a SNP influencing smoking, which has a consequentially large influence on CpG levels.
-
-The available methods, which average across the Wald ratios from all instruments, are all susceptible to SNPs that might have very large effects on the outcome. This is even true for the weighted median and weighted mode estimators, because the weights are based on the precision of the SNP-outcome association, and a single SNP could comprise half or the majority of the weight if it has a particularly large effect.
-
-We used a novel method, the sign concordance test (MR-SCT), to bypass this issue that is simple and rapid enough to be used as a screen for putative associations that can be taken forward for followup analysis. 
-
-
-
-
+```{r, echo=FALSE}
+library(knitr)
+opts_chunk$set(cache=TRUE, message=FALSE, warning=FALSE, echo=FALSE)
+```
 
 ```{r}
 library(TwoSampleMR)
@@ -26,34 +14,90 @@ library(dplyr)
 library(ggplot2)
 load("../results/mr_sct_bmi.rdata")
 
-temp <- mr(dat, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
-temp$what <- "real"
-temp$eff <- 0
-temp$snp <- NA
-res <- rbind(temp, res)
-
-res <- subset(res, method != "Unweighted regression")
-ress <- group_by(res, method, what, eff) %>%
-summarise(nsig=sum(pval < 0.05))
-# ggplot(res, aes(x=method, y=-log10(pval))) +
-# geom_boxplot(aes(fill=as.factor(eff))) +
-# facet_grid(what ~ ., scale="free_y") +
-# theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
-
 ```
 
+
+## Background
+
+The ideal scenario for a MR analysis is in which there are multiple independent SNPs instrumenting the exposure. Here, each SNP acts as a proxy for a randomised controlled trial, and each SNP can provide an independent causal effect estimate through the Wald ratio. The effect estimate will be unbiased if, for example, the SNP only influences the outcome through the exposure (i.e. there is no horizontal pleiotropy). If all SNPs provide unbiased causal effect estimates, or if bias across all SNPs is random in direction and magnitude, meta-analysing across the effect estimates will give an overall unbiased estimate of the causal effect that is more precise than any individual SNP.
+
+Proving that the bias from each SNP is absent or perfectly balanced is difficult, and if this assumption is not satisfied then the average effect across all SNPs will be inevitably biased. Heterogeneity tests can determine whether there are differences between each SNP's estimate that goes beyond that expected due to their standard errors. When substantial heterogeneity is present, it is prudent to follow up with additional meta-analysis strategies that are robust to different patterns of pleiotropy manifesting across the SNPs. However, generally these strategies operate by averaging across all SNPs (e.g. IVW, MR-Egger), or averaging across a subset of SNPs (e.g. weighted median, weighted mode). Under 
+
+In our analysis we performed MR of 122 traits against 345,109 CpGs (42,103,298 analyses). Systematically searching for putative results of interest requires prioritising associations that are not due to obvious violations. A chief source of bias arises if one of many instruments for a trait happen to be close to a variant that has a very large effect on the CpG level. This can arise under a range of common scenarios, for example
+
+- Being close to a cis mQTL for the CpG
+- Being located within the MHC region, which has large effects on many CpGs
+- Being located close to a SNP influencing smoking, which has a consequentially large influence on CpG levels.
+
+The available methods, which average across the Wald ratios from all instruments, are all susceptible to SNPs that might have very large effects on the outcome. This is even true for the weighted median and weighted mode estimators, because the weights are based on the precision of the SNP-outcome association, and a single SNP could comprise half or the majority of the weight if it has a particularly large effect.
+
+Standard methods attempt to estimate the causal effect of the exposure on the outcome, and then report the strength of evidence by estimating the precision of the estimate and often evaluating if the estimate is substantially different from 0. Here, the qualitative evaluation of whether there is a causal effect (and its direction) manifests from the estimate of the effect size.
+
+Because the effect estimate, a form of an average across a set of SNPs, is liable to be skewed, we developed a method that evaluates the qualitative question of whether there is a causal effect (and its direction) independent of the estimated effect size. This was simply achieved by inferring the extent to which the causal directions of the Wald ratios from all SNPs are consistent. If the trait truly causes the CpG then in general the effect estimates from each of the SNPs should have the same sign, and each SNP's contribution to this concordance is equal. Under the null hypothesis of no causal effect, we expect 50% of the signs of the Wald ratios to be positive and 50% to be negative.  The MR sign concordance test (MR-SCT) simply performs a binomial test to see if the proportion of positive signs is more (in the case of a positive effect) or less (in the case of a negative effect) than expected by chance.
+
+The MR-SCT doesn't provide a causal effect estimate. It returns the proportion of Wald ratios that are positive. An MR-SCT estimate of 1 would indicate very strong agreement for a positive effect of the exposure on the outcome, and a value of 0 would indicate very strong agreement for a negative effect. The corresponding p-value can be used for evaluating the extent to which the proportion is different to what we expect by chance.
+
+
+## Illustrative example
+
+Here we show the impact of one of the instrumenting SNPs exhibiting a very precise effect on the outcome. We took the instruments for body mass index (BMI) and the corresponding effects for coronary heart disease (CHD). Then, to simulate a null effect, we permuted the SNP-outcome effect sizes:
+
+
+
 ```{r}
-ggplot(res, aes(x=method, y=b)) +
+o2
+```
+
+Now we artificially increase the precision of one of the SNPs, and re-perform the analysis
+
+```{r}
+o3
+```
+
+## Further simulations
+
+Note that causal effect estimates using the IVW, median and mode methods, which average across all or subsets of SNPs, are depicting very precise non-null estimates. Because the influential SNP is treated with equal weight in the MR-SCT method as all other SNPs, the correct null result is obtained.
+
+There are `r nrow(dat)` SNPs in this dataset, and we next systematically set one SNP at a time to have an artificially large precision, to get an understanding of how the methods generally perform. We performed analyses where there was a true null effect as described above, and also when there is a true causal effect (the SNP-outcome effects were not permuted).
+
+```{r}
+ggplot(res %>% filter(what != "real"), aes(x=method, y=b)) +
 geom_boxplot(aes(fill=as.factor(eff))) +
 facet_grid(what ~ ., scale="free_y") +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
 labs(fill="Outlier factor", y="Effect estimate")
+```
+
+The effect estimate is the same across all simulations for the MR-SCT because changing the precision of the SNPs does not impact the test (as described earlier, this is not a true effect estimate). Note that for the other methods there is substantial volatility across estimates simply by changing the precision of a single SNP-outcome effect. Below we show what proportion of the tests returned p-values below 0.05 for the null (false discovery rate) and the non-null (power) simulations:
 
 
+```{r}
 ggplot(ress, aes(x=method, y=nsig/nrow(dat))) +
 geom_bar(stat="identity", position="dodge", aes(fill=as.factor(eff)), width=0.3) +
 facet_grid(what ~ ., scale="free_y") +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
 labs(fill="Outlier factor", y="Proportion with p < 0.05")
+```
+
+The FDR is very high for the IVW, median and mode estimates. The MR-SCT does not have an elevated FDR. Similarly, the power is slightly reduced due to the presence of a single highly influential SNP.
+
+A drawback of this method is that if there are few instrumenting SNPs for the exposure then the minimum p-value is limited to being quite high, making it difficult to use for screening. Here we show how many SNPs are required to obtain p-values below a particular threshold:
+
+
+```{r}
+
+param <- expand.grid(n = 1:100, x=0:100)
+param <- subset(param, x <= n)
+for(i in 1:nrow(param))
+{
+	param$pval[i] <- binom.test(x=param$x[i], n=param$n[i], p=0.5)$p.value
+}
+
+ggplot(param, aes(x=x, y=n)) +
+geom_point(aes(colour=pval < 1e-5)) +
+labs(y="Number of SNPs", x="Number of SNPs with a positive effect")
 
 ```
+
+If we are screening under substantial multiple testing, a relatively low p-value is required for an association to be taken forward. Therefore, we were only able to use this method for traits that were instrumented by at least 25 SNPs.
+
