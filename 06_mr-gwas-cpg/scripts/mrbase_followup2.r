@@ -38,9 +38,9 @@ do_mr <- function(a, b, chunk)
 			res <- suppressMessages(mr(dat, metho=c("mr_ivw", "mr_wald_ratio", "mr_sign", "mr_simple_mode", "mr_weighted_mode", "mr_simple_median", "mr_weighted_median", "mr_egger_regression")))
 			het <- suppressMessages(mr_heterogeneity(dat))
 			plei <- suppressMessages(mr_pleiotropy_test(dat))
-			res$chunk <- chunk
-			het$chunk <- chunk
-			plei$chunk <- chunk
+			if(nrow(res) > 0) res$chunk <- chunk
+			if(nrow(het) > 0) het$chunk <- chunk
+			if(nrow(plei) > 0) plei$chunk <- chunk
 			dat$chunk <- chunk
 			return(list(res=res, het=het, plei=plei, dat=dat))
 		} else {
