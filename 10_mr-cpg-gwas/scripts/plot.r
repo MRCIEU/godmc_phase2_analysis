@@ -29,9 +29,11 @@ res2$conc <- res2$code %in% subset(temp8, same_sign & sig2a)$code
 
 ##
 
+
+## Get results that withstand 
 load("../../06_mr-gwas-cpg/results/mrbase_sig_mhc_sign.rdata")
 
-mult <- subset(res, nsnp >= 6 & what2 == "all")
+mult <- subset(res, nsnp >= 50 & what2 == "all")
 mult <- group_by(mult, code, exposure) %>%
 	summarise(same_sign=sign(b[1]) == sign(b[2]), sig1=pval[2] < 0.05/nrow(mult)*2, sig2 = pval[2] < 0.05, sig3 = pval[1] < threshold2)
 table(mult$same_sign, mult$sig2, mult$sig3)

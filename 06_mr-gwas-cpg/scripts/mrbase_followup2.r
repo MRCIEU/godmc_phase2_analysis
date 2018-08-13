@@ -1,28 +1,8 @@
+library(TwoSampleMR)
 library(plyr)
 library(dplyr)
-library(TwoSampleMR)
 library(tidyr)
 library(RadialMR)
-
-remove_mhc <- function(x)
-{
-	require(tidyr)
-	x <- tidyr::separate(x, id, c("chr", "pos", "type"), sep=":", remove = FALSE)
-	x$pos <- as.numeric(x$pos)
-	x <- subset(x, ! (chr == "chr6" & (pos > 25000000 & pos < 35000000)))
-	return(x)
-}
-
-
-format_radial_dat <- function(dat)
-{
-	dat <- subset(dat, mr_keep)
-	format_radial(dat$beta.exposure, dat$beta.outcome, dat$se.exposure, dat$se.outcome, dat$SNP)
-}
-
-
-load("../results/mrbase_sig.rdata")
-load("../data/snps_gwas.rdata")
 
 do_mr <- function(a, b, chunk)
 {
@@ -55,10 +35,14 @@ do_mr <- function(a, b, chunk)
 		if(nrow(dat) > 0)
 		{
 			message("Analysing")
-			mres <- suppressMessages(mr(dat, metho=c("mr_ivw", "mr_wald_ratio", "mr_sign")))
-			# mres <- subset(mres, ! method %in% "Inverse variance weighted")
-			mres$chunk <- chunk
-			return(list(mres=mres, dat=dat))
+			res <- suppressMessages(mr(dat, metho=c("mr_ivw", "mr_wald_ratio", "mr_sign", "mr_simple_mode", "mr_weighted_mode", "mr_simple_median", "mr_weighted_median", "mr_egger_regression")))
+			het <- suppressMessages(mr_heterogeneity(dat))
+			plei <- suppressMessages(mr_pleiotropy_test(dat))
+			res$chunk <- chunk
+			het$chunk <- chunk
+			plei$chunk <- chunk
+			dat$chunk <- chunk
+			return(list(res=res, het=het, plei=plei, dat=dat))
 		} else {
 			return(NULL)
 		}
@@ -68,39 +52,36 @@ do_mr <- function(a, b, chunk)
 }
 
 
+run_chunk <- function(chunk)
+{
+	res <- list()
+	load(paste0("../results/mrbase_dat/dat", chunk, ".rdata"))
+	x <- subset(sig, chunk == chunk)
+	temp <- subset(a, id.exposure %in% x$id.exposure)
 
-l <- list()
+	out <- do_mr(temp, exp, chunk)
+
+	res$res <- out$res
+	res$het <- out$het
+	res$plei <- out$plei
+	dat <- out$dat
+	save(dat, file=paste0("../results/mrbase_dat/datf", chunk, ".rdata"))
+	return(res)
+}
+
+
+load("../results/mrbase_sig.rdata")
+load("../data/snps_gwas.rdata")
+
+out <- list()
 chunks <- unique(sig$chunk)
 for(i in 1:length(chunks))
 {
 	message(i)
-	m <- list()
-	load(paste0("../results/mrbase_dat/dat", chunks[i], ".rdata"))
-	x <- subset(sig, chunk == chunks[i])
-	temp <- subset(a, id.exposure %in% x$id.exposure)
-	temp2 <- remove_mhc(temp)
-	temp3 <- subset(temp, !id %in% temp2$id)
-	m$all <- do_mr(temp, exp, chunks[i])$mres
-	m$all$what2 <- "all"
-	if(nrow(temp2) > 0)
-	{
-		m$no_mhc <- do_mr(temp2, exp, chunks[i])$mres
-		m$no_mhc$what2 <- "no_mhc"
-	}
-	if(nrow(temp3) > 0)
-	{
-		m$mhc <- do_mr(temp3, exp, chunks[i])$mres
-		m$mhc$what2 <- "mhc"
-	}
-	l[[i]] <- bind_rows(m)
+	out[[i]] <- run_chunk(chunks[i])
 }
 
-res <- bind_rows(l)
-res <- subset(res, !is.na(exposure))
-res$code <- paste(res$id.exposure, res$id.outcome)
-sig$code <- paste(sig$id.exposure, sig$id.outcome)
-res <- subset(res, code %in% sig$code)
-save(res, file="../results/mrbase_sig_mhc_sign.rdata")
+save(out, file="../results/mrbase_placeholder.rdata")
 
 q()
 

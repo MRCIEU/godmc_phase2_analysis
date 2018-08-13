@@ -30,6 +30,46 @@ sigm <- subset(sig, category != "Metabolites")
 
 ```
 
+
+How many traits with more than one instrument
+
+```{r}
+load("../data/snps_gwas.rdata")
+am <- filter(a, grepl("mr", data_source.exposure))
+gkeep <- am %>% group_by(id.exposure, trait) %>% summarise(n=n()) %>% arrange(desc(n)) %>% ungroup %>% filter(!duplicated(trait))
+table(gkeep$n == 1)
+
+```
+
+40 traits with at least one association at p < 1.4e-7
+
+```{r}
+load("../results/mrbase_sig.rdata")
+filter(sig, pval < 1.4e-7 & id.exposure %in% gkeep$id.exposure) %>% filter(!duplicated(exposure)) %>% summarise(n=n())
+```
+
+
+How many sig due to wald ratio
+
+```{r}
+wr <- subset(sig, method == "Wald ratio" & pval < 1.4e-7 & id.exposure %in% gkeep$id.exposure)
+nrow(wr)
+length(unique(wr$id.exposure))
+length(unique(wr$id.outcome))
+```
+
+How many sig due to IVW
+
+```{r}
+iv <- subset(sig, method == "Inverse variance weighted" & pval < 1.4e-7 & id.exposure %in% gkeep$id.exposure)
+nrow(iv)
+length(unique(iv$id.exposure))
+length(unique(iv$id.outcome))
+```
+
+
+
+
 We can define `CPG->trait` associations to be significant if the colocalisation score `> 0.8` and the p-value adjusted for 300000 CpGs tested in 698 traits (p < `r threshold1`). How many significant associations?
 
 ```{r}
@@ -190,15 +230,21 @@ temp8$same_sign <- sign(temp8$b1) == sign(temp8$b2)
 temp8$fdr2 <- p.adjust(temp8$p2, "fdr")
 temp8$sig2a <- temp8$p2 < 0.05
 temp8$sig2b <- temp8$fdr2 < 0.05
+save(dat, mr_new, temp8, file="../results/mr_concordance.rdata")
+```
 
+
+```{r}
+load("../results/mr_concordance.rdata")
 table(temp8$same_sign)
 table(temp8$sig2a)
 table(temp8$sig2b)
-table(temp8$sig2b, temp8$same_sign)
+table(temp8$sig2a, temp8$same_sign)
+table(temp8$sig2a, temp8$same_sign) %>% chisq.test
 
-subset(temp8, sig2b & same_sign) %>% arrange(outcome.x) %>% as.data.frame %>% dplyr::select(snp1, snp2, outcome.y, exposure)
 
-save(dat, mr_new, temp8, file="../results/mr_concordance.rdata")
+subset(temp8, sig2a & same_sign) %>% arrange(outcome.x) %>% as.data.frame %>% dplyr::select(snp1, snp2, outcome.y, exposure)
+
 ```
 
 

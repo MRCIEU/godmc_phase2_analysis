@@ -26,10 +26,10 @@ for(i in 1:nrow(dat))
 	dat6 <- dat2
 	dat6$se.outcome[i] <- dat6$se.outcome[i] / 10
 
-	res3 <- mr(dat3, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
-	res4 <- mr(dat4, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
-	res5 <- mr(dat5, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
-	res6 <- mr(dat6, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+	res3 <- mr(dat3, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
+	res4 <- mr(dat4, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
+	res5 <- mr(dat5, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
+	res6 <- mr(dat6, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
 	res3$what <- res5$what <- "outlier"
 	res4$what <- res6$what <- "null"
 	res3$eff <- res4$eff <- 5
@@ -42,7 +42,7 @@ res <- bind_rows(out)
 
 
 
-temp <- mr(dat, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+temp <- mr(dat, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
 temp$what <- "real"
 temp$eff <- 0
 temp$snp <- NA
@@ -64,21 +64,21 @@ dat2 <- harmonise_data(a,b)
 dat2$beta.outcome <- sample(dat2$beta.outcome)
 
 # Get MR estimates
-temp2 <- mr(dat2, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+temp2 <- mr(dat2, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
 
 # Plot
-o2 <- mr_forest_plot(mr_singlesnp(dat2, all_method = c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode")))[[1]] +
+o2 <- mr_forest_plot(mr_singlesnp(dat2, all_method = c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode")))[[1]] +
 labs(x="MR effect size estimates") + theme(axis.text.y=element_text(size=5))
 
 dat3 <- dat2
 dat3$se.outcome[25] <- dat3$se.outcome[25] / 5
-temp3 <- mr(dat3, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_uwr"))
+temp3 <- mr(dat3, metho=c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode"))
 
 dat3$outlier <- FALSE
 dat3$outlier[25] <- TRUE
 dat3$waldratio <- dat3$beta.outcome / dat3$beta.exposure
 
-o3 <- mr_forest_plot(mr_singlesnp(dat3, all_method = c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode")))[[1]] + geom_point(data=dat3[dat3$outlier,], aes(y=SNP, x=waldratio), colour="black", size=2) + geom_point(data=dat3[dat3$outlier,], aes(y=SNP, x=waldratio), colour="yellow", size=1) +
+o3 <- mr_forest_plot(mr_singlesnp(dat3, all_method = c("mr_ivw_radial", "mr_sign", "mr_weighted_median", "mr_weighted_mode", "mr_simple_median", "mr_simple_mode")))[[1]] + geom_point(data=dat3[dat3$outlier,], aes(y=SNP, x=waldratio), colour="black", size=2) + geom_point(data=dat3[dat3$outlier,], aes(y=SNP, x=waldratio), colour="yellow", size=1) +
 labs(x="MR effect size estimates") + theme(axis.text.y=element_text(size=5))
 
 
@@ -88,6 +88,6 @@ labs(x="MR effect size estimates") + theme(axis.text.y=element_text(size=5))
 
 
 
-save(res, dat, o3, o2, file="../results/mr_sct_bmi.rdata")
+save(res, ress, dat, o3, o2, file="../results/mr_sct_bmi.rdata")
 
 
