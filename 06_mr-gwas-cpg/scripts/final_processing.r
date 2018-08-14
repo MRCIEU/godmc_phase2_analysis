@@ -1,74 +1,96 @@
 library(TwoSampleMR)
 library(tidyverse)
 
+load("../results/mrbase_tophits_full.rdata")
 
-load("../data/snps_gwas.rdata")
-## loads a
-gkeep <- filter(a, grepl("mr", data_source.exposure))
-gkeeps <- gkeep %>% group_by(id.exposure, trait, exposure) %>% summarise(n=n()) %>% arrange(desc(n)) %>% ungroup %>% filter(!duplicated(trait))
-rm(a)
+threshold <- 1.4e-7
+res$code <- paste(res$id.exposure, res$id.outcome)
+het$code <- paste(het$id.exposure, het$id.outcome)
+het <- subset(het, method == "Inverse variance weighted")
+plei$code <- paste(plei$id.exposure, plei$id.outcome)
 
+codes <- data_frame(code=unique(res$code), outcome = 0)
+table(codes$outcome)
 
-# Filtering 06 results
-
-
-load("../results/mrbase_sig.rdata")
-## loads sig
-sig$code <- paste(sig$id.exposure, sig$id.outcome)
-
-# 1. wald ratios
-code_wr <- subset(sig, nsnp == 1 & pval < 1.4e-7 & id.exposure %in% gkeeps$id.exposure)$code
+# (1) Non-significant wald ratio
+temp <- subset(res, nsnp == 1 & pval > threshold)$code
+codes$outcome[codes$code %in% temp] <- 1
+table(codes$outcome)
 
 
+# (2) Significant wald ratio
+temp <- subset(res, nsnp == 1 & pval <= threshold)$code
+codes$outcome[codes$code %in% temp] <- 2
+table(codes$outcome)
 
-# 2. 2-25 SNPs
-## if low Q stat, use IVW
+# (3) ivw not sig
 
-load("../results/mrbase_sig_mhc.rdata")
-## loads res
+temp <- subset(res, method == "Inverse variance weighted" & pval > threshold)$code
+codes$outcome[codes$code %in% temp] <- 3
+table(codes$outcome)
 
-mrbase_sig_mhc <- subset(res, id.exposure %in% gkeeps$id.exposure & pval < 1.4e-7)
-rm(res)
-mrbase_sig_mhc <- subset(mrbase_sig_mhc, what2 == "all" & nsnp > 1 & nsnp < 25 & is.na(mrbase_sig_mhc$what))
-mrbase_sig_mhc$code <- paste(mrbase_sig_mhc$id.exposure, mrbase_sig_mhc$id.outcome)
+### Followup
 
-code_lowq_25 <- subset(mrbase_sig_mhc, Q_pval > 0.05/nrow(mrbase_sig_mhc))$code
+# (4) 2-9 inst, no heterogeneity
+ivw_followup <- subset(res, method == "Inverse variance weighted" & pval <= threshold & nsnp >= 2 & nsnp < 10)$code
+het_followup <- subset(het, code %in% ivw_followup)
+temp <- subset(het_followup, Q_pval > 0.05/nrow(het_followup))$code
+codes$outcome[codes$code %in% temp] <- 4
+table(codes$outcome)
+
+# (5) heterogeneity
+
+temp <- subset(het_followup, Q_pval <= 0.05/nrow(het_followup))$code
+codes$outcome[codes$code %in% temp] <- 5
+table(codes$outcome)
 
 
-## if high Q stat, use mode
-load("../results/tophits_followup.rdata")
-## loads res
-tophits_followup <- res
+# (6) 10-49 inst, no het
+ivw_followup <- subset(res, method == "Inverse variance weighted" & pval <= threshold & nsnp >= 10 & nsnp < 50)
+het_followup <- subset(het, code %in% ivw_followup$code)
+temp1 <- subset(het_followup, Q_pval > 0.05/nrow(het_followup))$code
+temp2 <- subset(res, code %in% ivw_followup$code & method == "Sign concordance test")
+temp2 <- subset(temp2, pval < 0.05/nrow(temp2))$code
+temp3 <- subset(ivw_followup, code %in% c(temp1, temp2))$code
 
-temp <- select(gkeeps, exposure, id.exposure)
-query_codes <- subset(mrbase_sig_mhc, Q_pval < 0.05/nrow(mrbase_sig_mhc))$code
-
-out <- inner_join(tophits_followup, temp) %>% mutate(id.outcome = outcome, code = paste(id.exposure, id.outcome)) %>% filter(code %in% query_codes & method == "Simple mode" & pval < 1.4e-7)
-code_hiq_25 <- out$code
-rm(res, temp, query_codes)
-
-# 3. 50+ SNPs
-## check if sct is significant
-
-load("../../06_mr-gwas-cpg/results/mrbase_sig_mhc_sign.rdata")
-
-mult_code <- subset(res, nsnp >= 50 & what2 == "all" & method == "Inverse variance weighted" & pval < 1.4e-7)$code
-code_50 <- subset(res, code %in% mult_code & what2 == "all" & method == "Sign concordance test" & pval < 0.05/length(mult_code))$code
-
-mult <- group_by(mult, code, exposure) %>%
-	summarise(same_sign=sign(b[1]) == sign(b[2]), sig1=pval[2] < 0.05/nrow(mult)*2, sig2 = pval[2] < 0.05, sig3 = pval[1] < threshold2)
-table(mult$same_sign, mult$sig2, mult$sig3)
-group_by(mult, exposure) %>% summarise(n=n(), nsig1=sum(sig1), nsig2=sum(sig2), nsig3=sum(sig2 & sig3)) %>% arrange( nsig2) %>% as.data.frame
-sum(mult$sig2 & mult$sig3)
-
-ressig1 <- subset(res, (method == "Wald ratio" | method == "Inverse variance weighted") & what2=="all" & pval < threshold2)
-ressig1$sig <- ressig1$code %in% subset(mult, sig2 & sig3)$code
-ressig1 <- inner_join(ressig1, cpgpos, by=c("outcome"="cpg"))
-ressig1$chr <- as.numeric(gsub("chr", "", ressig1$cpgchr))
-ressig1$trait <- strsplit(ressig1$exposure, split="\\|") %>% sapply(function(x) x[1]) %>% gsub(" $", "", .)
-# ressig2 <- subset(res, method == "Inverse variance weighted" & pval < threshold2)
-# ressig2$nom <- strsplit(ressig2$exposure, split=" ") %>% sapply(function(x) x[1])
-ressig1$pval[ressig1$pval < 1e-100] <- 1e-100
+codes$outcome[codes$code %in% temp3] <- 6
+table(codes$outcome)
 
 
 
+# (7) high het/ low sign and median is not sig
+temp4 <- subset(ivw_followup, ! code %in% c(temp1, temp2))
+temp5 <- subset(res, code %in% temp4$code & method == "Simple median")
+temp6 <- subset(temp5, pval > 0.05/nrow(temp5))$code
+codes$outcome[codes$code %in% temp6] <- 7
+table(codes$outcome)
+
+
+# (8) high het/ low sign and median is sig
+temp7 <- subset(temp5, pval <= 0.05/nrow(temp5))$code
+codes$outcome[codes$code %in% temp7] <- 8
+table(codes$outcome)
+
+
+# (9) 50+ inst, low sign or high het
+ivw_followup <- subset(res, method == "Inverse variance weighted" & pval <= threshold & nsnp >= 50)
+
+temp <- subset(res, code %in% ivw_followup$code & method == "Sign concordance test")
+temp2 <- subset(het, code %in% ivw_followup$code)
+
+temp3 <- subset(temp, pval < 0.05/nrow(temp))$code
+temp4 <- subset(temp2, Q_pval > 0.05/nrow(temp2))$code
+
+temp5 <- subset(ivw_followup, !code %in% c(temp3, temp4))$code
+codes$outcome[codes$code %in% temp5] <- 9
+table(codes$outcome)
+
+
+# (10) 50+ inst, high sign or low het
+temp6 <- subset(ivw_followup, code %in% c(temp3, temp4))$code
+codes$outcome[codes$code %in% temp6] <- 10
+table(codes$outcome)
+codes$sig <- codes$outcome %in% c(2,4,6,8,10)
+codes$msig <- codes$outcome %in% c(4,6,8,10)
+
+save(codes, file="../results/mrbase_sig_codes.rdata")
