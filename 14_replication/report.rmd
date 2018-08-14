@@ -516,6 +516,10 @@ labs(x="Number of mQTLs per CpG", y="Heritability estimate", fill="Heritability\
 ggsave(p1, file="images/mqtl_vs_h2.png", width=9, height=4)
 
 
+tab2l %>% filter(key == "Twin") %>% lm(mqtls ~ value, data=.) %>% summary %>% coefficients
+
+tab2l %>% group_by(key) %>% summarise(cor=cor(mqtls, value))
+
 p1 <- ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90)) +

@@ -225,7 +225,8 @@ ggplot(n, aes(x, y, xend = xend, yend = yend)) +
                  aes(label = vn),
                  color = "steelblue", fontface = "bold") +
   theme_blank()
-ggsave("../images/bipartite_network.pdf")
+ggsave("../images/bipartite_network.pdf", width=12, height=12)
+ggsave("../images/bipartite_network.png", width=12, height=12)
 
 
 

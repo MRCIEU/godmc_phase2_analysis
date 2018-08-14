@@ -2,6 +2,7 @@ library(dplyr)
 library(ggplot2)
 library(ggthemes)
 
+
 threshold1 <- 0.05 / (300000 * 698)
 threshold2 <- 0.05 / (300000)
 
@@ -30,24 +31,40 @@ res2$conc <- res2$code %in% subset(temp8, same_sign & sig2a)$code
 ##
 
 
-## Get results that withstand 
-load("../../06_mr-gwas-cpg/results/mrbase_sig_mhc_sign.rdata")
+load("../../06_mr-gwas-cpg/results/mrbase_tophits_full.rdata")
+trait_cpg <- subset(res, method %in% c("Wald ratio", "Inverse variance weighted"))
+trait_cpg$code <- paste(trait_cpg$id.exposure, trait_cpg$id.outcome)
+load("../../06_mr-gwas-cpg/results/mrbase_sig_codes.rdata")
+trait_cpg <- inner_join(trait_cpg, codes)
 
-mult <- subset(res, nsnp >= 50 & what2 == "all")
-mult <- group_by(mult, code, exposure) %>%
-	summarise(same_sign=sign(b[1]) == sign(b[2]), sig1=pval[2] < 0.05/nrow(mult)*2, sig2 = pval[2] < 0.05, sig3 = pval[1] < threshold2)
-table(mult$same_sign, mult$sig2, mult$sig3)
-group_by(mult, exposure) %>% summarise(n=n(), nsig1=sum(sig1), nsig2=sum(sig2), nsig3=sum(sig2 & sig3)) %>% arrange( nsig2) %>% as.data.frame
-sum(mult$sig2 & mult$sig3)
+subset(trait_cpg, msig)$exposure %>% table(.)
 
-ressig1 <- subset(res, (method == "Wald ratio" | method == "Inverse variance weighted") & what2=="all" & pval < threshold2)
-ressig1$sig <- ressig1$code %in% subset(mult, sig2 & sig3)$code
-ressig1 <- inner_join(ressig1, cpgpos, by=c("outcome"="cpg"))
-ressig1$chr <- as.numeric(gsub("chr", "", ressig1$cpgchr))
-ressig1$trait <- strsplit(ressig1$exposure, split="\\|") %>% sapply(function(x) x[1]) %>% gsub(" $", "", .)
-# ressig2 <- subset(res, method == "Inverse variance weighted" & pval < threshold2)
-# ressig2$nom <- strsplit(ressig2$exposure, split=" ") %>% sapply(function(x) x[1])
-ressig1$pval[ressig1$pval < 1e-100] <- 1e-100
+trait_cpg <- inner_join(trait_cpg, cpgpos, by=c("outcome"="cpg"))
+trait_cpg$chr <- as.numeric(gsub("chr", "", trait_cpg$cpgchr))
+trait_cpg$trait <- strsplit(trait_cpg$exposure, split="\\|") %>% sapply(function(x) x[1]) %>% gsub(" $", "", .)
+trait_cpg$pval[trait_cpg$pval < 1e-100] <- 1e-100
+
+
+# ## Get results that withstand 
+# load("../../06_mr-gwas-cpg/results/mrbase_sig_mhc_sign.rdata")
+
+# mult <- subset(res, nsnp >= 50 & what2 == "all")
+# mult <- group_by(mult, code, exposure) %>%
+# 	summarise(same_sign=sign(b[1]) == sign(b[2]), sig1=pval[2] < 0.05/nrow(mult)*2, sig2 = pval[2] < 0.05, sig3 = pval[1] < threshold2)
+# table(mult$same_sign, mult$sig2, mult$sig3)
+# group_by(mult, exposure) %>% summarise(n=n(), nsig1=sum(sig1), nsig2=sum(sig2), nsig3=sum(sig2 & sig3)) %>% arrange( nsig2) %>% as.data.frame
+# sum(mult$sig2 & mult$sig3)
+
+
+
+# ressig1 <- subset(res, (method == "Wald ratio" | method == "Inverse variance weighted") & what2=="all" & pval < threshold2)
+# ressig1$sig <- ressig1$code %in% subset(mult, sig2 & sig3)$code
+# ressig1 <- inner_join(ressig1, cpgpos, by=c("outcome"="cpg"))
+# ressig1$chr <- as.numeric(gsub("chr", "", ressig1$cpgchr))
+# ressig1$trait <- strsplit(ressig1$exposure, split="\\|") %>% sapply(function(x) x[1]) %>% gsub(" $", "", .)
+# # ressig2 <- subset(res, method == "Inverse variance weighted" & pval < threshold2)
+# # ressig2$nom <- strsplit(ressig2$exposure, split=" ") %>% sapply(function(x) x[1])
+# ressig1$pval[ressig1$pval < 1e-100] <- 1e-100
 
 # ressig2$category <- as.factor(ressig2$exposure)
 # levels(ressig2$category) <- c("Risk factor", "Disease", "Disease", "Disease", "Risk factor", "Risk factor", "Risk factor", "Disease", "Disease", "Disease", "Risk factor", "Disease", "Disease", "Disease", "Metabolites", "Risk factor", "Risk factor", "Risk factor")
@@ -62,7 +79,7 @@ rand1 <- data_frame(cpg=cpgpos$cpg, trait="a", chr=cpgpos$chr, p=10^-runif(nrow(
 rand2 <- data_frame(cpg=cpgpos$cpg, trait="b", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="trait to cpg", sig=FALSE, cpgpos=cpgpos$cpgpos)
 temp <- rbind(
 	data_frame(cpg=res2$exposure, trait=res2$trait, cpgpos=res2$cpgpos, chr=res2$chr, p=res2$p, what="cpg to trait", sig=res2$H4 > 0.8 & res2$conc),
-	data_frame(cpg=ressig1$outcome, trait=ressig1$trait, cpgpos=ressig1$cpgpos, chr=ressig1$chr, p=ressig1$pval, what="trait to cpg", sig=ressig1$sig),
+	data_frame(cpg=trait_cpg$outcome, trait=trait_cpg$trait, cpgpos=trait_cpg$cpgpos, chr=trait_cpg$chr, p=trait_cpg$pval, what="trait to cpg", sig=trait_cpg$msig),
 	data_frame(
 		cpg=res$outcome, trait=res$exposure, cpgpos=res$cpgpos, chr=res$chr, p=res$pval, what="trait to cpg", sig=FALSE
 		),
@@ -82,6 +99,8 @@ cats$subcategory[cats$subcategory == "NA"] <- "Anthropometric"
 cats$subcategory[cats$subcategory == "Other"] <- "Metabolite"
 cats$subcategory[cats$subcategory == "Nucleotide"] <- "Metabolite"
 cats$subcategory[cats$subcategory == "Lipid"] <- "Metabolite"
+cats$subcategory[cats$subcategory == "Metal"] <- "Haemotological"
+
 cats <- subset(cats, !duplicated(paste(trait, subcategory))) %>% arrange(trait)
 temp <- merge(temp, cats, by=c("trait"), all.x=TRUE)
 
@@ -91,7 +110,7 @@ geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
 geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
 facet_grid(what ~ chr, scale="free", space="free") +
-scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9")) +
+scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
 # theme_tufte() +
 scale_y_continuous(breaks=seq(0, 100, 20)) +
 labs(x="CpG position", y="-log10 p", colour="") +
@@ -120,14 +139,14 @@ geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
 geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
 facet_grid(. ~ chr, scale="free", space="free") +
-scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9")) +
+scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
 scale_y_continuous(breaks=seq(-100, 100, 20)) +
 labs(x="CpG position", y="", colour="") +
 ylim(-60, 60) +
 geom_hline(yintercept=-log10(threshold2), linetype="dotted") +
 geom_hline(yintercept=log10(threshold2), linetype="dotted") +
 geom_hline(yintercept=0, linetype="solid") +
-guides(colour=guide_legend(ncol=3)) +
+guides(colour=guide_legend(ncol=5)) +
 theme(
 	legend.position="top",
 	axis.text=element_blank(),
