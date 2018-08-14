@@ -272,6 +272,66 @@ facet_wrap(~ phen) +
 theme(strip.text=element_text(size=6))
 ggsave("../images/lambda_top.pdf")
 
+ann$cpg <- rownames(ann)
+l <- list()
+for(i in 1:nrow(lambtop))
+{
+	message(i)
+	load(paste0("../results/out/gwas", lambtop$id[i], ".rdata"))
+	res <- merge(res, ann, by.x="outcome", by.y="cpg")
+	out <- res %>% as_data_frame %>% group_by(chr) %>%
+	summarise(n=n(), lambda=lambda(pval)[1])
+	out$id <- lambtop$id[i]
+	out$phen <- lambtop$phen[i]
+	l[[i]] <- out
+}
+lambdatopchr <- bind_rows(l)
+save(lambdatopchr, file="../results/lambda_top_chr.rdata")
+load("../results/lambda_top_chr.rdata")
+
+
+ggplot(lambdatopchr %>% filter(n > 500), aes(y=lambda, x=gsub("chr", "", chr) %>% as.numeric)) +
+geom_point() +
+geom_hline(data=lambtop, aes(yintercept=lambda), colour="red") +
+geom_hline(yintercept=1, linetype="dotted") +
+facet_wrap(~ phen) +
+theme(strip.text=element_text(size=6)) +
+labs(x="Chromosome")
+ggsave("../images/lambda_top_chr.pdf")
+
+
+l <- list()
+for(i in 1:nrow(lambtop))
+{
+	message(i)
+	load(paste0("../results/out/gwas", lambtop$id[i], ".rdata"))
+	res <- merge(res, ann, by.x="outcome", by.y="cpg")
+	res <- subset(res, chr %in% paste("chr", 1:22, sep="")) %>% as_data_frame
+	m <- list()
+	for(j in 1:22)
+	{
+		temp <- subset(res, chr != paste0("chr", j))
+		m[[j]] <- data_frame(chr=j, n=nrow(temp), lambda=lambda(temp$pval)[1])
+	}
+	out <- bind_rows(m)
+	out$id <- lambtop$id[i]
+	out$phen <- lambtop$phen[i]
+	l[[i]] <- out
+}
+lambdatoploo <- bind_rows(l)
+save(lambdatoploo, file="../results/lambda_top_loo.rdata")
+load("../results/lambda_top_loo.rdata")
+
+ggplot(lambdatoploo %>% filter(n > 500), aes(y=lambda, x=chr)) +
+geom_point() +
+geom_hline(data=lambtop, aes(yintercept=lambda), colour="red") +
+geom_hline(yintercept=1, linetype="dotted") +
+facet_wrap(~ phen) +
+theme(strip.text=element_text(size=6)) +
+labs(x="Excluded chromosome")
+ggsave("../images/lambda_top_loo.pdf")
+
+
 hist(lam32$lambda, breaks=30)
 
 

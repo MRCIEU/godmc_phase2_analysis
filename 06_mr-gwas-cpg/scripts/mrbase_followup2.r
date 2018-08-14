@@ -81,7 +81,10 @@ for(i in 1:length(chunks))
 	out[[i]] <- run_chunk(chunks[i])
 }
 
-save(out, file="../results/mrbase_placeholder.rdata")
+res <- lapply(out, function(x) x$res) %>% bind_rows %>% as_data_frame
+het <- lapply(out, function(x) x$het) %>% bind_rows %>% as_data_frame
+plei <- lapply(out, function(x) x$plei) %>% bind_rows %>% as_data_frame
 
-q()
+save(res, het, plei, file="../results/mrbase_tophits_full.rdata")
+
 
