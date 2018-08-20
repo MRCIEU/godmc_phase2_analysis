@@ -180,10 +180,11 @@ kable(rep3)
 ```{r, echo=FALSE, dev="png"}
 ggplot(subset(temp), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=gs.sig)) +
-facet_grid(cist ~ .) +
-labs(x="GoDMC effect size", y="GS effect size", colour="Significant\nreplication") +
-theme(legend.position="top")
-ggsave("images/replication.png", width=4, height=8)
+facet_grid(. ~ cist ) +
+labs(x="GoDMC effect size", y="Generation Scotland effect size", colour="Significant\nreplication") +
+theme(legend.position="right")
+ggsave("images/replication.pdf", width=9, height=4)
+ggsave("images/replication.png", width=9, height=4)
 ```
 
 ## Expected vs observed replication rates
