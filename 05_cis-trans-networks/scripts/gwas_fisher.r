@@ -85,6 +85,8 @@ dat$label <- gsub("disease__", "", dat$fn)
 dat$label <- gsub("risk_factor__", "", dat$label)
 dat$label <- gsub("_", " ", dat$label)
 
+stab <- subset(dat, select=c(clust, label, nsnp, min_p, nsig1, nsig2, nsig3, binom1, binom2, binom3, binom4, fisher)) %>% arrange(binom4)
+write.csv(stab, file="../results/gwas_clusters_nochr6.csv")
 
 dat <- merge(dat, info, by="fn")
 

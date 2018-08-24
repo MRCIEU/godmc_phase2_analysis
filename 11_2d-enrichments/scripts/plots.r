@@ -9,6 +9,18 @@ load("../results/difres/difres0.rdata")
 load("../data/annotations.rdata")
 load("../data/blood.rdata")
 
+encode_tfbs <- anno$index[anno$collection == "encode_tfbs"]
+anno$code <- paste0(anno$antibody2, " : ", anno$cellType, ", ", anno$tissue, " : ", anno$treatment )
+temp <- subset(anno, select=c(index, code))[encode_tfbs,]
+stab <- subset(difres, Var1 %in% encode_tfbs & Var2 %in% encode_tfbs & sddif >= 10)
+
+stab <- merge(stab, temp, by.x="Var1", by.y="index", all.x=TRUE)
+names(stab)[names(stab) == "code"] <- "snp_tfbs"
+stab <- merge(stab, temp, by.x="Var2", by.y="index", all.x=TRUE)
+names(stab)[names(stab) == "code"] <- "cpg_tfbs"
+
+stab <- subset(stab, select=c(snp_tfbs, cpg_tfbs, val, Min., Max., sddif)) %>% arrange(desc(sddif))
+write.csv(stab, file="../results/2d_enrichment.csv")
 
 load("../data/blood.rdata")
 tfbs <- subset(anno, collection == "encode_tfbs")
