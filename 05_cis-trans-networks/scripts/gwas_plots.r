@@ -38,7 +38,7 @@ dat$subcategory[dat$subcategory=="Autoimmune / inflammatory"] <- "Immune"
 dat$subcategory[dat$subcategory=="Psychiatric / neurological"] <- "Neurological"
 dat$subcategory[is.na(dat$subcategory)] <- "Kidney"
 
-stab <- subset(dat, !grepl("metabolites__", fn) & nsnp > 4, select=c(clust, label, nsnp, min_p, fisher)) %>% arrange(fisher)
+stab <- subset(dat, !grepl("metabolites__", fn) & nsnp > 2, select=c(clust, label, nsnp, min_p, fisher)) %>% arrange(fisher)
 write.csv(stab, file="../results/gwas_clusters_nochr6.csv")
 
 
@@ -69,7 +69,7 @@ geom_hline(yintercept=-log10(0.05/nrow(dat)), linetype="dotted") +
 labs(x="", y="Enrichment", size="Number\nof SNPs in\ncommunity", colour="Cluster") +
 scale_colour_brewer(type="qual") +
 facet_grid(. ~ subcategory, scale="free", space="free") +
-theme(legend.position="bottom", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 10))
+theme(legend.position=c(0.03, 0.76), strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 10))
 # geom_label_repel(data=dat_sig, aes(label=clust))
 p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=20, height=13)
