@@ -5,11 +5,19 @@
 library(dplyr)
 library(data.table)
 
-load("../results/communities.rdata")
+load("../results/graph.rdata")
+communities <- merge(dat, mem, by.x="creg", by.y="cpg")
 
-comms <- group_by(communities, cluster) %>% summarise(nsnp=length(unique(snp)), ncpg=length(unique(cpg))) %>% arrange(desc(nsnp)) %>% filter(nsnp > 5)
+communities <- bind_rows(
+	data_frame(cpg = communities$creg, snp=communities$snp, cluster=communities$cluster, type="creg"),
+	data_frame(cpg = communities$tcpg, snp=communities$snp, cluster=communities$cluster, type="tcpg")
+)
+communities$id <- 1:nrow(communities)
+
+comms <- group_by(communities, cluster) %>% summarise(nsnp=length(unique(snp)), ncpg=length(unique(cpg))) %>% arrange(desc(nsnp)) %>% filter(nsnp >= 2)
 
 selcom <- subset(communities, cluster %in% comms$cluster) %>% arrange(cluster)
+
 
 # convert to rsids
 
@@ -45,7 +53,7 @@ for(i in 1:length(fn))
 	l[[i]] <- x
 }
 
-save(l, file="../data/cluster_extract.rdata")
+save(l, selcom, file="../data/cluster_extract.rdata")
 
 
 

@@ -120,3 +120,11 @@ ressigm <- subset(res, msig)
 ressigm %>% group_by(trait) %>% summarise(n=n())
 ressigm %>% group_by(outcome) %>% summarise(n=n())
 subset(res, decision == 2) %>% group_by(trait) %>% summarise(n=n())
+
+
+a <- subset(res, nsnp > 1, select=-c(id.exposure, id.outcome, method, chunk, code, sig, exposure))
+
+a <- subset(res, nsnp > 1, select=c(trait, outcome, nsnp, b, se, pval, decision, msig)) %>%
+	arrange(desc(msig), pval)
+write.csv(a, file="../results/trait-cpg-sig-codes.csv")
+
