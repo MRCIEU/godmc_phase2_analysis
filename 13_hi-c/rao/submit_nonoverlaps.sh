@@ -1,12 +1,14 @@
 #!/bin/bash
 
-#PBS -N nonoverlaps_surplus1
-#PBS -o /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/nonoverlaps_surplus1-output
-#PBS -e /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/nonoverlaps_surplus1-error
+#PBS -N nonoverlaps
+#PBS -o /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/nonoverlaps-output
+#PBS -e /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/nonoverlaps-error
 #PBS -l walltime=50:00:00
 #PBS -l nodes=1:ppn=2
-#PBS -t 201-253
+#PBS -t 77,85,96-100,122,127,131,133-136,140,144,147,149,150,152,178,179,181,182,191,222,253
 #PBS -S /bin/bash
+
+#1-253 chr_list
 
 set -e
 
@@ -43,4 +45,3 @@ done
 end_time=`date +%s`
 echo execution time was `expr $end_time - $start_time` s.
 
-#1-253 chr_list

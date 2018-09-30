@@ -25,11 +25,9 @@ print(pnum)
 
 #1. Load and format data
 #2. Select GRanges for SNP+proxies
-#3. Select GRanges for cpg_samp
+#3. Select GRanges for CpG
 #4. Select Granges for Hi-C data
 #5. Overlap functions
-##6. Permutations (next script)
-##7. Plots and tables (next script)
 
 #1.
 rao <- read.table(paste0("/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/",i,"/MAPQGE30/",i,".NORM"), header=F)
@@ -90,7 +88,7 @@ mcols(hic_oe) <- rao
 
 #save(hic_bait, hic_oe, file=paste0("hi_c_ranges_",i,".rdata"))
 
-#4.
+#5.
 
 bait.overlap.cpg_samp <- function() {
   overlaps <- findOverlaps(hic_bait, cpg_samps, ignore.strand=T)
@@ -120,12 +118,12 @@ oe.overlap.snp <- function() {
   return(result[order(result$SNP), ])
 }
 
-bait_hic_cpg_samp <- bait.overlap.cpg_samp() # cpg_samp in bait 13556
-bait_hic_snp <- bait.overlap.snp() # snp in bait 882383
-oe_hic_cpg_samp <- oe.overlap.cpg_samp() # cpg_samp in interacting region 16388
-oe_hic_snp <- oe.overlap.snp() # snp in interacting region 575885
+bait_hic_cpg_samp <- bait.overlap.cpg_samp()
+bait_hic_snp <- bait.overlap.snp()
+oe_hic_cpg_samp <- oe.overlap.cpg_samp()
+oe_hic_snp <- oe.overlap.snp()
 
-# as data table as merge on null row (no overlap) datasets breaks the permutation loops
+# below "as data table" as merge on null row (no overlap) datasets breaks the permutation loops
 
 bait_hic_cpg_samp <- as.data.table(bait_hic_cpg_samp)
 bait_hic_snp <- as.data.table(bait_hic_snp)
@@ -134,11 +132,12 @@ oe_hic_snp <- as.data.table(oe_hic_snp)
 
 
 # snp in bait
-snp_in_bait <- merge(oe_hic_cpg_samp, subset(bait_hic_snp, select=c(interaction, SNP)), by="interaction") # snp in bait
+snp_in_bait <- merge(oe_hic_cpg_samp, subset(bait_hic_snp, select=c(interaction, SNP)), by="interaction")
 snp_in_bait$code <- paste(snp_in_bait$cpg_samp, snp_in_bait$SNP)
 snp_in_bait <- snp_in_bait[snp_in_bait$code %in% perm2$code, ]
+
 # cpg_samp in bait
-cpg_in_bait <- merge(oe_hic_snp, subset(bait_hic_cpg_samp, select=c(interaction, cpg_samp)), by="interaction") # cpg_samp in bait
+cpg_in_bait <- merge(oe_hic_snp, subset(bait_hic_cpg_samp, select=c(interaction, cpg_samp)), by="interaction")
 cpg_in_bait$code <- paste(cpg_in_bait$cpg_samp, cpg_in_bait$SNP)
 cpg_in_bait <- cpg_in_bait[cpg_in_bait$code %in% perm2$code, ]
 
@@ -150,13 +149,4 @@ save(data, file=paste0("nondata_",i,"_perm_",pnum,".Rdata"))
 #write.table(bait_hic_snp, file=paste0("nonbait_hic_snp_perm_",i,"_",pnum,".tsv"), sep="\t", quote=F, row.names=F)
 #write.table(oe_hic_cpg_samp, file=paste0("nonoe_hic_cpg_perm_",i,"_",pnum,".tsv"), sep="\t", quote=F, row.names=F)
 #write.table(oe_hic_snp, file=paste0("nonoe_hic_snp_perm_",i,"_",pnum,".tsv"), sep="\t", quote=F, row.names=F)
-
-#to do
-# check the results
-# combine the overlaps
-# permutations using broken links and 1000 tests
-# enrichment of overlaps in LOLA: background set to be non associated mQTLS that are in contact points. 
-# enrichment of SNPs in GARFIELD: will take a bit of time. 
-# update document for meeting on Wednesday
-
 

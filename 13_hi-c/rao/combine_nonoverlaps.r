@@ -30,8 +30,8 @@ for (file in file_list){
 oe_data <- subset(oe_data, select=c("interaction", "bait.start", "bait.end", "oe.start", "oe.end", "contacts", "chr.bait", "chr.oe", "cpg_samp", "SNP", "code"))
 all_data <-rbind(bait_data, oe_data)
 write.table(all_data, file=paste0("all_data_perm_",pnum,".tsv"), sep="\t", row.names=F, quote=F)
-save(all_data, file=paste0("all_data_perm_",pnum,".Rdata")) # 1176 contacts overlaping 
+save(all_data, file=paste0("all_data_perm_",pnum,".Rdata"))
 
-nodups_data <- subset(all_data, !duplicated(code)) # 638 unique mQTLs (interchrom)
+nodups_data <- subset(all_data, !duplicated(code))
 write.table(nodups_data, file=paste0("nodups_data_perm_",pnum,".tsv"), sep="\t", row.names=F, quote=F)
-save(nodups_data, file=paste0("nodups_data_perm_",pnum,".Rdata")) # 1176 contacts overlaping 
+save(nodups_data, file=paste0("nodups_data_perm_",pnum,".Rdata")) 
