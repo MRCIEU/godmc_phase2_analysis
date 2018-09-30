@@ -1,21 +1,6 @@
----
-title: "Hi-C Rao README"
-author: "Kimberley Burrows"
-date: "27 September 2018"
-output:
-  html_document:
-    df_print: paged
-  pdf_document: default
-  word_document: default
----
+# Rao Hi-C Analysis
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-#Rao Hi-C Analysis
-
-##Data Acquisition and cleaning
+## Data Acquisition and cleaning
 
 Trans inter-chromosomal interactions was downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63525 (Rao et.al 2014 ) (~35 Gb)
 Data was stored in relevant independent inter-chromosomal directories and contained the raw contact data, and KR norm vectors.
