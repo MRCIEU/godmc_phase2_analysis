@@ -85,7 +85,7 @@ Overlaps are performed on each individual permuted inter-chromosomal data file
 
 Permuted overlaps were performed using:  
 
-  * submit_nonoverlaps.sh & rao_hic_overlaps.r
+  * submit_nonoverlaps.sh & nonrao_hic_overlaps.r
   * Overlaps are defined as SNPs that overlap in bait with an associated CpG that overlaps the other end and vice versa
   * The output file is: nondata_i_perm_[perm number].Rdata
 
@@ -98,8 +98,8 @@ Combining the permutation data overlaps was performed using:
   * The output files are: nodups_data_perm_i.Rdata
 
 ### Test permutations
-Count the number of overlaps for the real data and for each of the 1000 permuted datasets
-Generate Pval via
+Count the number of overlaps for the real data and for each of the 1000 permuted datasets  
+Gen P val for counts
 
 ### Final datasets for further work
 
