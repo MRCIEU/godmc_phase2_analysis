@@ -23,9 +23,10 @@ dat <- merge(dat, info, by="fn")
 library(TwoSampleMR)
 ao <- available_outcomes()
 #load("../data/outcomes.RData")
-ao <- subset(ao, select=c(id, subcategory))
+ao <- subset(ao, select=c(id, subcategory, access))
 #dat <- merge(dat, ao, by.x="id.y", by.y="id")
 dat <- merge(dat, ao, by.x="id.y", by.y="id",all.x=T)
+dat <- subset(dat, access != "developer")
 
 dat$subcategory[dat$subcategory=="Hemodynamic"] <- "Haemotological"
 dat$subcategory[dat$subcategory=="Immune system"] <- "Autoimmune / inflammatory"
@@ -73,6 +74,7 @@ theme(legend.position=c(0.03, 0.76), strip.text=element_text(angle=90, size=10),
 # geom_label_repel(data=dat_sig, aes(label=clust))
 p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=20, height=13)
+ggsave(p1, file="../images/gwas_clusters_full.png", width=20, height=13)
 
 # temp <- group_by(dat, id=id.y) %>%
 # summarise(
