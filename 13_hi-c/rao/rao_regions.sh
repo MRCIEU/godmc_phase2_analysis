@@ -5,9 +5,7 @@
 #PBS -e /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/regions-error
 #PBS -l walltime=8:00:00
 #PBS -l nodes=1:ppn=1
-## PBS -t 253
-#PBS -t 201-253
-## PBS -t 201-253
+#PBS -t 1-100
 #PBS -S /bin/bash
 
 # To Do. 

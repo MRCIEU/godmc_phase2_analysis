@@ -1,0 +1,111 @@
+# Rao Hi-C Analysis
+
+## Data Acquisition and cleaning
+
+Trans inter-chromosomal interactions was downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE63525 (Rao et.al 2014 ) (~35 Gb)
+Data was stored in relevant independent inter-chromosomal directories and contained the raw contact data, and KR norm vectors.
+Data included the inter-chromosomal interactions for the GM12878 sample at the 1 kb interaction region resolution and quality threshold E30 and was normalised using the KR norm vectors as described in Rao et al. 
+
+### Normalisation
+Data was required to be normalised prior to overlap analysis. Normalisation was achieved by taking the raw observed contact matrix (containing I (bait), j (other end), M_ij (value of counts)) and dividing the entry (row observation) by corresponding norm factors for I and j line. For example:  
+  
+  * e.g RAWobserved file:
+    + 40000 41000 59
+    + divide 59 by ((40000/1000)+1=41) 41st line and ((41000/1000)+1=42) 42nd line
+    + therefore = 59/(line_i x line_j)
+    + KR vectors i=first chr (left) and j=second chr (right)
+    + All data 1kb matrix resolution and > MAPQE30
+	
+There are 253 inter-chromosomal pairs (incl. X chr)  
+
+Normalisation was performed using:  
+
+  * rao_normalisation.sh
+  * [some interactions take >200 hours to complete]
+  * The output file is: i_1kb.NORMobserved
+
+### Defining Regions
+Using a list of inter-chromosomal pairs (chr_list.txt), this list runs through all inter-chrom pairs and performs the following:  
+
+  * takes position i (bait) and generates a new position of i+1000
+  * take position j (other end(oe)) and generates a new position of j+1000
+	
+Regions were performed using:  
+
+  * rao_regions.sh
+  * regions are defined as "bait_start", "bait_end", "oe_start", "oe_end"
+  * The output file is: i.NORM
+	
+### Overlaps for real mQTL data
+Overlaps are performed on each individual inter-chromosomal data file 
+
+1. mQTLs were filtered for CpG-SNP pairs that were inter-chromosomal and Pvalue <1e-14
+2. Each contact in the rao dataset was given an interaction id number
+3. Take SNP proxies and use to subset trans mQTLs - generate GRanges
+4. Generate GRanges for the Hi-C bait and other end positions
+5. Apply overlap functions like those of PCHiC (findOverlaps)
+6. Find overlap mQTLs with SNP in bait and CpG in bait
+
+Overlaps were performed using:  
+
+  * submit_overlaps.sh & rao_hic_overlaps.r
+  * Overlaps are defined as SNPs that overlap in bait with an associated CpG that overlaps the other end and vice versa
+  * The output file is: data_i.Rdata
+
+### Combine the real data overlaps
+Combine all the individual inter-chromosomal overlap files and remove any duplicate mQTLs
+
+Combining the real data overlaps was performed using:  
+
+  * combine_overlaps.r
+  * The output file is: nodups.data.Rdata
+
+### Generate the permutation datasets
+Create 1000 permuted datasets for overlaps via the following:
+
+1. Generate a file of CpG positions from clumped data (mQTLs were filtered for CpG-SNP pairs that were inter-chromosomal and Pvalue <1e-14)
+2. Sample $cpg to gen $cpg2 (cpg positions do not change order and so are now incorrect)
+3. Join sampled data with the file of CpG positions and the trans mQTL clumped data to get have a broken link of SNP-CpGs with amended CpG positions
+4. Remove any duplicate mQTL codes
+5. Remove any mQTL codes generated from the sampled CpG and SNP in the permuted data that match those of the real data mQTL codes
+
+Generating permutation datasets were performed using:  
+
+  * permutations.r
+  * The outfile files are: permutations_i_.rdata
+
+### Perform overlaps for each of the 1000 permutation inter-chromosomal data files (1000*253=253000 jobs total)
+Overlaps are performed on each individual permuted inter-chromosomal data file 
+
+1. Each contact in the rao dataset was given an interaction id number
+2. Take SNP proxies and use to subset permuted trans mQTLs - generate GRanges
+3. Generate GRanges for the Hi-C bait and other end positions
+4. Apply overlap functions like those of PCHiC (findOverlaps)
+5. Find overlap permuted mQTLs with SNP in bait and CpG in bait
+
+Permuted overlaps were performed using:  
+
+  * submit_nonoverlaps.sh & nonrao_hic_overlaps.r
+  * Overlaps are defined as SNPs that overlap in bait with an associated CpG that overlaps the other end and vice versa
+  * The output file is: nondata_i_perm_[perm number].Rdata
+
+### Combine the 1000 permutation data overlaps
+Combine all the individual inter-chromosomal permutation overlap files and remove any duplicate mQTLs
+
+Combining the permutation data overlaps was performed using:  
+
+  * submit_combine_nonoverlaps.sh & combine_nonoverlaps.r
+  * The output files are: nodups_data_perm_i.Rdata
+
+### Test permutations
+Count the number of overlaps for the real data and for each of the 1000 permuted datasets  
+Gen P val for counts
+
+### Final datasets for further work
+
+### To Do
+Plots - present the overlaps and permuations via plots
+
+# Additional data
+## chr_list.txt
+A list of all 253 inter-chromosomal pairs (corresponds to interaction directories of data)
