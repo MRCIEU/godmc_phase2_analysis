@@ -62,6 +62,36 @@ dat_sig <- subset(dat, !grepl("metabolites__", fn) & fisher < 0.05/nrow(dat) & n
 dat_nsig <- subset(dat, !grepl("metabolites__", fn) & fisher >= 0.05/nrow(dat) & nsnp > 2)
 dat_sig$fisher[dat_sig$fisher < 1e-50] <- 1e-50
 
+
+
+###
+# Get trait list
+###
+
+ao <- TwoSampleMR::available_outcomes()
+library(magrittr)
+library(dplyr)
+load("~/repo/godmc-database/neo4j/data/trait_id_master.rdata")
+b <- subset(ao, access != "developer" & id %in% subset(master, !is.na(id_06))$id_mrb)
+uid <- unique(dat_nsig$id.y)
+uid <- uid[!uid %in% b$id]
+
+
+b <- b %$% 
+	data_frame(trait, author, pmid, sample_size, ncase, ncontrol, subcategory, used_in_mr=TRUE)
+b1 <- subset(ao, id %in% uid) %$%
+	data_frame(trait, author, pmid, sample_size, ncase, ncontrol, subcategory, used_in_mr=FALSE)
+
+b <- bind_rows(b, b1)
+dim(b)
+table(b$used_in_mr)
+
+write.csv(b, "../results/trait_list.csv")
+
+
+
+
+
 p1 <- ggplot(dat_nsig, aes(x=label, y=-log10(fisher))) +
 geom_point(aes(size=nsnp)) +
 geom_point(data=dat_sig, aes(colour=as.factor(clust), size=nsnp)) +
