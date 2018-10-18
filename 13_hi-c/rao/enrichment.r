@@ -46,7 +46,7 @@ ggplot(as.data.frame(y), aes(x = y)) +
   geom_density(alpha = .2, fill = "#FF6666") +
   geom_vline(aes(xintercept = mean(y)), 
              color = "#FF6666", linetype = "dashed", size = 1) +
-  labs(title = "Denisty of Overlap Counts", x = "Counts", y = "Density", subtitle = "Hi-C Interactions in Permuted and Real Data") +
+  labs(title = "Density of Overlap Counts", x = "Counts", y = "Density", subtitle = "Hi-C Interactions in Permuted and Real Data") +
   geom_vline(aes(xintercept = real_count), 
              color = "cornflowerblue", linetype = "solid", size = 1) +
   scale_x_continuous(limits = c(400, 1200)) +
