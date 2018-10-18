@@ -98,24 +98,24 @@ Combining the permutation data overlaps was performed using:
   * The output files are: nodups_data_perm_i.Rdata
 
 ### Test permutations
-Count the number of overlaps for the real data and for each of the 1000 permuted datasets
-Results files contain mean, min and max of the 1000 permutation counts
-There are **0** permutation datasets where the overlap counts exceeed that of the real data
-Gen P val for counts: P=0 see above
+Count the number of overlaps for the real data and for each of the 1000 permuted datasets 
+Results files contain mean, min and max of the 1000 permutation counts 
+There are **0** permutation datasets where the overlap counts exceeed that of the real data 
+Gen P val for counts: P=0 see above 
 
-txt file of mean, min and max and pval is in: results/enrichments
+txt file of mean, min and max and pval is in: results/enrichments 
 
 ### Final datasets for further work
-data/hi-c/nodups_data.Rdata = df of overlaps for real data
-data/hi-c/permutation/nodups_data_[1-1000].Rdata = df of overlaps for 1000 permutation datasets
+data/hi-c/nodups_data.Rdata = df of overlaps for real data 
+data/hi-c/permutation/nodups_data_[1-1000].Rdata = df of overlaps for 1000 permutation datasets 
 
 ### Plots
-Density plot of permutation counts vs real data
-found in: results/enrichments
+Density plot of permutation counts vs real data 
+found in: results/enrichments 
 
 ### To Do
 
 
 # Additional data
 ## chr_list.txt
-A list of all 253 inter-chromosomal pairs (corresponds to interaction directories of data)
+A list of all 253 inter-chromosomal pairs (corresponds to interaction directories of data) 
