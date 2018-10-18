@@ -21,18 +21,19 @@ clumped$code <- paste(clumped$cpg, clumped$snp)
 trans_mqtl <- subset(clumped, clumped$cpgchr != clumped$snpchr) # 18584 trans mQTLs (interchromosomal)
 
 
+
 #2.
 load("/panfs/panasas01/shared-godmc/1kg_reference_ph3/snpcontrolsets_selection.rdata") #284819, 24443 trans, 260376 cis
 ldinfo <- subset(f.all, select=c(SNP, min, max, nproxies)) #10085072 obs
 names(ldinfo) <- c("snp", "snplow", "snphigh", "snpproxies")
-temp <- subset(trans_mqtl, !duplicated(snp), select=c("snp", "snpchr", "snppos", "cpg", "cpgchr", "cpgpos", "code")) #12252 SNPs (unique)
-temp <- inner_join(temp, ldinfo, "snp") #12252 obs
-snps <- GRanges(seqnames=temp$snpchr, ranges=IRanges(temp$snplow, temp$snphigh), strand="*")
-names(snps) <- temp$snp # 12252 unique SNPs
-mcols(snps) <- temp
+temp <- subset(trans_mqtl, select=c("snp", "snpchr", "snppos", "cpg", "cpgchr", "cpgpos", "code"))
+temp2 <- inner_join(temp, ldinfo, "snp") #12252 obs
+snps <- GRanges(seqnames=temp2$snpchr, ranges=IRanges(temp2$snplow, temp2$snphigh), strand="*")
+names(snps) <- temp2$snp
+mcols(snps) <- temp2
 
 #3. 
-cpg_pos <- subset(trans_mqtl, select=c("cpg", "cpgpos", "cpgchr"))
+cpg_pos <- subset(trans_mqtl, !duplicated(cpg), select=c("cpg", "cpgpos", "cpgchr"))
 cpg_pos$cpg2 <- cpg_pos$cpg
 
 #4. 
@@ -75,12 +76,12 @@ set.seed(1234)
 for(i in 1:n_perm)
 {
 message(i)
-temp <- subset(trans_mqtl, select=c("cpg", "cpgchr", "cpgpos", "code"))
-temp$cpg2 <- sample(temp$cpg)
-temp2 <- inner_join(temp, cpg_pos, "cpg2")
-temp3 <- subset(temp2, select=c("code", "cpg.y", "cpgpos.y", "cpgchr.y"))
-names(temp3) <- c("code", "cpg_samp", "cpg_pos_samp", "cpgchr_samp")
-perm1 <- inner_join(trans_mqtl, temp3, "code")
+xtemp <- subset(trans_mqtl, select=c("cpg", "cpgchr", "cpgpos", "code"))
+xtemp$cpg2 <- sample(xtemp$cpg)
+xtemp2 <- inner_join(xtemp, cpg_pos, "cpg2")
+xtemp3 <- subset(xtemp2, select=c("code", "cpg.y", "cpgpos.y", "cpgchr.y"))
+names(xtemp3) <- c("code", "cpg_samp", "cpg_pos_samp", "cpgchr_samp")
+perm1 <- inner_join(trans_mqtl, xtemp3, "code")
 perm1$code2 <- paste(perm1$cpg_samp, perm1$snp)
 perm1_codes <-perm1$code2
 tmp <- subset(perm1_codes, !duplicated(perm1_codes))
@@ -90,4 +91,6 @@ tmp3 <- subset(tmp2, !(tmp %in% tmp2))
 perm2 <- subset(perm1, perm1$code %in% tmp3)
 save(perm2, file=paste0("data/permutations/permutations", i, ".rdata"))
 }
+
+
 

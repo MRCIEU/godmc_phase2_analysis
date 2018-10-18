@@ -32,6 +32,6 @@ all_data <-rbind(bait_data, oe_data)
 write.table(all_data, file=paste0("all_data_perm_",pnum,".tsv"), sep="\t", row.names=F, quote=F)
 save(all_data, file=paste0("all_data_perm_",pnum,".Rdata"))
 
-nodups_data <- subset(all_data, !duplicated(code))
+nodups_data <- subset(all_data, !duplicated(paste0(all_data$code, all_data$interaction)))
 write.table(nodups_data, file=paste0("nodups_data_perm_",pnum,".tsv"), sep="\t", row.names=F, quote=F)
 save(nodups_data, file=paste0("nodups_data_perm_",pnum,".Rdata")) 

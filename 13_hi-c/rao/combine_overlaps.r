@@ -25,8 +25,8 @@ for (file in file_list){
 oe_data <- subset(oe_data, select=c("interaction", "bait.start", "bait.end", "oe.start", "oe.end", "contacts", "chr.bait", "chr.oe", "CpG", "SNP", "code"))
 all_data <-rbind(bait_data, oe_data)
 write.table(all_data, file="all_data.tsv", sep="\t", row.names=F, quote=F)
-save(all_data, file="all.data.Rdata") # 1176 contacts overlaping 
+save(all_data, file="all.data.Rdata")
 
-nodups_data <- subset(all_data, !duplicated(code)) # 638 unique mQTLs (interchrom)
+nodups_data <- subset(all_data, !duplicated(paste0(all_data$code, all_data$interaction)))
 write.table(nodups_data, file="nodups_data.tsv", sep="\t", row.names=F, quote=F)
 save(nodups_data, file="nodups.data.Rdata") 

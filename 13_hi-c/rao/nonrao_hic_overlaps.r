@@ -29,6 +29,8 @@ print(pnum)
 #4. Select Granges for Hi-C data
 #5. Overlap functions
 
+if (!file.exists(paste0("nondata_",i,"_perm_",pnum,".Rdata"))) {
+
 #1.
 rao <- read.table(paste0("/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/",i,"/MAPQGE30/",i,".NORM"), header=F)
 load(paste0("/panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/data/permutations/permutations",pnum,".rdata"))
@@ -48,10 +50,14 @@ trans_mqtl <- subset(perm2, perm2$cpgchr_samp != perm2$snpchr) # 18584 trans mQT
 
 #how many specific chr mQTL pairs are there?
 trans_mqtl2 <-subset(trans_mqtl, (cpgchr_samp ==var1 | cpgchr_samp ==var2) & (snpchr==var1 | snpchr ==var2))
-table(trans_mqtl2$cpgchr_samp)
+head(trans_mqtl2)
+
+if (dim(trans_mqtl2)[1] > 0) {
+    
+print(table(trans_mqtl2$cpgchr_samp))
 #write.table(trans_mqtl2, file=paste0("nontrans_mqtl_perm_",pnum,"_",i,".tsv"), sep="\t", quote=F, row.names=F)
-
-
+print("that's it yo")
+	
 #2. take proxies, subset trans_mqtls for non duplicate snps, join non duplicated snps with proxies keeping matches only, GRanges
 ldinfo <- subset(f.all, select=c(SNP, min, max, nproxies))
 names(ldinfo) <- c("snp", "snplow", "snphigh", "snpproxies")
@@ -61,7 +67,7 @@ snps <- GRanges(seqnames=temp$snpchr, ranges=IRanges(temp$snplow, temp$snphigh),
 names(snps) <- temp$snp # 12252 unique SNPs
 mcols(snps) <- temp
 
-#3. 
+#3.
 temp <- subset(trans_mqtl2, !duplicated(cpg_samp))
 cpg_samps <- GRanges(seqnames=temp$cpgchr_samp, ranges=IRanges(temp$cpg_pos_samp, temp$cpg_pos_samp), strand="*")
 names(cpg_samps) <- temp$cpg_samp # There are 15759 unique cpg_samps
@@ -150,3 +156,5 @@ save(data, file=paste0("nondata_",i,"_perm_",pnum,".Rdata"))
 #write.table(oe_hic_cpg_samp, file=paste0("nonoe_hic_cpg_perm_",i,"_",pnum,".tsv"), sep="\t", quote=F, row.names=F)
 #write.table(oe_hic_snp, file=paste0("nonoe_hic_snp_perm_",i,"_",pnum,".tsv"), sep="\t", quote=F, row.names=F)
 
+}
+}
