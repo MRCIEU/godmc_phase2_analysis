@@ -2,12 +2,13 @@ res <- rep(0,1000)
 for(i in 1:1000)
 {
 	message(i)
-	load(paste0("permutations/nodups_data_perm_",i, ".Rdata"))
+	load(paste0("~/repo/godmc_phase2_analysis/data/hi-c/permutations/nodups_data_perm_",i, ".Rdata"))
 	res[i] <- length(unique(nodups_data$code))
 }
 perm<-median(res)
 #473
-load(paste0("nodups.data.Rdata"))
+max(res) #547
+load(paste0("~/repo/godmc_phase2_analysis/data/hi-c/nodups.data.Rdata"))
 real<-length(unique(nodups_data$code))
 #637
 sort(res)
