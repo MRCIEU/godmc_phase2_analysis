@@ -1,0 +1,34 @@
+PERM = list(range(0,501))
+
+rule all:
+	input: 'images/bipartite_network.pdf'
+
+rule generate_data:
+	input: '../results/16/16_clumped.rdata', '../05_cis-trans-networks/data/snpcontrolsets_selection.rdata'
+	output: 'data/trans_granges.rdata', 'data/trans_clumped.rdata'
+	script:
+		"cd scripts; R CMD BATCH generate_data.r"
+
+rule get_annotations:
+	input: rules.generate_data.output
+	output: 'data/annotations.rdata', 'data/blood.rdata'
+	script:
+		'cd scripts; R CMD BATCH get_annotations.r'
+
+rule matrix:
+	input: rules.get_annotations.output, rules.generate_data.output
+	output: 'results/matrix/m{perm}.rdata'
+	script:
+		'cd scripts; R CMD BATCH matrix.r {wildcard.perm}'
+
+rule difres:
+	input: 'results/matrix/m{perm}.rdata'
+	output: 'results/difres/difres{perm}.rdata'
+	script:
+		'cd scripts; R CMD BATCH difres.r {wildcard.perm}'
+
+rule plots:
+	input: expand('results/difres/difres{perm}.rdata', perm=PERM)
+	output: 'images/bipartite_network.pdf'
+	script:
+		'cd scripts; R CMD BATCH plots.r'
