@@ -5,10 +5,10 @@
 #PBS -e /panfs/panasas01/sscm/epwkb/GoDMC_Analysis/Hi-C/Rao2014/GM12878_combined_interchromosomal/1kb_resolution_interchromosomal/job_reports/norm_clean-error
 #PBS -l walltime=200:00:00
 #PBS -l nodes=1:ppn=2
-#PBS -t 18
-## PBS -t 101-200
-## PBS -t 201-253
+#PBS -t 1-100
 #PBS -S /bin/bash
+
+#1-253 chr_list
 
 ## NOTE: Submit 50 jobs to each array to prevent no space on device error: 
 ## some chr[1, 2 & 3] + chr[i] interactions take >200 hours to normalise 

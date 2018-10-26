@@ -6,8 +6,9 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 
 ```{r}
 library(knitr)
-library(dplyr)
 library(TwoSampleMR)
+ao <- available_outcomes()
+library(dplyr)
 library(ggplot2)
 library(ggthemes)
 
@@ -19,8 +20,7 @@ fn <- read.csv("../../data/gwas/00info.csv")
 load("../results/cpg_trait_coloc.rdata")
 load("../../data/misc/cpg_pos.rdata")
 
-
-ao <- available_outcomes() %>% filter(id %in% res$outcome)
+ao <- ao %>% filter(id %in% res$outcome)
 sig <- res[res$H4 > 0.8 & res$p < threshold1 & res$nsnp >= 10,]
 sig <- subset(sig, !duplicated(paste(exposure, outcome)))
 sig <- merge(sig, subset(ao, select=c(id, trait, category, subcategory)), by.x="outcome", by.y="id")
@@ -34,7 +34,7 @@ sigm <- subset(sig, category != "Metabolites")
 How many traits with more than one instrument
 
 ```{r}
-load("../data/snps_gwas.rdata")
+load("../../06_mr-gwas-cpg/data/snps_gwas.rdata")
 am <- filter(a, grepl("mr", data_source.exposure))
 gkeep <- am %>% group_by(id.exposure, trait) %>% summarise(n=n()) %>% arrange(desc(n)) %>% ungroup %>% filter(!duplicated(trait))
 table(gkeep$n == 1)
@@ -137,6 +137,26 @@ summarise(cat=first(subcategory), n=n()) %>%
 arrange(desc(n)) %>% kable
 
 sig6 <- filter(sig, category != "Metabolites" & !(snpchr == 6 & snppos > 28000000 & snppos < 33000000))
+
+library(magrittr)
+sig6csv <- sig6 %$% data_frame(
+	cpg=exposure,
+	trait=trait,
+	cpg_pos = paste0(cpgchr, ":", cpgpos),
+	lead_snp = snp,
+	cis=cis,
+	b_wald_ratio = b,
+	se_wald_ratio = se,
+	p_wald_ratio = p,
+	coloc_nsnp = nsnp,
+	coloc_h0 = H0,
+	coloc_h1 = H1,
+	coloc_h2 = H2,
+	coloc_h3 = H3,
+	coloc_h4 = H4
+)
+write.csv(sig6csv, "../results/cpg-trait-tophits.csv")
+
 ```
 
 
@@ -231,6 +251,19 @@ temp8$fdr2 <- p.adjust(temp8$p2, "fdr")
 temp8$sig2a <- temp8$p2 < 0.05
 temp8$sig2b <- temp8$fdr2 < 0.05
 save(dat, mr_new, temp8, file="../results/mr_concordance.rdata")
+
+outcsv <- data_frame(
+	cpg = temp8$exposure, 
+	trait = temp8$outcome.x, 
+	b_cis = temp8$b1,
+	se_cis = temp8$se1,
+	pval_cis = temp8$p1,
+	b_trans = temp8$b2,
+	se_trans = temp8$se2,
+	pval_trans = temp8$p2,
+	same_sign = temp8$same_sign
+)
+write.csv(outcsv, file="../results/cis-trans-concordance.csv")
 ```
 
 

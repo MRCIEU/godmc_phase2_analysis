@@ -1,0 +1,145 @@
+"","trait","author","pmid","sample_size","ncase","ncontrol","subcategory","used_in_mr"
+"1","Adiponectin","Dastani Z",22479202,39883,NA,NA,"Protein",TRUE
+"2","Depressive symptoms","Okbay",27089181,161460,NA,NA,"Psychiatric / neurological",TRUE
+"3","Years of schooling","Okbay",27225129,293723,NA,NA,"Education",TRUE
+"4","Leptin","Kilpelainen",26833098,32161,NA,NA,"Hormone",TRUE
+"5","Age at menopause","Day",26414677,69360,NA,NA,"Reproductive aging",TRUE
+"6","Percent emphysema","Manichaikul A",24383474,7667,NA,NA,"Lung disease",TRUE
+"7","Mean platelet volume","Gieger C",22139419,66867,NA,NA,"Haemotological",TRUE
+"8","Neuroticism","Okbay",27089181,170911,NA,NA,"Personality",TRUE
+"9","Platelet count","Gieger C",22139419,66867,NA,NA,"Haemotological",TRUE
+"10","Subjective well being","Okbay",27089181,298420,NA,NA,"Psychiatric / neurological",TRUE
+"11","Plasma cortisol","Bolton JL",25010111,12597,NA,NA,"Hormone",TRUE
+"12","Immunoglobulin G index levels","Goris A",25616667,938,NA,NA,"Immune system",TRUE
+"13","Migraine in bipolar disorder","Jacobsen KK",25451450,1374,460,924,"Psychiatric / neurological",TRUE
+"14","Difference in height between childhood and adulthood","Cousminer",23449627,10799,NA,NA,"Anthropometric",TRUE
+"15","Difference in height between adolescence and adulthood","Cousminer",23449627,9228,NA,NA,"Anthropometric",TRUE
+"16","Intracranial volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",TRUE
+"17","Amygdala volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",TRUE
+"18","Hippocampus volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",TRUE
+"19","Putamen volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",TRUE
+"20","Iron","Benyamin",25352340,23986,NA,NA,"Metal",TRUE
+"21","Ferritin","Benyamin",25352340,23986,NA,NA,"Metal",TRUE
+"22","Transferrin Saturation","Benyamin",25352340,23986,NA,NA,"Metal",TRUE
+"23","Transferrin","Benyamin",25352340,23986,NA,NA,"Metal",TRUE
+"24","Gout","Kottgen",23263486,69374,2115,67259,"Autoimmune / inflammatory",TRUE
+"25","Urate","Kottgen",23263486,110347,NA,NA,"Other",TRUE
+"26","Heart rate","den Hoed M",23583979,92355,NA,NA,"Hemodynamic",TRUE
+"27","Weight","Randall JC",23754948,60586,NA,NA,"Anthropometric",TRUE
+"28","Sitting height ratio","Chan",25865494,21590,NA,NA,"Anthropometric",TRUE
+"29","Copper","Evans",23720494,2603,NA,NA,"Metal",TRUE
+"30","Selenium","Evans",23720494,2603,NA,NA,"Metal",TRUE
+"31","Zinc","Evans",23720494,2603,NA,NA,"Metal",TRUE
+"32","IgA nephropathy","Feehally J",20595679,5957,977,4980,"Kidney",TRUE
+"33","Thyroid cancer","Kohler A",23894154,1080,649,431,"Cancer",TRUE
+"34","Birth weight","Horikoshi",27680694,153781,NA,NA,"Anthropometric",TRUE
+"35","Amyotrophic lateral sclerosis","van Rheenen",27455348,36052,12577,23475,"Psychiatric / neurological",TRUE
+"36","Chronotype","Jones",27494321,128266,NA,NA,"Sleeping",TRUE
+"37","Sleep duration","Jones",27494321,128266,NA,NA,"Sleeping",TRUE
+"38","Top 1 % survival","Pilling",27015805,75244,NA,NA,"Aging",TRUE
+"39","Father's age at death","Pilling",27015805,75244,NA,NA,"Aging",TRUE
+"40","Mother's age at death","Pilling",27015805,75244,NA,NA,"Aging",TRUE
+"41","Age at menarche","Perry JR",25231870,182416,NA,NA,"Reproductive aging",TRUE
+"42","Childhood obesity","Bradfield JP",22484627,13848,5530,8318,"Anthropometric",TRUE
+"43","Microalbuminuria","Teumer",26631737,54116,NA,NA,"Kidney",TRUE
+"44","Narcolepsy","Faraco",23459209,12307,1886,10421,"Autoimmune / inflammatory",TRUE
+"45","Chronic kidney disease","Pattaro",26831199,117165,12385,104780,"Kidney",TRUE
+"46","Serum creatinine (eGFRcrea)","Pattaro",26831199,133814,NA,NA,"Kidney",TRUE
+"47","Serum cystatin C (eGFRcys)","Pattaro",26831199,33152,NA,NA,"Kidney",TRUE
+"48","Urinary albumin-to-creatinine ratio","Teumer",26631737,54450,NA,NA,"Kidney",TRUE
+"49","Neo-conscientiousness","de Moor MH",21173776,17375,NA,NA,"Personality",TRUE
+"50","Neo-openness to experience","de Moor MH",21173776,17375,NA,NA,"Personality",TRUE
+"51","Body mass index","Locke AE",25673413,339224,NA,NA,"Anthropometric",TRUE
+"52","Schizophrenia","Ripke S",25056061,82315,35476,46839,"Psychiatric / neurological",TRUE
+"53","Type 2 diabetes","Mahajan A",24509480,110452,26488,83964,"Diabetes",TRUE
+"54","Haemoglobin concentration","van der Harst P",23222517,71861,NA,NA,"Haemotological",TRUE
+"55","Mean cell haemoglobin","van der Harst P",23222517,64731,NA,NA,"Haemotological",TRUE
+"56","Mean cell haemoglobin concentration","van der Harst P",23222517,67852,NA,NA,"Haemotological",TRUE
+"57","Mean cell volume","van der Harst P",23222517,69335,NA,NA,"Haemotological",TRUE
+"58","Packed cell volume","van der Harst P",23222517,63511,NA,NA,"Haemotological",TRUE
+"59","Red blood cell count","van der Harst P",23222517,66214,NA,NA,"Haemotological",TRUE
+"60","Celiac disease","Dubois PC",20190752,15283,4533,10750,"Autoimmune / inflammatory",TRUE
+"61","Juvenile idiopathic arthritis","Hinks",23603761,15872,2816,13056,"Autoimmune / inflammatory",TRUE
+"62","Psoriasis","Tsoi",23143594,33394,10588,22806,"Autoimmune / inflammatory",TRUE
+"63","Multiple sclerosis","Sawcer S",21833088,27148,9772,17376,"Autoimmune / inflammatory",TRUE
+"64","Primary biliary cirrhosis","Cordell",26394269,13239,2764,10475,"Autoimmune / inflammatory",TRUE
+"65","Systemic lupus erythematosus","Bentham",26502338,23210,7219,15991,"Autoimmune / inflammatory",TRUE
+"66","Birth length","van der Valk RJ",25281659,28459,NA,NA,"Anthropometric",TRUE
+"67","Type 1 diabetes",NA,NA,13254,5913,7341,"Autoimmune / inflammatory",TRUE
+"68","Alzheimer's disease","Lambert",24162737,54162,17008,37154,"Psychiatric / neurological",TRUE
+"69","HDL cholesterol","Willer CJ",24097068,187167,NA,NA,"Lipid",TRUE
+"70","Crohn's disease","Liu",26192919,20883,5956,14927,"Autoimmune / inflammatory",TRUE
+"71","LDL cholesterol","Willer CJ",24097068,173082,NA,NA,"Lipid",TRUE
+"72","Total cholesterol","Willer CJ",24097068,187365,NA,NA,"Lipid",TRUE
+"73","Triglycerides","Willer CJ",24097068,177861,NA,NA,"Lipid",TRUE
+"74","Inflammatory bowel disease","Liu",26192919,34652,12882,21770,"Autoimmune / inflammatory",TRUE
+"75","Ulcerative colitis","Liu",26192919,27432,6968,20464,"Autoimmune / inflammatory",TRUE
+"76","Asthma","Moffatt MF",20860503,26475,10365,16110,"Autoimmune / inflammatory",TRUE
+"77","Anorexia nervosa","Boraska V",24514567,17767,2907,14860,"Psychiatric / neurological",TRUE
+"78","Hip circumference","Shungin D",25673412,224459,NA,NA,"Anthropometric",TRUE
+"79","Waist circumference","Shungin D",25673412,224459,NA,NA,"Anthropometric",TRUE
+"80","Coronary heart disease","Nikpay",26343387,184305,60801,123504,"Cardiovascular",TRUE
+"81","Waist-to-hip ratio","Shungin D",25673412,224459,NA,NA,"Anthropometric",TRUE
+"82","2hr glucose","Saxena R",20081857,15234,NA,NA,"Glycemic",TRUE
+"83","HbA1C","Soranzo N",20858683,46368,NA,NA,"Glycemic",TRUE
+"84","Corrected insulin response","Prokopenko",24699409,5318,NA,NA,"Glycemic",TRUE
+"85","Fasting proinsulin","Dupuis J",20081858,10701,NA,NA,"Glycemic",TRUE
+"86","HOMA-B","Dupuis J",20081858,46186,NA,NA,"Glycemic",TRUE
+"87","Fasting glucose","Manning AK",22581228,58074,NA,NA,"Glycemic",TRUE
+"88","Fasting insulin","Manning AK",22581228,51750,NA,NA,"Glycemic",TRUE
+"89","Melanoma","Amos CI",21926416,2830,1804,1026,"Cancer",TRUE
+"90","Myocardial infarction","Nikpay",26343387,171875,43676,128199,"Cardiovascular",TRUE
+"91","Bipolar disorder","Sklar P",21926972,16731,7481,9250,"Psychiatric / neurological",TRUE
+"92","Autism","Smoller JW",23453885,29415,14525,14890,"Psychiatric / neurological",TRUE
+"93","PGC cross-disorder traits","Smoller JW",23453885,61220,33332,27888,"Psychiatric / neurological",TRUE
+"94","Ischaemic stroke","Matarin M",17434096,517,249,268,"Cardiovascular",TRUE
+"95","Neuroblastoma","Capasso M",23222812,4881,1627,3254,"Cancer",TRUE
+"96","Rheumatoid arthritis","Okada Y",24390342,80799,19234,61565,"Autoimmune / inflammatory",TRUE
+"97","College completion","Rietveld CA",23722424,95427,20044,75383,"Education",TRUE
+"98","Extreme body mass index","Berndt SI",23563607,16068,7962,8106,"Anthropometric",TRUE
+"99","Extreme height","Berndt SI",23563607,16196,8097,8099,"Anthropometric",TRUE
+"100","Extreme waist-to-hip ratio","Berndt SI",23563607,10255,4774,5481,"Anthropometric",TRUE
+"101","Height","Wood AR",25282103,253288,NA,NA,"Anthropometric",TRUE
+"102","Obesity class 1","Berndt SI",23563607,98697,32858,65839,"Anthropometric",TRUE
+"103","Obesity class 2","Berndt SI",23563607,72546,9889,62657,"Anthropometric",TRUE
+"104","Obesity class 3","Berndt SI",23563607,50364,2896,47468,"Anthropometric",TRUE
+"105","Overweight","Berndt SI",23563607,158855,93015,65840,"Anthropometric",TRUE
+"106","Cigarettes smoked per day","Furberg",20418890,68028,NA,NA,"Behavioural",TRUE
+"107","Lung adenocarcinoma","Wang Y",24880342,18336,3442,14894,"Cancer",TRUE
+"108","Lung cancer","Wang Y",24880342,27209,11348,15861,"Cancer",TRUE
+"109","Squamous cell lung cancer","Wang Y",24880342,18313,3275,15038,"Cancer",TRUE
+"110","Paget's disease","Albagha OM",21623375,3440,741,2699,"Bone",TRUE
+"111","Forearm bone mineral density","Zheng",26367794,NA,NA,NA,"Bone",TRUE
+"112","Femoral neck bone mineral density","Zheng",26367794,NA,NA,NA,"Bone",TRUE
+"113","Lumbar spine bone mineral density","Zheng",26367794,NA,NA,NA,"Bone",TRUE
+"114","Bulimia nervosa","Wade TD",23568457,2442,151,2291,"Psychiatric / neurological",TRUE
+"115","Eczema","Paternoster",26482879,40835,10788,30047,"Autoimmune / inflammatory",TRUE
+"116","Body fat","Lu",26833246,100716,NA,NA,"Anthropometric",TRUE
+"117","C-reactive protein","Okada Y",21196492,10112,NA,NA,"Immune system",FALSE
+"118","Oligoclonal band status","Goris A",25616667,3026,363,2663,"Immune system",FALSE
+"119","Internalizing problems","Benke",24839885,4596,NA,NA,"Psychiatric / neurological",FALSE
+"120","Nucleus accumbens volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",FALSE
+"121","Caudate volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",FALSE
+"122","Pallidum volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",FALSE
+"123","Thalamus volume","Hibar",25607358,30717,NA,NA,"Psychiatric / neurological",FALSE
+"124","G speed factor","Luciano",21130836,2430,NA,NA,"Psychiatric / neurological",FALSE
+"125","Symbol search","Luciano",21130836,991,NA,NA,"Psychiatric / neurological",FALSE
+"126","8-choice reaction time","Luciano",21130836,1382,NA,NA,"Psychiatric / neurological",FALSE
+"127","2-choice reaction time","Luciano",21130836,2602,NA,NA,"Psychiatric / neurological",FALSE
+"128","Inspection time","Luciano",21130836,2645,NA,NA,"Psychiatric / neurological",FALSE
+"129","Simple reaction time","Luciano",21130836,2378,NA,NA,"Psychiatric / neurological",FALSE
+"130","Digit symbol","Luciano",21130836,2956,NA,NA,"Psychiatric / neurological",FALSE
+"131","4-choice reaction time","Luciano",21130836,2829,NA,NA,"Psychiatric / neurological",FALSE
+"132","Parents' age at death","Pilling",27015805,75244,NA,NA,"Aging",FALSE
+"133","Neo-agreeableness","de Moor MH",21173776,17375,NA,NA,"Personality",FALSE
+"134","Neo-extraversion","de Moor MH",21173776,17375,NA,NA,"Personality",FALSE
+"135","Neo-neuroticism","de Moor MH",21173776,17375,NA,NA,"Personality",FALSE
+"136","Childhood intelligence","Benyamin B",23358156,12441,NA,NA,"Education",FALSE
+"137","Infant head circumference","Taal HR",22504419,10768,NA,NA,"Anthropometric",FALSE
+"138","HOMA-IR","Dupuis J",20081858,46186,NA,NA,"Glycemic",FALSE
+"139","Major depressive disorder","Sullivan",22472876,18759,9240,9519,"Psychiatric / neurological",FALSE
+"140","Alcohol dependence","Olfson",22978509,3829,1897,1932,"Behavioural",FALSE
+"141","Pancreatic cancer","Amundadottir L",19648918,3835,1896,1939,"Cancer",FALSE
+"142","Ever vs never smoked","Furberg",20418890,74035,41969,32066,"Behavioural",FALSE
+"143","Former vs current smoker","Furberg",20418890,41969,23554,18415,"Behavioural",FALSE
+"144","Age of smoking initiation","Furberg",20418890,47961,NA,NA,"Behavioural",FALSE

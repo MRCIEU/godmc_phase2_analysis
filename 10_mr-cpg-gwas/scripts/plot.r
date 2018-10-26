@@ -38,6 +38,7 @@ load("../../06_mr-gwas-cpg/results/mrbase_sig_codes.rdata")
 trait_cpg <- inner_join(trait_cpg, codes)
 
 subset(trait_cpg, msig)$exposure %>% table(.)
+subset(trait_cpg, sig)$exposure %>% table(.)
 
 trait_cpg <- inner_join(trait_cpg, cpgpos, by=c("outcome"="cpg"))
 trait_cpg$chr <- as.numeric(gsub("chr", "", trait_cpg$cpgchr))
@@ -75,13 +76,13 @@ res$chr <- as.numeric(gsub("chr", "", res$cpgchr))
 
 cpgpos$chr <- as.numeric(gsub("chr", "", cpgpos$cpgchr))
 cpgpos <- subset(cpgpos, !is.na(chr) & chr %in% 1:23)
-rand1 <- data_frame(cpg=cpgpos$cpg, trait="a", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="cpg to trait", sig=FALSE, cpgpos=cpgpos$cpgpos)
-rand2 <- data_frame(cpg=cpgpos$cpg, trait="b", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="trait to cpg", sig=FALSE, cpgpos=cpgpos$cpgpos)
+rand1 <- data_frame(cpg=cpgpos$cpg, trait="a", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="cpg to trait", sig=FALSE, cpgpos=cpgpos$cpgpos, what2="r")
+rand2 <- data_frame(cpg=cpgpos$cpg, trait="b", chr=cpgpos$chr, p=10^-runif(nrow(cpgpos), min=0, max=-log10(threshold2)), what="trait to cpg", sig=FALSE, cpgpos=cpgpos$cpgpos, what2="r")
 temp <- rbind(
-	data_frame(cpg=res2$exposure, trait=res2$trait, cpgpos=res2$cpgpos, chr=res2$chr, p=res2$p, what="cpg to trait", sig=res2$H4 > 0.8 & res2$conc),
-	data_frame(cpg=trait_cpg$outcome, trait=trait_cpg$trait, cpgpos=trait_cpg$cpgpos, chr=trait_cpg$chr, p=trait_cpg$pval, what="trait to cpg", sig=trait_cpg$msig),
+	data_frame(cpg=res2$exposure, trait=res2$trait, cpgpos=res2$cpgpos, chr=res2$chr, p=res2$p, what="cpg to trait", sig=res2$H4 > 0.8 & res2$conc, what2="nr"),
+	data_frame(cpg=trait_cpg$outcome, trait=trait_cpg$trait, cpgpos=trait_cpg$cpgpos, chr=trait_cpg$chr, p=trait_cpg$pval, what="trait to cpg", sig=trait_cpg$msig, what2="nr"),
 	data_frame(
-		cpg=res$outcome, trait=res$exposure, cpgpos=res$cpgpos, chr=res$chr, p=res$pval, what="trait to cpg", sig=FALSE
+		cpg=res$outcome, trait=res$exposure, cpgpos=res$cpgpos, chr=res$chr, p=res$pval, what="trait to cpg", sig=FALSE, what2="nr"
 		),
 	rand1, rand2
 	)
@@ -108,9 +109,9 @@ ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval)) +
 geom_point(data=temp %>% filter(chrcol), size=0.2, colour="#bbbbbb") +
 geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
-geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
+# geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
 facet_grid(what ~ chr, scale="free", space="free") +
-scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
+# scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
 # theme_tufte() +
 scale_y_continuous(breaks=seq(0, 100, 20)) +
 labs(x="CpG position", y="-log10 p", colour="") +
@@ -126,7 +127,7 @@ theme(
 	panel.spacing=unit(0, "lines"),
 	panel.border=element_blank(),
 	strip.text.x=element_blank(),
-	strip.background=element_rect(fill="white", linetype="blank"),
+	strip.background=element_rect(fill="white", linetype="blank")
 )
 ggsave(file="../images/bidirectional_manhattan2.png", width=10, height=6)
 
@@ -137,9 +138,9 @@ ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval2)) +
 geom_point(data=temp %>% filter(chrcol), size=0.2, colour="#bbbbbb") +
 geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
-geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
+# geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
 facet_grid(. ~ chr, scale="free", space="free") +
-scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
+# scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
 scale_y_continuous(breaks=seq(-100, 100, 20)) +
 labs(x="CpG position", y="", colour="") +
 ylim(-60, 60) +
@@ -156,9 +157,11 @@ theme(
 	panel.spacing=unit(0, "lines"),
 	panel.border=element_blank(),
 	strip.text=element_blank(),
-	strip.background=element_rect(fill="white", linetype="blank"),
+	strip.background=element_rect(fill="white", linetype="blank")
 )
 ggsave(file="../images/bidirectional_manhattan3.png", width=10, height=6)
 
 
 
+temp2 <- subset(temp, what2 == "nr")
+save(temp2, file="../results/organised_tophits.rdata")

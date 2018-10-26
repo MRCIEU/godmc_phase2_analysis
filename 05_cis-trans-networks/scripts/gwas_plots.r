@@ -23,9 +23,10 @@ dat <- merge(dat, info, by="fn")
 library(TwoSampleMR)
 ao <- available_outcomes()
 #load("../data/outcomes.RData")
-ao <- subset(ao, select=c(id, subcategory))
+ao <- subset(ao, select=c(id, subcategory, access))
 #dat <- merge(dat, ao, by.x="id.y", by.y="id")
 dat <- merge(dat, ao, by.x="id.y", by.y="id",all.x=T)
+dat <- subset(dat, access != "developer")
 
 dat$subcategory[dat$subcategory=="Hemodynamic"] <- "Haemotological"
 dat$subcategory[dat$subcategory=="Immune system"] <- "Autoimmune / inflammatory"
@@ -61,6 +62,36 @@ dat_sig <- subset(dat, !grepl("metabolites__", fn) & fisher < 0.05/nrow(dat) & n
 dat_nsig <- subset(dat, !grepl("metabolites__", fn) & fisher >= 0.05/nrow(dat) & nsnp > 2)
 dat_sig$fisher[dat_sig$fisher < 1e-50] <- 1e-50
 
+
+
+###
+# Get trait list
+###
+
+ao <- TwoSampleMR::available_outcomes()
+library(magrittr)
+library(dplyr)
+load("~/repo/godmc-database/neo4j/data/trait_id_master.rdata")
+b <- subset(ao, access != "developer" & id %in% subset(master, !is.na(id_06))$id_mrb)
+uid <- unique(dat_nsig$id.y)
+uid <- uid[!uid %in% b$id]
+
+
+b <- b %$% 
+	data_frame(trait, author, pmid, sample_size, ncase, ncontrol, subcategory, used_in_mr=TRUE)
+b1 <- subset(ao, id %in% uid) %$%
+	data_frame(trait, author, pmid, sample_size, ncase, ncontrol, subcategory, used_in_mr=FALSE)
+
+b <- bind_rows(b, b1)
+dim(b)
+table(b$used_in_mr)
+
+write.csv(b, "../results/trait_list.csv")
+
+
+
+
+
 p1 <- ggplot(dat_nsig, aes(x=label, y=-log10(fisher))) +
 geom_point(aes(size=nsnp)) +
 geom_point(data=dat_sig, aes(colour=as.factor(clust), size=nsnp)) +
@@ -73,6 +104,7 @@ theme(legend.position=c(0.03, 0.76), strip.text=element_text(angle=90, size=10),
 # geom_label_repel(data=dat_sig, aes(label=clust))
 p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=20, height=13)
+ggsave(p1, file="../images/gwas_clusters_full.png", width=20, height=13)
 
 # temp <- group_by(dat, id=id.y) %>%
 # summarise(

@@ -56,7 +56,8 @@ dat <- expand.grid(
 )
 selcom <- subset(selcom, !grepl("chr6", snp))
 
-temp <- group_by(selcom, cluster) %>% summarise(n=length(unique(snp)))
+
+temp <- group_by(selcom, cluster) %>% summarise(n=length(unique(snp))) %>% arrange(desc(n))
 
 for(j in 1:nrow(dat))
 {

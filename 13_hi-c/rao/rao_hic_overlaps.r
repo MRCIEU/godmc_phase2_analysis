@@ -11,13 +11,16 @@ i <- as.character(arguments[1])
 var1 <- as.character(arguments[2])
 var2 <- as.character(arguments[3])
 
+
 print(i)
 print(var1)
 print(var2)
 
+
 #i <-"chr18_chrX"
 #var1 <- "chr18"
 #var2 <- "chrX"
+
 
 
 #1. Load and format data
@@ -51,20 +54,21 @@ table(trans_mqtl2$cpgchr)
 write.table(trans_mqtl2, file=paste0("trans_mqtl_clumped_",i,".tsv"), sep="\t", quote=F, row.names=F)
 
 
+
 #2. take proxies, subset trans_mqtls for non duplicate snps, join non duplicated snps with proxies keeping matches only, GRanges
 ldinfo <- subset(f.all, select=c(SNP, min, max, nproxies))
 names(ldinfo) <- c("snp", "snplow", "snphigh", "snpproxies")
-temp <- subset(trans_mqtl2, !duplicated(snp))
-temp <- inner_join(temp, ldinfo, "snp") 
+#temp <- subset(trans_mqtl2, !duplicated(snp))
+temp <- inner_join(trans_mqtl2, ldinfo, "snp") 
 snps <- GRanges(seqnames=temp$snpchr, ranges=IRanges(temp$snplow, temp$snphigh), strand="*")
 names(snps) <- temp$snp # 12252 unique SNPs
 mcols(snps) <- temp
 
 #3. 
-temp <- subset(trans_mqtl2, !duplicated(cpg))
-cpgs <- GRanges(seqnames=temp$cpgchr, ranges=IRanges(temp$cpgpos, temp$cpgpos), strand="*")
-names(cpgs) <- temp$cpg # There are 15759 unique CpGs
-mcols(cpgs) <- temp
+#temp <- subset(trans_mqtl2, !duplicated(cpg))
+cpgs <- GRanges(seqnames=trans_mqtl2$cpgchr, ranges=IRanges(trans_mqtl2$cpgpos, trans_mqtl2$cpgpos), strand="*")
+names(cpgs) <- trans_mqtl2$cpg # There are 15759 unique CpGs
+mcols(cpgs) <- trans_mqtl2
 
 #save(snps, cpgs, file=paste0("trans_mqtl_granges_",i,".rdata"))
 
@@ -117,26 +121,27 @@ oe.overlap.snp <- function() {
   return(result[order(result$SNP), ])
 }
 
-bait_hic_cpg <- bait.overlap.cpg() # cpg in bait 13556
-bait_hic_snp <- bait.overlap.snp() # snp in bait 882383
-oe_hic_cpg <- oe.overlap.cpg() # cpg in interacting region 16388
-oe_hic_snp <- oe.overlap.snp() # snp in interacting region 575885
+bait_hic_cpg <- bait.overlap.cpg()
+bait_hic_snp <- bait.overlap.snp()
+oe_hic_cpg <- oe.overlap.cpg()
+oe_hic_snp <- oe.overlap.snp()
 
 
 # snp in bait
-snp_in_bait <- merge(oe_hic_cpg, subset(bait_hic_snp, select=c(interaction, SNP)), by="interaction") # snp in bait
+snp_in_bait <- merge(oe_hic_cpg, subset(bait_hic_snp, select=c(interaction, SNP)), by="interaction")
 snp_in_bait$code <- paste(snp_in_bait$CpG, snp_in_bait$SNP)
 snp_in_bait <- snp_in_bait[snp_in_bait$code %in% clumped$code, ]
+
 # cpg in bait
-cpg_in_bait <- merge(oe_hic_snp, subset(bait_hic_cpg, select=c(interaction, CpG)), by="interaction") # cpg in bait
+cpg_in_bait <- merge(oe_hic_snp, subset(bait_hic_cpg, select=c(interaction, CpG)), by="interaction")
 cpg_in_bait$code <- paste(cpg_in_bait$CpG, cpg_in_bait$SNP)
 cpg_in_bait <- cpg_in_bait[cpg_in_bait$code %in% clumped$code, ]
 
 data <- list(snp_in_bait, cpg_in_bait)
 print(data)
-save(data, file=paste0("data_",i,".Rdata"))
+save(data, file=paste0("data2_",i,".Rdata"))
 
-write.table(bait_hic_cpg, file=paste0("bait_hic_cpg_",i,".tsv"), sep="\t", quote=F, row.names=F)
-write.table(bait_hic_snp, file=paste0("bait_hic_snp_",i,".tsv"), sep="\t", quote=F, row.names=F)
-write.table(oe_hic_cpg, file=paste0("oe_hic_cpg_",i,".tsv"), sep="\t", quote=F, row.names=F)
-write.table(oe_hic_snp, file=paste0("oe_hic_snp_",i,".tsv"), sep="\t", quote=F, row.names=F)
+#write.table(bait_hic_cpg, file=paste0("bait_hic_cpg_",i,".tsv"), sep="\t", quote=F, row.names=F)
+#write.table(bait_hic_snp, file=paste0("bait_hic_snp_",i,".tsv"), sep="\t", quote=F, row.names=F)
+#write.table(oe_hic_cpg, file=paste0("oe_hic_cpg_",i,".tsv"), sep="\t", quote=F, row.names=F)
+#write.table(oe_hic_snp, file=paste0("oe_hic_snp_",i,".tsv"), sep="\t", quote=F, row.names=F)
