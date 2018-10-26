@@ -5,6 +5,7 @@ library(dplyr)
 library(GenomicRanges)
 library(doParallel)
 library(rvest)
+library(simpleCache)
 
 load("../data/trans_granges.rdata")
 
@@ -46,8 +47,6 @@ cpgres <- parLapply(cl, 1:nrow(anno), function(i)
 stopCluster(cl)
 snpres <- bind_rows(snpres)
 cpgres <- bind_rows(cpgres)
-
-save(snpres, cpgres, anno, file="../data/annotations.rdata")
 
 
 
@@ -94,7 +93,16 @@ anno$antibody2 <- sapply(strsplit(as.character(anno$antibody2), split="\\("), fu
 anno$antibody2 <- gsub("eGFP-", "", anno$antibody2)
 
 
+anno$antibody3 <- gsub("_[^_]+$", "",anno$antibody)
+
+group_by(anno, collection) %>% summarise(n=length(unique(antibody)), n2=length(unique(antibody2)), n3=length(unique(antibody3)))
+
+table(subset(anno, collection == "encode_tfbs")$antibody3 %>% unique %in% subset(anno, collection != "encode_tfbs")$antibody3)
 
 blood <- subset(anno, tissue == "blood")
 
+subset(anno, !duplicated(antibody3)) %>% group_by(collection) %>% summarise(n=n())
+subset(anno, !duplicated(antibody2)) %>% group_by(collection) %>% summarise(n=n())
+
+save(snpres, cpgres, anno, blood, file="../data/annotations.rdata")
 save(blood, anno, file="../data/blood.rdata")

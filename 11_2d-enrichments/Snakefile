@@ -32,3 +32,4 @@ rule plots:
 	output: 'images/bipartite_network.pdf'
 	script:
 		'cd scripts; R CMD BATCH plots.r'
+

@@ -4,7 +4,7 @@
 
 library(TwoSampleMR)
 ao <- available_outcomes()
-ao <- subset(ao, access != "developer")
+# ao <- subset(ao, access != "developer")
 library(dplyr)
 
 ewas <- read.table("../data/EWAS_Catalog_20-02-2018.txt.gz", he=T, sep="\t", stringsAsFactors=FALSE)
@@ -17,13 +17,17 @@ load("../data/snps_gwas.rdata")
 
 ao$name <- paste(ao$trait, "||", ao$consortium, "||", ao$year, "||", ao$unit)
 traits <- unique(subset(a, data_source.exposure == "mrbase")$exposure)
+# traits <- traits[traits %in% ao$name]
 table(traits %in% ao$name)
 rename <- traits[which(!traits %in% ao$name)]
 
+a$exposure_orig <- a$exposure
 a$exposure[a$exposure == rename[1]] <- "Serum creatinine (eGFRcrea) || CKDGen || 2015 || log ml/min/1.73 m^2"
 a$exposure[a$exposure == rename[2]] <- "Serum cystatin C (eGFRcys) || CKDGen || 2015 || log ml/min/1.73 m^2"
 a$exposure[a$exposure == rename[3]] <- "Father's age at death || UK Biobank || 2016 || SD"
 a$exposure[a$exposure == rename[4]] <- "Mother's age at death || UK Biobank || 2016 || SD"
+
+a <- subset(a, !exposure %in% subset(ao, access == "developer")$name)
 
 
 a0 <- filter(a, data_source.exposure == "mrbase") %>% group_by(id.exposure, exposure) %>% summarise(n=n()) %>% arrange(exposure, n)
@@ -203,7 +207,7 @@ save(lam, file="../results/lambda.rdata")
 load("../results/lambda.rdata")
 
 aono <- subset(ao, access=="developer")
-lam <- subset(lam, !grepl("TRICL \\|\\| NA", trait))
+lam <- subset(lam, trait %in% a$exposure_orig)
 
 table(lam$pdir < 0.05)
 hist(lam$proppos)
