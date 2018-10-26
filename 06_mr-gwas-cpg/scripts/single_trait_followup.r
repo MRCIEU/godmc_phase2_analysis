@@ -4,6 +4,7 @@
 
 library(TwoSampleMR)
 ao <- available_outcomes()
+ao <- subset(ao, access != "developer")
 library(dplyr)
 
 ewas <- read.table("../data/EWAS_Catalog_20-02-2018.txt.gz", he=T, sep="\t", stringsAsFactors=FALSE)
@@ -200,6 +201,9 @@ lam <- merge(lam, tr, by)
 
 save(lam, file="../results/lambda.rdata")
 load("../results/lambda.rdata")
+
+aono <- subset(ao, access=="developer")
+lam <- subset(lam, !grepl("TRICL \\|\\| NA", trait))
 
 table(lam$pdir < 0.05)
 hist(lam$proppos)
