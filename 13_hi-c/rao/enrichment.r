@@ -55,11 +55,51 @@ ggplot(as.data.frame(y), aes(x = y)) +
   annotate(geom = "text", x = real_count - 150, y = 0.007, label = "Real") +
   annotate("segment", x = real_count, xend = real_count - 110, y = 0.007, yend = 0.007, colour = "black", size = 1, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
 dev.off()
+
+# No Duplicate Codes
+real2 <- subset(real, !duplicated(real$code))
+str(real2)
+real_count2 <- nrow(real2) #637
+perms2 <- lapply(perms, function(x) subset(x, !duplicated(x$code)))
+
+# perform counts
+x <- lapply(perms2, nrow) # list (df) of count values
+y <- do.call(c, x) # vector of count values
+
+y <- as.data.frame(y)
+
+print(paste0("There are: ", sum(y >= real_count2) ," perumation datasets that have a higher overlap count than real data"))
+
+#pval
+print(paste0("pval for permutations = ", sum(y >= real_count2)/length(perms2)))
+print(paste0("The mean overlap count for permuted datasets is: ", mean(y$y)))
+print(paste0("The min overlap count for permuted datasets is: ", min(y$y)))
+print(paste0("The max overlap count for permuted datasets is: ", max(y$y)))
+
+#plots of counts
+pdf("Rao_count_densityplot_nodupcodes.pdf")
+ggplot(as.data.frame(y), aes(x = y)) + 
+  #geom_histogram(aes(y = ..density..), colour = "black", fill = "white") +
+  geom_density(alpha = .2, fill = "#FF6666") +
+  geom_vline(aes(xintercept = mean(y)), 
+             color = "#FF6666", linetype = "dashed", size = 1) +
+  labs(title = "Density of Overlap Counts", x = "Counts", y = "Density", subtitle = "Hi-C Interactions in Permuted and Real Data") +
+  geom_vline(aes(xintercept = real_count2), 
+             color = "cornflowerblue", linetype = "solid", size = 1) +
+  scale_x_continuous(limits = c(350, 650)) +
+  annotate(geom = "text", x = mean(y$y + 50), y = 0.015, label = "Permuted") +
+  annotate("segment", x = mean(y$y), xend = mean(y$y + 30), y = 0.015, yend = 0.015, colour = "black", size = 1, arrow = arrow(type = "closed", length = unit(0.20,"cm"))) +
+  annotate(geom = "text", x = real_count2 - 50, y = 0.010, label = "Real") +
+  annotate("segment", x = real_count2, xend = real_count2 - 40, y = 0.010, yend = 0.010, colour = "black", size = 1, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
+dev.off()
+ 
+
   
 #Mean number of counts
 #table of counts for perms
 #plot of counts
 #pvals for perms
+#Rscript --verbose --no-restore --slave enrichment.r
 
 sink()
 
