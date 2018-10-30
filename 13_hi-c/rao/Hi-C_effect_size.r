@@ -28,6 +28,10 @@ real_count2 <- nrow(real2) #637
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped_cpgciscategories_251018.Rdata")
 cpgtrans <- subset(data, select = c(snp, cpg, cpg_cis, cis, Effect, pval, snpchr, snppos, cpgchr, cpgpos))
 cpgtrans$code <- paste(cpgtrans$cpg, cpgtrans$snp)
+# Subset for Pval
+cpgtrans <- subset(cpgtrans, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE )) 
+cpgtrans <- subset(cpgtrans, cpgtrans$cpgchr != cpgtrans$snpchr) #
+
 
 # Join data, gen overlap id, gen abs effect size
 real2 <- as.data.frame(real2)
@@ -35,6 +39,21 @@ counts <- full_join(cpgtrans, real2, "code")
 counts$overlap <- ifelse(is.na(counts$interaction), "no", "yes")
 table(counts$overlap)
 counts$effect_abs <- abs(counts$Effect)
+
+# ttest between groups
+with(counts, t.test(effect_abs~overlap))
+
+#Welch Two Sample t-test
+#
+#data:  effect_abs by overlap
+#t = -1.8223, df = 674.13, p-value = 0.06886
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -0.0254129384  0.0009480281
+#sample estimates:
+#  mean in group no mean in group yes
+#0.2242266         0.2364591
+
 
 # Plot data
 #1. Plot density plot of effect size of the 637 overlaps vs. all other interchrom mQTLs
@@ -71,14 +90,29 @@ dat2
 x2 <- (dat2[1,4]+dat2[2,4])/2
 x3 <- x2[1,1]
 
+#ttest
+with(dat1, t.test(effect_abs~cpg_cis))
+
+#Welch Two Sample t-test
+#
+#data:  effect_abs by cpg_cis
+#t = -4.8181, df = 408.12, p-value = 2.047e-06
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -0.09645713 -0.04055547
+#sample estimates:
+#  mean in group ambivalent      mean in group FALSE
+#0.2084973                0.2770036
+
+
 
 # TRUE = cis, FALSE = trans, ambivalent = both cis and trans
 
 pdf("Rao_effect_overlaps_vs_cis_cat.pdf")
 ggplot(dat1, aes(x = effect_abs, color = cpg_cis)) +
   geom_density() + 
-  geom_vline(aes(xintercept = dat2[1,4]), color = "#00BFC4") +
-  geom_vline(aes(xintercept = dat2[2,4]), color = "#F8766D") +
+  geom_vline(aes(xintercept = dat2[1,4]), color = "#F8766D") +
+  geom_vline(aes(xintercept = dat2[2,4]), color = "#00BFC4") +
   labs(title= "Density of Absolute Effect Size", x = "Absolute Effect Size", y = "Density", subtitle = "mQTL Hi-C overlaps by cis/trans category") +
   scale_color_discrete(name ="mQTL CpG cis/trans Status", labels=c("CpG trans only", "CpG cis and trans")) +
   theme(legend.position = "bottom") +

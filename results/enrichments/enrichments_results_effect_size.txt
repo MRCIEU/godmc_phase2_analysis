@@ -35,8 +35,20 @@ Formal class 'DataFrame' [package "S4Vectors"] with 6 slots
   ..@ elementMetadata: NULL
   ..@ metadata       : list()
 
-    no    yes 
-284182    637 
+   no   yes 
+17947   637 
+
+	Welch Two Sample t-test
+
+data:  effect_abs by overlap
+t = -1.8223, df = 674.13, p-value = 0.06886
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -0.0254129384  0.0009480281
+sample estimates:
+ mean in group no mean in group yes 
+        0.2242266         0.2364591 
+
 null device 
           1 
 # A tibble: 2 x 4
@@ -44,5 +56,17 @@ null device
        <chr>         <dbl>       <dbl>      <dbl>
 1 ambivalent     0.1675704   0.2084973   1.083028
 2      FALSE     0.2116495   0.2770036   1.278415
+
+	Welch Two Sample t-test
+
+data:  effect_abs by cpg_cis
+t = -4.8181, df = 408.12, p-value = 2.047e-06
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -0.09645713 -0.04055547
+sample estimates:
+mean in group ambivalent      mean in group FALSE 
+               0.2084973                0.2770036 
+
 null device 
           1 
