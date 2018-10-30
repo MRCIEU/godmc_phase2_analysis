@@ -64,16 +64,17 @@ dat <- counts %>%
 x2 <- (dat[2,4]+dat[1,4])/2
 x3 <- x2[1,1]
 
+#dat = no(1), yes(2)
 pdf("Rao_effect_overlaps_vs_no_overlaps.pdf")
 ggplot(counts, aes(x = effect_abs, color = overlap)) +
   geom_density() + 
-  geom_vline(aes(xintercept = dat[1,4]), color = "#00BFC4") +
-  geom_vline(aes(xintercept = dat[2,4]), color = "#F8766D") +
+  #geom_vline(aes(xintercept = dat[1,4]), color = "#F8766D") +
+  #geom_vline(aes(xintercept = dat[2,4]), color = "#00BFC4") +
   labs(title= "Density of Absolute Effect Size", x = "Absolute Effect Size", y = "Density", subtitle = "mQTLs that overlap Hi-C interactions vs. no overaps") +
   scale_color_discrete(name ="mQTL Overlap Status", labels=c("Non-overlapping mQTLs", "Overlapping mQTLs")) +
-  theme(legend.position = "bottom") +
-  annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
-  annotate("segment", x = x3, xend = dat$effect_max, y = 5-0.2, yend = 4.5, colour = "black", size = 0.5, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
+  theme(legend.position = "bottom") 
+  #annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
+  #annotate("segment", x = x3, xend = dat$effect_max, y = 5-0.2, yend = 4.5, colour = "black", size = 0.5, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
     
 dev.off()
 
@@ -111,13 +112,13 @@ with(dat1, t.test(effect_abs~cpg_cis))
 pdf("Rao_effect_overlaps_vs_cis_cat.pdf")
 ggplot(dat1, aes(x = effect_abs, color = cpg_cis)) +
   geom_density() + 
-  geom_vline(aes(xintercept = dat2[1,4]), color = "#F8766D") +
-  geom_vline(aes(xintercept = dat2[2,4]), color = "#00BFC4") +
+  #geom_vline(aes(xintercept = dat2[1,4]), color = "#F8766D") +
+  #geom_vline(aes(xintercept = dat2[2,4]), color = "#00BFC4") +
   labs(title= "Density of Absolute Effect Size", x = "Absolute Effect Size", y = "Density", subtitle = "mQTL Hi-C overlaps by cis/trans category") +
-  scale_color_discrete(name ="mQTL CpG cis/trans Status", labels=c("CpG trans only", "CpG cis and trans")) +
-  theme(legend.position = "bottom") +
-  annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
-  annotate("segment", x = x3, xend = dat2$effect_max, y = 5-0.2, yend = 4.5, colour = "black", size = 0.5, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
+  scale_color_discrete(name ="mQTL CpG cis/trans Status", labels=c("CpG cis and trans", "CpG trans only")) +
+  theme(legend.position = "bottom")
+  #annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
+  #annotate("segment", x = x3, xend = dat2$effect_max, y = 5-0.2, yend = 4.5, colour = "black", size = 0.5, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
 
 dev.off()
 
