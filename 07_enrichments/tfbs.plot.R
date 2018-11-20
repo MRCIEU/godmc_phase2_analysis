@@ -9,15 +9,17 @@ library(dplyr)
 
 r<-read.table(paste0(path,"mqtl_tfbs/garfield.test.mqtl_tfbs.out"),he=T)
 r$cis_snp<-"All"
+length(unique(r$Type))
 
 cis<-read.table(paste0(path,"mqtl_cis_tfbs/garfield.test.mqtl_cis_tfbs.out"),he=T)
 cis$cis_snp<-"cis only"
+length(unique(cis$Type))
 
 trans<-read.table(paste0(path,"mqtl_trans_tfbs/garfield.test.mqtl_trans_tfbs.out"),he=T)
 trans$cis_snp<-"trans only"
 
 amb<-read.table(paste0(path,"mqtl_ambivalent_tfbs/garfield.test.mqtl_ambivalent_tfbs.out"),he=T)
-amb$cis_snp<-"ambivalent"
+amb$cis_snp<-"cis+trans"
 
 padj<-read.table(paste0(path,"mqtl_tfbs/garfield.Meff.mqtl_tfbs.out"),he=F)
 padj<-padj[which(padj$V1=="Padj"),"V2"]
@@ -37,10 +39,10 @@ nvar
 #4 trans only             928
 
 
-df2$cis_snp<-gsub("All",paste0("All (N=",nvar[1,2]," SNPs)"),df2$cis_snp)
-df2$cis_snp<-gsub("ambivalent",paste0("ambivalent (N=",nvar[2,2]," SNPs)"),df2$cis_snp)
-df2$cis_snp<-gsub("cis only",paste0("cis only (N=",nvar[3,2]," SNPs)"),df2$cis_snp)
-df2$cis_snp<-gsub("trans only",paste0("trans only (N=",nvar[4,2]," SNPs)"),df2$cis_snp)
+#df2$cis_snp<-gsub("All",paste0("All (N=",nvar[1,2]," SNPs)"),df2$cis_snp)
+#df2$cis_snp<-gsub("cis+trans",paste0("cis+trans (N=",nvar[2,2]," SNPs)"),df2$cis_snp)
+#df2$cis_snp<-gsub("cis only",paste0("cis only (N=",nvar[3,2]," SNPs)"),df2$cis_snp)
+#df2$cis_snp<-gsub("trans only",paste0("trans only (N=",nvar[4,2]," SNPs)"),df2$cis_snp)
 
 df2$Type<-as.factor(df2$Type)
 df2$Category<-as.factor(df2$Category)
@@ -51,13 +53,16 @@ pval_lim<-padj
 w<-which(df2$Pvalue==0)
 m<-min(df2$Pvalue[-w])
 df2$Pvalue[w]<-m
+length(unique(df2$Type)) #188
+
 df2$Type<-sub("_[^_]+$", "", df2$Type)
+length(unique(df2$Type)) #172
 
 for (i in 1:(length(cats))){
 cat(i,"\n")
 
 if(cats[i]%in%c("TFBS")) {
-df3<-df2[which(df2$Category==cats[i]&df2$cis_snp!=paste0("All (N=",nvar[1,2]," SNPs)")),]
+df3<-df2[which(df2$Category==cats[i]&df2$cis_snp!="All"),]
 m<-max(-log10(df3$Pvalue))
 p1<-ggplot(df3,aes(x=Type,y=-log10(Pvalue),size=logOddsRatio,fill=Tissue))+
 geom_hline(yintercept=-log10(pval_lim),col="black",linetype="dashed")+
@@ -69,36 +74,63 @@ scale_size(range=c(1,4))+
 scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))
 ggsave(p1,file=paste0("./images/epigenetic_",cats[i],".pdf"),height=10,width=16)
 }
+
+if(cats[i]%in%c("TFBS")) {
+    df3<-df2[which(df2$Category==cats[i]&df2$cis_snp!="All"),]
+    m<-max(df3$OR)+1
+    p1<-ggplot(df3,aes(x=Type,y=OR,size=-log10(Pvalue)))+
+      geom_hline(yintercept=1,col="black",linetype="dotted")+
+      geom_point(aes(color=Tissue))+
+      facet_wrap(~cis_snp,scale="free_y",ncol=1)+
+      theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
+      scale_size(range=c(1,4))+
+      #scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE")) +
+    guides(fill = guide_legend(ncol=20))+
+      scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,10,20),limits=c(0.2,round(m))) +
+      labs(y="Odds ratio (log scale)",x="Transcription factor") +
+      scale_fill_brewer(type="qual") +
+      theme(legend.text=element_text(size=12))
+    
+    ggsave(p1,file=paste0("./images/epigenetic_",cats[i],"_OR.pdf"),height=10,width=16)
+    
 }
+}
+cellType_conversions=fread("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments/CellTypes.tsv",drop="collection")
+m<-match(df3$Celltype,cellType_conversions$cellType)
+df3<-data.frame(df3,cellType_category=cellType_conversions$cellType_cor[m])
+df4<-df3[which(df3$Pvalue<padj),c("Type","OR","Pvalue","Beta","SE","CI95_lower","CI95_upper","NAnnotThesh","NAnnot","NThresh","N","Celltype","cellType_category","Tissue","cis_snp")]
+names(df4)<-gsub("NAnnotThesh","NAnnotThresh",names(df4))
+names(df4)<-gsub("cis_snp","Annotation",names(df4))
+w<-which(r.all3$Annotation=="All")
+write.table(df4[-w,],"TableSXX_garfield_tfbs.txt",quote=F,row.names=F,col.names=T,sep="\t")
+  
 
-
-
-group_by(df3[which(df3$cis_snp==paste0("ambivalent (N=",nvar[2,2]," SNPs)")),]) %>% summarize(m = max(Pvalue))
+group_by(df3[which(df3$cis_snp==paste0("cis+trans (N=",nvar[2,2]," SNPs)")),]) %>% summarize(m = max(Pvalue))
 group_by(df3[which(df3$cis_snp==paste0("cis only (N=",nvar[3,2]," SNPs)")),]) %>% summarize(m = max(Pvalue))
 group_by(df3[which(df3$cis_snp==paste0("trans only (N=",nvar[4,2]," SNPs)")),]) %>% summarize(m = max(Pvalue))
 
-group_by(df3[which(df3$cis_snp==paste0("ambivalent (N=",nvar[2,2]," SNPs)")),]) %>% summarize(m = min(Pvalue))
+group_by(df3[which(df3$cis_snp==paste0("cis+trans (N=",nvar[2,2]," SNPs)")),]) %>% summarize(m = min(Pvalue))
 group_by(df3[which(df3$cis_snp==paste0("cis only (N=",nvar[3,2]," SNPs)")),]) %>% summarize(m = min(Pvalue))
 group_by(df3[which(df3$cis_snp==paste0("trans only (N=",nvar[4,2]," SNPs)")),]) %>% summarize(m = min(Pvalue))
 
-group_by(df3[which(df3$cis_snp==paste0("ambivalent (N=",nvar[2,2]," SNPs)")),],Tissue) %>% summarize(m = max(OR))
+group_by(df3[which(df3$cis_snp==paste0("cis+trans (N=",nvar[2,2]," SNPs)")),],Tissue) %>% summarize(m = max(OR))
 group_by(df3[which(df3$cis_snp==paste0("cis only (N=",nvar[3,2]," SNPs)")),], Tissue) %>% summarize(m = max(OR))
 group_by(df3[which(df3$cis_snp==paste0("trans only (N=",nvar[4,2]," SNPs)")),], Tissue) %>% summarize(m = max(OR))
 
-group_by(df3[which(df3$cis_snp==paste0("ambivalent (N=",nvar[2,2]," SNPs)")),],Tissue) %>% summarize(m = min(OR))
+group_by(df3[which(df3$cis_snp==paste0("cis+trans (N=",nvar[2,2]," SNPs)")),],Tissue) %>% summarize(m = min(OR))
 group_by(df3[which(df3$cis_snp==paste0("cis only (N=",nvar[3,2]," SNPs)")),], Tissue) %>% summarize(m = min(OR))
 group_by(df3[which(df3$cis_snp==paste0("trans only (N=",nvar[4,2]," SNPs)")),], Tissue) %>% summarize(m = min(OR))
 
-group_by(df3[which(df3$cis_snp==paste0("ambivalent (N=",nvar[2,2]," SNPs)")),],Tissue) %>% summarize(n = n())
+group_by(df3[which(df3$cis_snp==paste0("cis+trans (N=",nvar[2,2]," SNPs)")),],Tissue) %>% summarize(n = n())
 group_by(df3[which(df3$cis_snp==paste0("cis only (N=",nvar[3,2]," SNPs)")),], Tissue) %>% summarize(n = n())
 group_by(df3[which(df3$cis_snp==paste0("trans only (N=",nvar[4,2]," SNPs)")),], Tissue) %>% summarize(n = n())
 
-trans<-df3[which(df3$cis_snp==paste0("trans only (N=",nvar[4,2]," SNPs)")),]
+trans<-df3[which(df3$cis_snp=="trans only"),]
 o<-order(trans$Pvalue)
 trans<-trans[o,]
 
 
-cis<-df2[which(df2$cis_snp==paste0("cis only (N=",nvar[3,2]," SNPs)")),]
+cis<-df2[which(df2$cis_snp=="cis only"),]
 a<-(group_by(cis, Type) %>% summarize(n = n()))
 dim(a) #172
 cis<-cis[which(cis$Pvalue<padj),]
@@ -140,7 +172,7 @@ b2<-b2[which(b2$Tissue%in%c("Blood")),]
 
 
 ####
-amb<-df2[which(df2$cis_snp==paste0("ambivalent (N=",nvar[2,2]," SNPs)")),]
+amb<-df2[which(df2$cis_snp=="cis+trans"),]
 a<-(group_by(amb, Type) %>% summarize(n = n()))
 dim(a) #172
 amb<-amb[which(amb$Pvalue<padj),]
