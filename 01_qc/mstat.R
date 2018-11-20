@@ -72,10 +72,25 @@ getmstatistic_results$M_crit_alpha_0_05
 
 save(getmstatistic_results,dframe,file="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats_chr20.RData")
 
+#filename_mstats_vs_avg_effectsize <- base::paste0("Mstatistics_vs_average_variant_effectsize_", nstudies, "studies_", nsnps, "snps.tif")
+#grDevices::tiff(filename_mstats_vs_avg_effectsize, width = 23.35, height = 17.35, units = "cm", res = 300, compression = "lzw", pointsize = 14)
+#h <- ggplot2::ggplot(usta_mean_scatter_strength, ggplot2::aes(base::log(oddsratio), usta_mean, colour = usta_mean, label = study_names)) + ggplot2::geom_point(size = 4.5) + ggplot2::geom_text(ggplot2::aes(label = study), hjust = 1.2, vjust = -0.5, size = 2.5, colour = "azure4") + ggplot2::scale_colour_gradientn(name = "M statistic", colours = grDevices::rainbow(11)) + ggplot2::scale_x_continuous(trans="log", limits=c(x_axis_min, x_axis_max), breaks=base::round(base::seq(x_axis_min, x_axis_max, x_axis_increment_in),x_axis_round_in), minor_breaks=ggplot2::waiver(), labels = base::round(base::exp(base::seq(x_axis_min, x_axis_max, x_axis_increment_in)),x_axis_round_in)) + ggplot2::theme_bw() + ggplot2::scale_fill_hue(c = 45, l = 40) + ggplot2::xlab("Average effect size (oddsratio)") + ggplot2::ylab("M statistic") + ggplot2::theme(panel.grid.minor = ggplot2::element_blank(), panel.grid.major = ggplot2::element_blank()) + ggplot2::theme(axis.title.x = ggplot2::element_text(size = 14), axis.text.x = ggplot2::element_text(size = 14)) + ggplot2::theme(axis.title.y = ggplot2::element_text(size = 14), axis.text.y = ggplot2::element_text(size = 14))
+#hi <- h + ggplot2::geom_hline(ggplot2::aes(yintercept = yval), data = dat_hlines, colour = "grey80", linetype = "dashed", lwd = 0.4) + ggplot2::theme(legend.text = ggplot2::element_text(size = 10)) + ggplot2::theme(legend.title = ggplot2::element_text(size = 12)) + ggplot2::theme(legend.position = "bottom")
+#base::print(hi + ggplot2::geom_hline(ggplot2::aes(yintercept = c(0,0)), data = dat_hlines, colour = "grey80", linetype = "solid", lwd = 0.4))
+#grDevices::dev.off()
+
+dframe$study_names_in<-gsub("00_ARIES","ARIES",dframe$study_names_in)
+dframe$study_names_in<-gsub("as_cc","EGC_asthma",dframe$study_names_in)
+dframe$study_names_in<-gsub("ccg","EGC_CTG",dframe$study_names_in)
+dframe$study_names_in<-gsub("InterAct","EPIC_Norfolk",dframe$study_names_in)
+dframe$study_names_in<-gsub("Leiden_Longevity_Study","LLS",dframe$study_names_in)
+dframe$study_names_in<-gsub("Project_MinE_s27","MinE",dframe$study_names_in)
+dframe$study_names_in<-gsub("IOW3g","IOW F2",dframe$study_names_in)
+
 p1 <- ggplot(dframe, aes(x=as.factor(study_names_in), y=beta_in)) +
 geom_boxplot() +
-theme(axis.title.x=element_blank(),axis.title.y=element_text(size=8),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=6)) +
-labs(x="study", y="effect size")
+theme(axis.title.x=element_text(size=8),axis.title.y=element_text(size=8),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=6)) +
+labs(x="Study", y="Effect size")
 ggsave(plot=p1, file="./images/effectsizechr20bystudy.pdf", width=7, height=7)
 
 library(plyr)

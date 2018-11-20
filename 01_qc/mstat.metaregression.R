@@ -369,11 +369,28 @@ ggsave(p1,file="./images/Mvaluebysdbmi_highvslowBMI.pdf",width=8,height=6)
 
 # Sort getmstatistic_results dataframe by M statistics
 dframe$study_names_in<-gsub("00_ARIES","ARIES",dframe$study_names_in)
+dframe$study_names_in<-gsub("as_cc","EGC_asthma",dframe$study_names_in)
+dframe$study_names_in<-gsub("ccg","EGC_CTG",dframe$study_names_in)
+dframe$study_names_in<-gsub("InterAct","EPIC_Norfolk",dframe$study_names_in)
+dframe$study_names_in<-gsub("Leiden_Longevity_Study","LLS",dframe$study_names_in)
+dframe$study_names_in<-gsub("Project_MinE_s27","MinE",dframe$study_names_in)
+dframe$study_names_in<-gsub("IOW3g","IOW F2",dframe$study_names_in)
+
+ss$study<-gsub("00_ARIES","ARIES",ss$study)
+ss$study<-gsub("as_cc","EGC_asthma",ss$study)
+ss$study<-gsub("ccg","EGC_CTG",ss$study)
+ss$study<-gsub("InterAct","EPIC_Norfolk",ss$study)
+ss$study<-gsub("Leiden_Longevity_Study","LLS",ss$study)
+ss$study<-gsub("Project_MinE_s27","MinE",ss$study)
+ss$study<-gsub("IOW3g","IOW F2",ss$study)
 getm_res_srtd <- dplyr::arrange(dframe, M)
 
 # First, drop duplicate study_names in the sorted getmsatistic_results
 # choose a snp with the maximum number of studies
-getm_res_srtd_nodups <- subset(getm_res_srtd, getm_res_srtd$snp == 6)
+snp<-data.frame(table(dframe$snp))
+w<-which(snp$Freq==length(unique(dframe$study_names_in)))
+snp<-as.character(snp[w[1],"Var1"])
+getm_res_srtd_nodups  <- subset(getm_res_srtd, getm_res_srtd$snp==2)
 
 # Checking dimensions to confirm that we have 38 studies
 #str(getm_res_srtd_nodups)

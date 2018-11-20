@@ -58,7 +58,25 @@ Padj=$(tail -1 $F0 |awk '{print $2}')
 
 Rscript /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-v2/garfield-plot_selection.R -i $F2 -o $F2 -l $ANNOTLINKFILE -t " " -f 10 -padj $Padj
 
+cp $OUTDIR/selection_no_mhc_lct.txt $OUTDIR/selection_no_mhc_lct_forplot.txt
+grep blood $OUTDIR/selection_cis_no_mhc_lct.txt >>$OUTDIR/selection_no_mhc_lct_forplot.txt
+grep blood $OUTDIR/selection_ambivalent_no_mhc_lct.txt >>$OUTDIR/selection_no_mhc_lct_forplot.txt
+grep blood $OUTDIR/selection_trans_no_mhc_lct.txt >>$OUTDIR/selection_no_mhc_lct_forplot.txt
 
+cd /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-v2
+DIR="../garfield-data"
+OUTDIR=$DIR/output
+F2=$OUTDIR/selection_no_mhc_lct_forplot.txt
+F0=$OUTDIR/mqtl_fst_no_mhc_lct/garfield.Meff.mqtl_fst_no_mhc_lct.out
+Padj=$(tail -1 $F0 |awk '{print $2}')
+ANNOTLINKFILE="$OUTDIR/link_file_selection_plot.txt"
+Rscript /panfs/panasas01/shared-godmc/GARFIELDv2/garfield-v2/garfield-plot_selection_v2.R -i $F2 -o $F2 -l $ANNOTLINKFILE -t " " -f 10 -padj $Padj
+
+#r<-read.table("selection_no_mhc_lct_forplot.txt",he=T)
+#l<-length(which(input$PThresh=="1e-14"))
+#input$ID<-sort(rep(seq(1:20),nrow(input)/l))
+#input$linkID<-input$ID-1
+#write.table(unique(r[,13:18]),"link_file_selection_plot.txt",sep=" ",col.names=T,row.names=F,quote=F)
 ###
 
 #perl -pe 's/mqtls/transmqtls/g' < $F2 >$F2.tmp

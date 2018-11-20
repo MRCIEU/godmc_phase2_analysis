@@ -49,7 +49,7 @@ ggsave(p1,file="Mqtl_GeneticVariance.pdf")
 
 h<-read.table("./cvd_sds/cad.add.160614.website.txt",he=T)
 bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
-bim<-which(bim$V2%in%h$markername)
+#bim<-which(bim$V2%in%h$markername)
 m<-match(h$markername,bim$V2)
 h<-data.frame(SNP=paste0("chr",bim[m,1],":",bim[m,4],":SNP"),h)
 h$b_sq<-h$beta^2
@@ -94,4 +94,11 @@ geom_density() +
 labs(x="Genetic Variance")
 ggsave(p1,file="cvd_GeneticVariance.pdf")
 
+h_all$cvd_mqtl <- factor(h_all$cvd_mqtl, levels = c("cvd SNPs (n=202)","cvd mqtl (n=15)", "cvd mqtl sds (n=2)"))
+p1<-ggplot(h_all, aes(y=es, x=cvd_mqtl)) +
+  geom_boxplot() +
+  labs(y="Genetic Variance",x="mQTL category")
+ggsave(p1,file="CVD_GeneticVariance_boxplot.pdf")
+
+save(h_all,file="./cvd_sds/cvd_plot.Robj")
 

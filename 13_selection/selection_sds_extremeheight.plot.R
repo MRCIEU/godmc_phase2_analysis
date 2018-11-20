@@ -88,6 +88,13 @@ geom_density() +
 labs(x="Genetic Variance")
 ggsave(p1,file="ExtremeHeight_GeneticVariance.pdf")
 
+h_all$height_mqtl <- factor(h_all$height_mqtl, levels = c("extreme height SNPs (n=60)","extreme height mqtl (n=48)", "extreme height mqtl sds (n=4)"))
+p1<-ggplot(h_all, aes(y=es, x=height_mqtl)) +
+  geom_boxplot() +
+  labs(y="Genetic Variance",x="mQTL category")
+ggsave(p1,file="Extremeheight_GeneticVariance_boxplot.pdf")
+
+
 library(dplyr)
 h_all%>%group_by(height_mqtl)%>%summarise(es=mean(es,na.rm=T))
 
@@ -98,4 +105,5 @@ h_all%>%group_by(height_mqtl)%>%summarise(es=mean(es,na.rm=T))
 #2 extreme height mqtl sds (n=4) 0.013163220
 #3    extreme height SNPs (n=60) 0.005124636
 
+save(h_all,file="./height_sds/extremeheight_plot.Robj")
 

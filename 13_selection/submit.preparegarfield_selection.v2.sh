@@ -23,9 +23,9 @@ i=${PBS_ARRAYID}
 
 cd ~/repo/godmc_phase2_analysis/13_selection
 
-#R CMD BATCH --no-save --no-restore '--args '$i'' preparegarfield_selection.R preparegarfield_selection$i.Rout
+R CMD BATCH --no-save --no-restore '--args '$i'' preparegarfield_selection_no_mhc_lct_cistransall.R preparegarfield_selection_no_mhc_lctall$i.Rout
 
-R CMD BATCH --no-save --no-restore '--args '$i'' preparegarfield_selection_sds_cis.R preparegarfield_selection${i}_cis.Rout
+#R CMD BATCH --no-save --no-restore '--args '$i'' preparegarfield_selection_sds_cis.R preparegarfield_selection${i}_cis.Rout
 
 
 #BEFORE RUNNING THIS SCRIPT:
