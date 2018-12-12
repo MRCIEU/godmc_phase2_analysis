@@ -58,7 +58,10 @@ suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
 suppressWarnings(suppressPackageStartupMessages(library(knitr)))
 opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
 
-no_snp_cpgs<-209034+(23917-35389)
+##OLD -see below for update
+##no_snp_cpgs<-209034+(23917-35389)
+###173645+23917=197562
+
 gs <- fread("gunzip -c GS_replication.tsv.gz", he=T) #173645
 p<-read.csv("sites_to_exclude_5200_samples.csv")
 #Filtered to have MAF > 0.01 and imputation quality score > 0.8 & probes that pass det p and nbeads p
@@ -67,9 +70,27 @@ w<-which(gs1$cpg%in%p$x)
 gs1<-gs1[-w,] #172147
 fail<-nrow(gs)-nrow(gs1) #1536
 
+#How many SNP-cpg pairs in GS
+no_gs<-read.table("godmc_snps_tested_but_not_in_output.tsv",he=T) #23917
+#* 'snpchr': SNP chromosome, as in the data you provided to us.
+#* 'snppos': SNP position, as in the data you provided to us.
+#* 'snp': SNP identifier, as in the data you provided to us.
+#* 'cpg': CpG identifier, as in the data you provided to us.
+#* 'Allele1': Allele1, as in the data you provided to us.
+#* 'Allele2': Allele2, as in the data you provided to us.
+#* 'Freq1': Freq1, as in the data you provided to us.
+#* 'FreqSE': FreqSE, as in the data you provided to us.
+#* 'rsid': rsID of the SNP, as labelled in our data.
+#* 'alleleA': alleleA, as labelled in our data.
+#* 'alleleB': alleleB, as labelled in our data.
+#* 'alleleA_frequency': Frequency of alleleA, in our data, in all 5,101 individuals for which we have methylation data. NB, not all individuals had a methylation value for all CpGs.
+#* 'alleleB_frequency': Frequency of alleleB, in our data, in all 5,101 individuals for which we have methylation data. NB, not all individuals had a methylation value for all CpGs.
 
-no_snp_cpgs<-no_snp_cpgs-fail #196064
+no_gs<-subset(no_gs, alleleA_frequency>0.01 & alleleA_frequency<0.99 & alleleB_frequency>0.01 & alleleB_frequency<0.99 ) #23328
+w<-which(no_gs$cpg%in%p$x)
+no_gs<-no_gs[-w,] #23224
 
+####
 load("../results/16/16_clumped.rdata")
 clumped<- subset(clumped, pval < 1e-8 & cis | pval < 1e-14 & !cis)
 
@@ -77,14 +98,49 @@ clumped$cist <- "cis"
 clumped$cist[!clumped$cis] <- "trans"
 clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
 clumped$code <- clumped %$% paste(snp, cpg)
+
 temp <- inner_join(
 	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Freq1, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetDf, HetISq, cis, code)),
 	subset(gs1, select=c(snpid, cpg, a1, a0, freq1, beta1, se, p, r2, n, info)),
 	by=c("snp"="snpid", "cpg"="cpg")
 )
+nrow(temp) #169682
+
+#remove mismatching alleles
 temp$Allele1 <- toupper(temp$Allele1)
 temp$Allele2 <- toupper(temp$Allele2)
-temp <- subset(temp, Allele1 == a1 | Allele2 == a1) #172118
+table(temp$Allele1 == temp$a1 | temp$Allele2 == temp$a1)
+#FALSE   TRUE 
+#    26 169656
+w<-which(temp$Allele1 == temp$a1 | temp$Allele2 == temp$a1)
+mm<-temp[-w,]
+temp<-temp[w,]
+nrow(temp) #169656
+
+
+temp_no_gs <- inner_join(
+	subset(clumped, select=c(snp, cpg, Allele1, Allele2, Freq1, Effect, StdErr, StdErrARE, StdErrMRE, pval, TotalSampleSize, HetDf, HetISq, cis, code)),
+	subset(no_gs, select=c(snp, cpg, alleleA, alleleB, alleleB_frequency)),
+	by=c("snp"="snp", "cpg"="cpg")
+)
+temp_no_gs$Allele1 <- toupper(temp_no_gs$Allele1)
+temp_no_gs$Allele2 <- toupper(temp_no_gs$Allele2)
+
+
+table(temp_no_gs$Allele1 == temp_no_gs$alleleA | temp_no_gs$Allele2 == temp_no_gs$alleleB)
+#FALSE  TRUE 
+#10288  8117 
+temp_no_gs1<-temp_no_gs[which(temp_no_gs$Allele1 == temp_no_gs$alleleA | temp_no_gs$Allele2 == temp_no_gs$alleleB),]
+temp_no_gs2<-temp_no_gs[which(temp_no_gs$Allele1 == temp_no_gs$alleleB | temp_no_gs$Allele2 == temp_no_gs$alleleA),]
+
+
+#How many SNP-CpGpairs are available?
+no_snp_cpgs<-nrow(temp)+nrow(temp_no_gs) #188061
+##
+
+temp$Allele1 <- toupper(temp$Allele1)
+temp$Allele2 <- toupper(temp$Allele2)
+temp <- subset(temp, Allele1 == a1 | Allele2 == a1) #169656
 index <- temp$Allele1 != temp$a1
 temp$beta1[index] <- temp$beta1[index] * -1
 temp2 <- temp$a0[index]
@@ -600,4 +656,6 @@ write.csv(tab1, file="results/replication2.csv")
 write.csv(tab2, file="results/variance_explained2.csv")
 
 ```
+
+
 
