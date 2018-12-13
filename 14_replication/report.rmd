@@ -53,7 +53,7 @@ Need to remove SNPs with non matching alleles.
 
 ## Counting and harmonising between GoDMC and GS
 
-```{r, echo=FALSE}
+```{r}
 suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
 suppressWarnings(suppressPackageStartupMessages(library(magrittr)))
 suppressWarnings(suppressPackageStartupMessages(library(data.table)))
@@ -263,7 +263,7 @@ Overall replication rate based on overall threshold: `r sum(replication$p < (0.0
 ## Effect size concordance
 
 
-```{r, echo=FALSE, dev="png"}
+```{r, dev="png"}
 replication$cist <- "Cis"
 replication$cist[!replication$cis] <- "Trans"
 ggplot(subset(replication), aes(x=Effect, y=beta1)) +
@@ -280,7 +280,7 @@ ggsave("images/replication.pdf", width=9, height=4)
 
 Do smoking associated probes associated explain the bidirectional effects?
 
-```{r, echo=FALSE, dev="png"}
+```{r, dev="png"}
 smok<-read.table("smoking.tsv",he=T,sep="\t")
 smok<-subset(smok,PMID=="27651444"& Exposure=="Current versus never smoking") #2622
 w<-which(replication$cpg%in%smok$CpG)
@@ -309,7 +309,7 @@ The probability of replication is based on the true effect size, the standard er
 
 If we use Bonferroni correction for replication, what proportion would we expect to be significant, and in the same direction?
 
-```{r, echoo=FALSE}
+```{r}
 preplication <- function(b, se_disc, se_rep, alpha)
 {
 	p_sign <- pnorm(-abs(b) / se_disc) * pnorm(-abs(b) / se_rep) + ((1 - pnorm(-abs(b) / se_disc)) * (1 - pnorm(-abs(b) / se_rep)))
@@ -359,7 +359,7 @@ kable(x)
 
 ## Strand issues?
 
-```{r, echo=FALSE}
+```{r}
 rep2 <- subset(replication, sigct)
 rep2$wrong_dir <- rep2 %$% {sign(Effect) != sign(beta1)}
 rep2$allele_codes <- rep2 %$% {paste(Allele1, Allele2)}
@@ -367,7 +367,7 @@ rep2$allele_codes <- rep2 %$% {paste(Allele1, Allele2)}
 
 There are `r sum(rep2$wrong_dir)` mQTLs that have significant replication in the wrong direction. Is this due to palindromic SNPs?
 
-```{r, echo=FALSE}
+```{r}
 group_by(rep2, allele_codes) %>%
 summarise(
 	ncorrect=sum(!wrong_dir), 
@@ -378,7 +378,7 @@ summarise(
 
 There doesn't seem to be a strong relationship with palendromic SNPs. Is there a difference in effect sizes between the replications in the correct vs incorrect directions?
 
-```{r, echo=FALSE}
+```{r}
 group_by(rep2, wrong_dir) %>%
 summarise(
 	mean_eff = mean(abs(Effect)),
@@ -393,7 +393,7 @@ summarise(
 It appears that the effect sizes are on average smaller, which is consistent with them being liable to give the wrong direction. There is also much higher heterogeneity in the discovery, which suggests it could be biological or something to do with the way the data is being treated at those CpGs. What proportion of mQTLs would we expect with wrong sign and significant?
 
 
-```{r, echo=FALSE}
+```{r}
 r <- replication %$% preplication(beta1, StdErrMRE, se, 0.05/nrow(clumped))[[3]]
 exp_wrong_sig <- sum((1 - r$sign) * r$sig)
 ```
@@ -402,5 +402,8 @@ Sum of `(1-prob(correct sign)) * (prob(significant)) = ` `r exp_wrong_sig`
 
 This is a much lower number than observed. Perhaps the SNPs that are leading to these results are more likely to be multi allelic?
 
+Save the replication data
 
-
+```{r}
+save(replication, file="replication.rdata")
+```
