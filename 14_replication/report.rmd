@@ -247,18 +247,19 @@ total_tested <- bind_rows(replication, rep_fail)
 replication$sigct <- FALSE
 replication$sigct[replication$cis & (replication$p < (0.05 / sum(total_tested$cis)))] <- TRUE
 replication$sigct[!replication$cis & (replication$p < (0.05 / sum(!total_tested$cis)))] <- TRUE
+replication$sig <- FALSE
 replication$sig[replication$p < (0.05 / nrow(total_tested))] <- TRUE
 ```
 
-Cis replication rate at cis threshold: `r sum((replication$sigct & replication$cis)) / sum(replication$cis)`
-Trans replication rate at trans threshold: `r sum((replication$sigct & !replication$cis)) / sum(!replication$cis)`
+* Cis replication rate at cis threshold: `r sum((replication$sigct & replication$cis)) / sum(replication$cis)`
+* Trans replication rate at trans threshold: `r sum((replication$sigct & !replication$cis)) / sum(!replication$cis)`
 
 Higher for trans because the significance threshold is lower. Overall replication rates
 
-Cis replication rate at overall threshold: `r sum((replication$sig & replication$cis)) / sum(replication$cis)`
-Trans replication rate at overall threshold: `r sum((replication$sig & !replication$cis)) / sum(!replication$cis)`
+* Cis replication rate at overall threshold: `r sum((replication$sig & replication$cis)) / sum(replication$cis)`
+* Trans replication rate at overall threshold: `r sum((replication$sig & !replication$cis)) / sum(!replication$cis)`
 
-Overall replication rate based on overall threshold: `r sum(replication$p < (0.05 / n_tested)) / n_tested`
+* Overall replication rate based on overall threshold: `r sum(replication$p < (0.05 / n_tested)) / n_tested`
 
 ## Effect size concordance
 
@@ -323,12 +324,45 @@ preplication <- function(b, se_disc, se_rep, alpha)
 x1 <- group_by(replication, cist) %>%
 summarise(
 	obs_significant = sum(sigct), 
+	exp_significant = preplication(Effect, StdErr, se, 0.05/sum(total_tested$cis))[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErr, se, 0.05/sum(total_tested$cis))[1]
+)
+
+x2 <- group_by(replication) %>%
+summarise(
+	obs_significant = sum(sigct), 
+	exp_significant = preplication(Effect, StdErr, se, 0.05/nrow(total_tested))[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErr, se, 0.05/nrow(total_tested))[1]
+)
+
+y1 <- group_by(replication, cist) %>%
+summarise(
+	obs_significant = n(), 
+	exp_significant = preplication(Effect, StdErr, se, 1e-3)[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErr, se, 1e-3)[1]
+)
+
+y2 <- group_by(replication) %>%
+summarise(
+	obs_significant = n(), 
+	exp_significant = preplication(Effect, StdErr, se, 1e-3)[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErr, se, 1e-3)[1]
+)
+
+
+x1r <- group_by(replication, cist) %>%
+summarise(
+	obs_significant = sum(sigct), 
 	exp_significant = preplication(Effect, StdErrMRE, se, 0.05/sum(total_tested$cis))[2],
 	obs_sign = sum(sign(Effect) == sign(beta1)),
 	exp_sign = preplication(Effect, StdErrMRE, se, 0.05/sum(total_tested$cis))[1]
 )
 
-x2 <- group_by(replication) %>%
+x2r <- group_by(replication) %>%
 summarise(
 	obs_significant = sum(sigct), 
 	exp_significant = preplication(Effect, StdErrMRE, se, 0.05/nrow(total_tested))[2],
@@ -336,9 +370,42 @@ summarise(
 	exp_sign = preplication(Effect, StdErrMRE, se, 0.05/nrow(total_tested))[1]
 )
 
+y1r <- group_by(replication, cist) %>%
+summarise(
+	obs_significant = n(), 
+	exp_significant = preplication(Effect, StdErrMRE, se, 1e-3)[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErrMRE, se, 1e-3)[1]
+)
+
+y2r <- group_by(replication) %>%
+summarise(
+	obs_significant = n(), 
+	exp_significant = preplication(Effect, StdErrMRE, se, 1e-3)[2],
+	obs_sign = sum(sign(Effect) == sign(beta1)),
+	exp_sign = preplication(Effect, StdErrMRE, se, 1e-3)[1]
+)
+
+
+
 x2$cist <- "all"
 x <- rbind(x1, x2)
-kable(x)
+y2$cist <- "all"
+y <- rbind(y1, y2)
+y$threshold <- "1e-3"
+x$threshold <- "Bonferroni"
+
+x2r$cist <- "all"
+xr <- rbind(x1r, x2r)
+y2r$cist <- "all"
+yr <- rbind(y1r, y2r)
+yr$threshold <- "1e-3"
+xr$threshold <- "Bonferroni"
+
+y$stderr <- x$stderr <- "Fixed"
+yr$stderr <- xr$stderr <- "Random"
+
+kable(rbind(y,x,yr,xr))
 
 # winners_curse <- function(b, alpha, n, m, sigma, tausq, M)
 # {

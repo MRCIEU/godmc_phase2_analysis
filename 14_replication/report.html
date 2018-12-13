@@ -357,6 +357,13 @@ $(document).ready(function () {
 <hr />
 <section id="counting-and-harmonising-between-godmc-and-gs" class="level2">
 <h2>Counting and harmonising between GoDMC and GS</h2>
+<pre class="r"><code>suppressWarnings(suppressPackageStartupMessages(library(dplyr)))
+suppressWarnings(suppressPackageStartupMessages(library(magrittr)))
+suppressWarnings(suppressPackageStartupMessages(library(data.table)))
+suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
+suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
+suppressWarnings(suppressPackageStartupMessages(library(knitr)))
+opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)</code></pre>
 <p>Read in the replication data from GS</p>
 <pre><code>## [1] 173645</code></pre>
 <p>Filtered to have MAF &gt; 0.01 and imputation quality score &gt; 0.8 &amp; probes that pass det p and nbeads p</p>
@@ -442,10 +449,16 @@ $(document).ready(function () {
 <p>What was the replication probability for the ones that failed replication</p>
 <p>Total tested</p>
 <p>“Significant” replication? Split by cis, trans, all</p>
-<p>Cis replication rate at cis threshold: 0.840183 Trans replication rate at trans threshold: 0.9190516</p>
+<ul>
+<li>Cis replication rate at cis threshold: 0.840183</li>
+<li>Trans replication rate at trans threshold: 0.9190516</li>
+</ul>
 <p>Higher for trans because the significance threshold is lower. Overall replication rates</p>
-<p>Cis replication rate at overall threshold: NA Trans replication rate at overall threshold: NA</p>
-<p>Overall replication rate based on overall threshold: 0.7591175</p>
+<ul>
+<li>Cis replication rate at overall threshold: 0.8384625</li>
+<li><p>Trans replication rate at overall threshold: 0.8714226</p></li>
+<li><p>Overall replication rate based on overall threshold: 0.7591175</p></li>
+</ul>
 </section>
 <section id="effect-size-concordance" class="level2">
 <h2>Effect size concordance</h2>
@@ -465,29 +478,118 @@ $(document).ready(function () {
 <th style="text-align: left;">exp_significant</th>
 <th style="text-align: right;">obs_sign</th>
 <th style="text-align: left;">exp_sign</th>
+<th style="text-align: left;">threshold</th>
+<th style="text-align: left;">stderr</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td style="text-align: left;">Cis</td>
+<td style="text-align: right;">155190</td>
+<td style="text-align: left;">155164.2</td>
+<td style="text-align: right;">154232</td>
+<td style="text-align: left;">155173.6</td>
+<td style="text-align: left;">1e-3</td>
+<td style="text-align: left;">Fixed</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Trans</td>
+<td style="text-align: right;">14466</td>
+<td style="text-align: left;">14461.22</td>
+<td style="text-align: right;">14425</td>
+<td style="text-align: left;">14463.64</td>
+<td style="text-align: left;">1e-3</td>
+<td style="text-align: left;">Fixed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">all</td>
+<td style="text-align: right;">169656</td>
+<td style="text-align: left;">169625.5</td>
+<td style="text-align: right;">168657</td>
+<td style="text-align: left;">169637.2</td>
+<td style="text-align: left;">1e-3</td>
+<td style="text-align: left;">Fixed</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Cis</td>
+<td style="text-align: right;">130388</td>
+<td style="text-align: left;">154211.7</td>
+<td style="text-align: right;">154232</td>
+<td style="text-align: left;">155173.6</td>
+<td style="text-align: left;">Bonferroni</td>
+<td style="text-align: left;">Fixed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Trans</td>
+<td style="text-align: right;">13295</td>
+<td style="text-align: left;">14356.78</td>
+<td style="text-align: right;">14425</td>
+<td style="text-align: left;">14463.64</td>
+<td style="text-align: left;">Bonferroni</td>
+<td style="text-align: left;">Fixed</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">all</td>
+<td style="text-align: right;">143683</td>
+<td style="text-align: left;">168543.1</td>
+<td style="text-align: right;">168657</td>
+<td style="text-align: left;">169637.2</td>
+<td style="text-align: left;">Bonferroni</td>
+<td style="text-align: left;">Fixed</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Cis</td>
+<td style="text-align: right;">155190</td>
+<td style="text-align: left;">144210.1</td>
+<td style="text-align: right;">154232</td>
+<td style="text-align: left;">154734.2</td>
+<td style="text-align: left;">1e-3</td>
+<td style="text-align: left;">Random</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Trans</td>
+<td style="text-align: right;">14466</td>
+<td style="text-align: left;">13861.07</td>
+<td style="text-align: right;">14425</td>
+<td style="text-align: left;">14455.29</td>
+<td style="text-align: left;">1e-3</td>
+<td style="text-align: left;">Random</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">all</td>
+<td style="text-align: right;">169656</td>
+<td style="text-align: left;">158071.2</td>
+<td style="text-align: right;">168657</td>
+<td style="text-align: left;">169189.5</td>
+<td style="text-align: left;">1e-3</td>
+<td style="text-align: left;">Random</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Cis</td>
 <td style="text-align: right;">130388</td>
 <td style="text-align: left;">126088.5</td>
 <td style="text-align: right;">154232</td>
 <td style="text-align: left;">154734.2</td>
+<td style="text-align: left;">Bonferroni</td>
+<td style="text-align: left;">Random</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">Trans</td>
 <td style="text-align: right;">13295</td>
 <td style="text-align: left;">12452.09</td>
 <td style="text-align: right;">14425</td>
 <td style="text-align: left;">14455.29</td>
+<td style="text-align: left;">Bonferroni</td>
+<td style="text-align: left;">Random</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td style="text-align: left;">all</td>
 <td style="text-align: right;">143683</td>
 <td style="text-align: left;">138315.5</td>
 <td style="text-align: right;">168657</td>
 <td style="text-align: left;">169189.5</td>
+<td style="text-align: left;">Bonferroni</td>
+<td style="text-align: left;">Random</td>
 </tr>
 </tbody>
 </table>
@@ -580,6 +682,7 @@ $(document).ready(function () {
 <p>It appears that the effect sizes are on average smaller, which is consistent with them being liable to give the wrong direction. There is also much higher heterogeneity in the discovery, which suggests it could be biological or something to do with the way the data is being treated at those CpGs. What proportion of mQTLs would we expect with wrong sign and significant?</p>
 <p>Sum of <code>(1-prob(correct sign)) * (prob(significant)) =</code> 0.9551889</p>
 <p>This is a much lower number than observed. Perhaps the SNPs that are leading to these results are more likely to be multi allelic?</p>
+<p>Save the replication data</p>
 </section>
 
 
