@@ -297,6 +297,16 @@ ggsave("images/replication_smok.png", width=9, height=4)
 ggsave("images/replication_smok.pdf", width=9, height=4)
 ```
 
+## Correlation between effect sizes
+
+```{r}
+w<-which(replication$cist=="Cis")
+cor.test(replication$Effect[w], replication$beta1[w])
+cor.test(replication$Effect[-w], replication$beta1[-w])
+```
+
+Correlation between effect sizes in cis: `r cor(replication$Effect[w], replication$beta1[w])`
+Correlation between effect sizes in trans: `r cor(replication$Effect[-w], replication$beta1[-w])`
 
 ## Expected vs observed replication rates
 
