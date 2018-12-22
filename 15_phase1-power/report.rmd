@@ -1,0 +1,165 @@
+---
+title: Power of study design
+---
+
+Get sample sizes and set range of r2 values to look at
+
+```{r}
+library(dplyr)
+library(pwr)
+library(ggplot2)
+#sample sizes for the 22 Phase 1 cohorts
+ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/descriptives.phase2.txt",sep="\t",he=T)
+ss<-ss[,c("study","nsamples04")]
+ss1<-data.frame(study="DunedinAge38",nsamples04="757")
+ss<-rbind(ss,ss1)
+cohorts<-read.table("/panfs/panasas01/shared-godmc/scripts/cohorts_noRAINE.txt",sep=" ",header=F)
+ss<-ss[which(ss$study%in%cohorts$V2),]
+
+r2 <- seq(0,0.02,length.out=2000)
+```
+
+## Cis power
+
+For cis associations we want to know the power of detecting an association in at least one of 22 studies at p < 1e-5. To do this we calculate what is the probability of missing an association as being the product of the probability of missing it in study 1 AND in study 2 AND in study 3 etc.
+
+$$
+p(miss) = \prod^{M=22}_{i=1}{p(miss_i)}
+$$
+
+where 
+
+$$
+p(miss_i) = 1 - f(19.5; k=1, \lambda=n_{i}r^2)
+$$
+
+where $f()$ is the probability density function for the non-central chi-square distribution with $k$ df and $\lambda$ non-centrality parameter based on the postulated variance explained by an mQTL ($r^2$) and the study sample size $n_i$; and 19.5 denotes the chi-square threshold at p = 1e-5 with 1 df.
+
+
+```{r, eval=FALSE}
+pchisq(
+	qchisq(THRESHOLD, df=1,low=F), 
+	ncp=R2 * SAMPLESIZE, df=1, low=F
+)
+```
+
+Calculate the probability of detection (or missing = 1 - probability of detection) of an association across a range of $r^2$ values. 
+
+
+```{r}
+dat <- expand.grid(SS=as.numeric(ss$nsamples04), r2=r2)
+dat$chisq <- dat$SS * dat$r2
+dat$pow <- pwr.chisq.test(w=sqrt(dat$r2),N=dat$SS,df=1,sig.level=1e-5)$power
+dat$missed <- 1 - dat$pow
+y <- group_by(dat, r2) %>%
+summarise(missed_overall = prod(missed), power_overall=1-missed_overall, what="cis")
+```
+
+## Trans power
+
+For trans associations we only allowed a candidate assoc to go forward if it was present at 1e-5 in at least 2 studies. So now we need to modify the calcs in the cis section to enumerate over pairs of studies. We calculate what is the probability of missing an association as being the product of the probability of missing it in both study 1 and study 2 AND in study 1 and study 3 AND in study 1 and study 4 etc.
+
+$$
+p(miss) = \prod^{22}_{i=1} {\prod^{i-1}_{j=1} 1 - {f(19.5; 1, n_{i}r^2) f(19.5; 1, n_{j}r^2)}}
+$$
+
+
+```{r}
+dat <- expand.grid(SS1=as.numeric(ss$nsamples04),SS2=as.numeric(ss$nsamples04), r2=r2) %>% subset(SS1 > SS2)
+dat$p1 <- pwr.chisq.test(w=sqrt(dat$r2), N=dat$SS1, df = 1, sig.level=1e-5)$power
+dat$p2 <- pwr.chisq.test(w=sqrt(dat$r2), N=dat$SS2, df = 1, sig.level=1e-5)$power
+dat$powboth <- dat$p1 * dat$p2
+dat <- group_by(dat, r2) %>% summarise(pow = 1-prod(1-powboth))
+dat$missed <- 1 - dat$pow
+
+z <- group_by(dat, r2) %>%
+summarise(missed_overall = prod(missed), power_overall=1-missed_overall, what="trans")
+```
+
+## How does cis and trans power compare
+
+```{r}
+out <- rbind(z,y)
+ggplot(out, aes(x=r2,y=power_overall)) +
+geom_line(aes(colour=what))
+```
+
+
+## Probability of being significant in meta-analysis
+
+After detection in phase 1, what is the probability of being significant in the overall meta analysis? We have to assume that the meta analysis is basically an overall analysis (i.e. no heternogeneity). So, if one mQTL is significant at 1e-5 in one study then what is the probability of it being significant at 1e-10 in the full meta analysis of 28k samples?
+
+The basic answer is that if a true positive is detected at phase 1 it will almost certainly be detected in phase 2.
+
+I think we are trying to calculate this:
+
+$$
+p(sig_{total} | sig_{subset}) = p(sig_{subset} | sig_{total}) p(sig_{total}) / p(sig_{subset})
+$$
+
+
+```{r, eval=FALSE}
+library(simulateGP)
+
+param <- expand.grid(
+	r2 = seq(0.001, 0.01, by=0.001),
+	ntot = 28000,
+	nsub = c(500,1000,2000),
+	nsim = 1:100,
+	totpval = NA,
+	subpval = NA
+)
+set.seed(1)
+for(i in 1:nrow(param))
+{
+	x <- make_geno(param$ntot[i], 1, 0.5)
+	y <- make_phen(sqrt(param$r2[i]), x)
+	ind <- 1:param$nsub[i]
+	x1 <- x[ind]
+	y1 <- y[ind]
+	param$subpval[i] <- fast_assoc(y1,x1)$pval
+	param$totpval[i] <- fast_assoc(y,x)$pval
+}
+table(param$totpval < 1e-10, param$subpval < 1e-5)
+table(param$totpval < 1e-14, param$subpval < 1e-5)
+table(param$subpval < param$totpval)
+```
+
+Basically if detected in a subsample it will almost certainly be detected overall. 
+
+
+## Simulations to check power calcs
+
+```{r, eval=FALSE}
+a <- group_by(param, r2, nsub) %>%
+summarise(
+	pow=sum(subpval < 1e-2)/n()
+)
+a$powt <- pwr.chisq.test(sqrt(a$r2), a$nsub, df=1, sig.level=1e-2)$power
+
+b <- group_by(param, r2, nsim) %>% summarise(
+	pow = as.numeric(any(subpval < 1e-2))
+) %>% group_by(r2) %>% summarise(pow=sum(pow)/n())
+
+c <- group_by(a, r2) %>% summarise(pow=1 - prod(1-powt))
+b
+
+# cis
+plot(c$pow, b$pow)
+
+b1 <- group_by(param, r2, nsim) %>% summarise(
+	pow = sum(subpval < 1e-2) >= 2 %>% as.numeric) %>%
+	group_by(r2) %>% summarise(pow = sum(pow)/n())
+
+b2 <- expand.grid(r2=seq(0.001, 0.02, by=0.001),s1=c(500,1000,2000),s2=c(500,1000,2000)) %>% subset(s1 > s2)
+b2$pow1 <- pwr.chisq.test(w=sqrt(b2$r2), N=b2$s1, df = 1, sig.level=1e-2)$power
+b2$pow2 <- pwr.chisq.test(w=sqrt(b2$r2), N=b2$s2, df = 1, sig.level=1e-2)$power
+b2$pow <- b2$pow1 * b2$pow2
+b3 <- group_by(b2, r2) %>% summarise(pow = 1-prod(1-pow))
+
+# trans
+plot(b3$pow, b1$pow)
+
+```
+
+
