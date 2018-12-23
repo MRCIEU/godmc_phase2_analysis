@@ -217,24 +217,7 @@ n_tested
 
 Given the discovery effect sizes, what do we expect the replication rate to be at different replication thresholds (1e-3 and Bonferroni for `r n_tested`)?
 
-```{r}
-psig <- function(b, se_disc, alpha)
-{
-	p_sig <- pnorm(-abs(b) / se_disc + qnorm(alpha / 2)) + (1 - pnorm(-abs(b) / se_disc - qnorm(alpha / 2)))
-	return(p_sig)
-}
-
-replication$prep1 <- psig(replication$Effect, replication$StdErrMRE, 1e-3)
-replication$prep2 <- psig(replication$Effect, replication$StdErrMRE, 0.05/n_tested)
-```
-
 What was the replication probability for the ones that failed replication
-
-```{r}
-rep_fail$prep1 <- psig(rep_fail$Effect, rep_fail$StdErrMRE, 1e-3)
-rep_fail$prep2 <- psig(rep_fail$Effect, rep_fail$StdErrMRE, 0.05/n_tested)
-```
-
 Total tested
 
 ```{r}
@@ -244,29 +227,40 @@ total_tested <- bind_rows(replication, rep_fail)
 "Significant" replication? Split by cis, trans, all
 
 ```{r}
+total_tested$p[is.na(total_tested$p)] <- 1
+total_tested$sigct <- FALSE
+total_tested$sigct[total_tested$cis & (total_tested$p < (0.05 / sum(total_tested$cis)))] <- TRUE
+total_tested$sigct[!total_tested$cis & (total_tested$p < (0.05 / sum(!total_tested$cis)))] <- TRUE
+total_tested$sig <- FALSE
+total_tested$sig[total_tested$p < (0.05 / nrow(total_tested))] <- TRUE
+
 replication$sigct <- FALSE
-replication$sigct[replication$cis & (replication$p < (0.05 / sum(total_tested$cis)))] <- TRUE
-replication$sigct[!replication$cis & (replication$p < (0.05 / sum(!total_tested$cis)))] <- TRUE
+replication$sigct[replication$cis & (replication$p < (0.05 / sum(replication$cis)))] <- TRUE
+replication$sigct[!replication$cis & (replication$p < (0.05 / sum(!replication$cis)))] <- TRUE
 replication$sig <- FALSE
 replication$sig[replication$p < (0.05 / nrow(total_tested))] <- TRUE
+
+total_tested$cist <- "Cis"
+total_tested$cist[!total_tested$cis] <- "Trans"
+replication$cist <- "Cis"
+replication$cist[!replication$cis] <- "Trans"
+
 ```
 
-* Cis replication rate at cis threshold: `r sum((replication$sigct & replication$cis)) / sum(replication$cis)`
-* Trans replication rate at trans threshold: `r sum((replication$sigct & !replication$cis)) / sum(!replication$cis)`
+* Cis replication rate at cis threshold: `r sum((total_tested$sigct & total_tested$cis)) / sum(total_tested$cis)`
+* Trans replication rate at trans threshold: `r sum((total_tested$sigct & !total_tested$cis)) / sum(!total_tested$cis)`
 
 Higher for trans because the significance threshold is lower. Overall replication rates
 
-* Cis replication rate at overall threshold: `r sum((replication$sig & replication$cis)) / sum(replication$cis)`
-* Trans replication rate at overall threshold: `r sum((replication$sig & !replication$cis)) / sum(!replication$cis)`
+* Cis replication rate at overall threshold: `r sum((total_tested$sig & total_tested$cis)) / sum(total_tested$cis)`
+* Trans replication rate at overall threshold: `r sum((total_tested$sig & !total_tested$cis)) / sum(!total_tested$cis)`
 
-* Overall replication rate based on overall threshold: `r sum(replication$p < (0.05 / n_tested)) / n_tested`
+* Overall replication rate based on overall threshold: `r sum(total_tested$p < (0.05 / n_tested)) / n_tested`
 
 ## Effect size concordance
 
 
 ```{r, dev="png"}
-replication$cist <- "Cis"
-replication$cist[!replication$cis] <- "Trans"
 ggplot(subset(replication), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=sigct), cex=0.5) +
 geom_point(data=subset(replication, !sigct), aes(x = Effect, y = beta1, color = sigct), cex=0.5) +
@@ -316,122 +310,137 @@ Correlation between effect sizes in trans: `r cor(replication$Effect[-w], replic
 
 ## Expected vs observed replication rates
 
-The probability of replication is based on the true effect size, the standard errors for the discovery and replication estimates, and the significance level for replication. Similarly, we can estimate the number of SNPs that should have the same sign. 
+The probability of replication is based on the true effect size, the standard errors for replication estimates, and the significance level for replication. Similarly, we can estimate the number of SNPs that should have the same sign. Note that in Ref 21 the notation seems to use the standard error for the discovery to estimate the probability of replication. However, this doesn't make sense to me - if you have an estimate of the true effect size then we expect the replication of that to be related to the expected standard error in the replication sample.
 
-If we use Bonferroni correction for replication, what proportion would we expect to be significant, and in the same direction?
+Can we calculate the expected standard error of the replication based on available parameters i.e. effect size, replication MAF, sample size?
+
+$$
+r^2 = \frac{t^2}{t^2 + n - 2} \\
+2p(1-p)\beta^2 = \frac{\frac{\beta^2}{se^2}}{\frac{\beta^2}{se^2} + n - 2}
+$$
+
+rearranging in terms of $s$ gives
+
+$$
+s = \sqrt{\frac{
+	2p(1 - p)\beta^2 + 1}{
+2p(1-p)(n-2)
+}}
+$$
 
 ```{r}
+maf <- total_tested$freq1
+maf[is.na(maf)] <- total_tested$Freq1[is.na(maf)]
+total_tested$expected_rep_se <- sqrt((2 * maf^2 * total_tested$Effect^2 - 2 * maf * total_tested$Effect^2 + 1) / (2 * maf * (-2 + 5101) * (1 - maf)))
+```
+
+For a large proportion of discovery estimates tested in the replication we have the known replication standard error. How closely does our expected replication standard error relate to the actual replication standard error?
+
+Correlation R2 = `r cor(total_tested$expected_rep_se, total_tested$se, use="pair")`
+
+```{r}
+plot(total_tested$expected_rep_se, total_tested$se, xlab="Expected replication SE", ylab="Actual replication SE")
+```
+
+```{r, eval=FALSE}
+psig <- function(b, se_disc, alpha)
+{
+	p_sig <- pnorm(-abs(b) / se_disc + qnorm(alpha / 2)) + (1 - pnorm(-abs(b) / se_disc - qnorm(alpha / 2)))
+	return(p_sig)
+}
+
+total_tested$prep1 <- psig(total_tested$Effect, total_tested$expected_rep_se, 1e-3)
+total_tested$prep2 <- psig(total_tested$Effect, total_tested$expected_rep_se, 0.05/n_tested)
+
+hist(total_tested$prep1, breaks=100)
+hist(total_tested$prep2, breaks=100)
+
+ggplot(data=total_tested, aes(x=log(prep1))) +
+geom_density(aes(fill=p < 0.05/n_tested))
+
+group_by(total_tested, p < 0.05/n_tested) %>%
+do(data.frame(t(quantile(.$prep1, probs = c(0.10, 0.30, 0.50, 0.80)))))
+
+filter(total_tested, p > 0.05/n_tested) %$% preplication(Effect, expected_rep_se, se, 1e-3)
+
+
+
+subset(total_tested, !is.na(Effect)) %$% plot(ecdf(psig(Effect,expected_rep_se,1e-3)), type="l")
+subset(total_tested, !is.na(Effect)) %$% plot(ecdf(psig(Effect,StdErr,1e-3)), col="red")
+subset(total_tested, !is.na(Effect)) %$% plot(ecdf(psig(Effect,StdErrMRE,1e-3)), col="blue")
+
+temp <- subset(total_tested, select=c(p, prep1, prep2)) %>% arrange(prep2)
+temp$bin1 <- cut(temp$prep1, 10)
+temp$bin2 <- cut(temp$prep2, 10)
+group_by(temp, bin1) %>% summarise(n=n(), s=sum(p < 1e-3), p=s/n) %$% plot(bin1, p)
+group_by(temp, bin2) %>% summarise(n=n(), s=sum(p < 1e-7), p=s/n) %$% plot(bin2, p)
+```
+
+
+
+
+Estimated the expected replication rate across all mQTLs can now be calculated. For comparison, here are the expected replication rates based on the expected SE in the replication; the fixed effects discovery SE; and two random effects discovery SE variables. I think it is more correct to use the expected replication rate of the outcome sample.
+
+```{r}
+
+
 preplication <- function(b, se_disc, se_rep, alpha)
 {
 	p_sign <- pnorm(-abs(b) / se_disc) * pnorm(-abs(b) / se_rep) + ((1 - pnorm(-abs(b) / se_disc)) * (1 - pnorm(-abs(b) / se_rep)))
 	p_sig <- pnorm(-abs(b) / se_disc + qnorm(alpha / 2)) + (1 - pnorm(-abs(b) / se_disc - qnorm(alpha / 2)))
 	message("Total: ", length(b))
-	message("Expected sign: ", sum(p_sign))
-	message("Expected sig: ", sum(p_sig))
-	return(list(sum(p_sign), sum(p_sig), data_frame(sig=p_sig, sign=p_sign)))
+	message("Expected sign: ", sum(p_sign, na.rm=TRUE))
+	message("Expected sig: ", sum(p_sig, na.rm=TRUE))
+	return(list(sum(p_sign, na.rm=TRUE), sum(p_sig, na.rm=TRUE), data_frame(sig=p_sig, sign=p_sign)))
 }
 
-x1 <- group_by(replication, cist) %>%
-summarise(
-	obs_significant = sum(sigct), 
-	exp_significant = preplication(Effect, StdErr, se, 0.05/sum(total_tested$cis))[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErr, se, 0.05/sum(total_tested$cis))[1]
+preplication_wrapper <- function(total_tested, stderr_col, threshold)
+{
+	total_tested$STDERR <- total_tested[[stderr_col]]
+	x1 <- group_by(total_tested, cist) %>%
+	summarise(
+		n = n(),
+		obs_significant = sum(p < threshold), 
+		exp_significant = unlist(preplication(Effect, STDERR, se, threshold)[2]),
+		obs_sign = sum(sign(Effect) == sign(beta1), na.rm=TRUE),
+		exp_sign = unlist(preplication(Effect, STDERR, se, threshold)[1])
+	)
+	x2 <- group_by(total_tested) %>%
+	summarise(
+		n = n(),
+		obs_significant = sum(p < threshold), 
+		exp_significant = unlist(preplication(Effect, STDERR, se, threshold)[2]),
+		obs_sign = sum(sign(Effect) == sign(beta1), na.rm=TRUE),
+		exp_sign = unlist(preplication(Effect, STDERR, se, threshold)[1])
+	)
+	x2$cist <- "all"
+	x <- rbind(x1, x2)
+	return(x)
+}
+
+repl_params <- expand.grid(
+	STDERR=c("StdErr", "StdErrMRE", "StdErrARE", "expected_rep_se"),
+	threshold = c(1e-3, 1e-4, 1e-5, 1e-6, 0.05/n_tested)
 )
 
-x2 <- group_by(replication) %>%
-summarise(
-	obs_significant = sum(sigct), 
-	exp_significant = preplication(Effect, StdErr, se, 0.05/nrow(total_tested))[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErr, se, 0.05/nrow(total_tested))[1]
-)
+l <- list()
+for(i in 1:nrow(repl_params))
+{
+	l[[i]] <- preplication_wrapper(total_tested, as.character(repl_params$STDERR[i]), repl_params$threshold[i])
+	l[[i]]$stderr <- repl_params$STDERR[i]
+	l[[i]]$beta <- repl_params$BETA[i]
+	l[[i]]$threshold <- repl_params$threshold[i]
+}
+repl_vals <- bind_rows(l)
 
-y1 <- group_by(replication, cist) %>%
-summarise(
-	obs_significant = n(), 
-	exp_significant = preplication(Effect, StdErr, se, 1e-3)[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErr, se, 1e-3)[1]
-)
+ggplot(repl_vals, aes(x=-log10(threshold), y=obs_significant/exp_significant)) +
+geom_point(aes(colour=cist)) +
+geom_line(aes(colour=cist)) +
+facet_grid(. ~ stderr) +
+scale_colour_brewer(type="qual")
 
-y2 <- group_by(replication) %>%
-summarise(
-	obs_significant = n(), 
-	exp_significant = preplication(Effect, StdErr, se, 1e-3)[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErr, se, 1e-3)[1]
-)
+subset(repl_vals, stderr=="expected_rep_se") %>% kable
 
-
-x1r <- group_by(replication, cist) %>%
-summarise(
-	obs_significant = sum(sigct), 
-	exp_significant = preplication(Effect, StdErrMRE, se, 0.05/sum(total_tested$cis))[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErrMRE, se, 0.05/sum(total_tested$cis))[1]
-)
-
-x2r <- group_by(replication) %>%
-summarise(
-	obs_significant = sum(sigct), 
-	exp_significant = preplication(Effect, StdErrMRE, se, 0.05/nrow(total_tested))[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErrMRE, se, 0.05/nrow(total_tested))[1]
-)
-
-y1r <- group_by(replication, cist) %>%
-summarise(
-	obs_significant = n(), 
-	exp_significant = preplication(Effect, StdErrMRE, se, 1e-3)[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErrMRE, se, 1e-3)[1]
-)
-
-y2r <- group_by(replication) %>%
-summarise(
-	obs_significant = n(), 
-	exp_significant = preplication(Effect, StdErrMRE, se, 1e-3)[2],
-	obs_sign = sum(sign(Effect) == sign(beta1)),
-	exp_sign = preplication(Effect, StdErrMRE, se, 1e-3)[1]
-)
-
-
-
-x2$cist <- "all"
-x <- rbind(x1, x2)
-y2$cist <- "all"
-y <- rbind(y1, y2)
-y$threshold <- "1e-3"
-x$threshold <- "Bonferroni"
-
-x2r$cist <- "all"
-xr <- rbind(x1r, x2r)
-y2r$cist <- "all"
-yr <- rbind(y1r, y2r)
-yr$threshold <- "1e-3"
-xr$threshold <- "Bonferroni"
-
-y$stderr <- x$stderr <- "Fixed"
-yr$stderr <- xr$stderr <- "Random"
-
-kable(rbind(y,x,yr,xr))
-
-# winners_curse <- function(b, alpha, n, m, sigma, tausq, M)
-# {
-# 	v <- sqrt(sigma^2 / (2 * n * m * (1 - m)))
-# 	X <- rnorm(M, b, v)
-# 	tplus <- pnorm(1 - alpha / 2) - X / v
-# 	tneg <- tplus * -1
-# 	g1 <- X / (1 - (pnorm(tplus) - pnorm(tneg)))
-# 	g2 <- 1 / (1 - (pnorm(tplus) - pnorm(tneg)))
-# 	print(b)
-# 	return(mean(g1) / mean(g2))
-
-# }
-
-# winners_curse(clumped$Effect[1], 1e-02, clumped$TotalSampleSize[1], clumped$Freq1[1], 1, 1, 10000000)
-# winners_curse(0.01, 1e-2, clumped$TotalSampleSize[1], clumped$Freq1[1], 1, 1, 10000000)
 ```
 
 ## Strand issues?
@@ -442,7 +451,10 @@ rep2$wrong_dir <- rep2 %$% {sign(Effect) != sign(beta1)}
 rep2$allele_codes <- rep2 %$% {paste(Allele1, Allele2)}
 ```
 
-There are `r sum(rep2$wrong_dir)` mQTLs that have significant replication in the wrong direction. Is this due to palindromic SNPs?
+There are `r sum(rep2$wrong_dir)` mQTLs that have significant replication in the wrong direction. 
+
+
+Is this due to palindromic SNPs?
 
 ```{r}
 group_by(rep2, allele_codes) %>%
@@ -464,6 +476,7 @@ summarise(
 	mean_isq = mean(HetISq),
 	n_studies = mean(HetDf),
 	gv = mean(Freq1 * (1-Freq1)),
+	prop_cis = sum(cis) / n()
 ) %>% kable
 ```
 
