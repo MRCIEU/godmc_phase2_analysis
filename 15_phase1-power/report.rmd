@@ -1,8 +1,12 @@
 ---
 title: Power of study design
+output: 
+  html_document:
+    toc: true
+    theme: united
 ---
 
-Get sample sizes and set range of r2 values to look at
+Get sample sizes
 
 ```{r}
 suppressWarnings(suppressPackageStartupMessages({
@@ -13,11 +17,7 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(tidyr)
 }))
 opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
-```
-
-```{r}
 load("studies.rdata")
-r2 <- seq(0, 1, by=0.0001)
 ```
 
 ## Cis power
@@ -25,16 +25,12 @@ r2 <- seq(0, 1, by=0.0001)
 For cis associations we want to know the power of detecting an association in at least one of 22 studies at p < 1e-5. To do this we calculate what is the probability of missing an association as being the product of the probability of missing it in study 1 AND in study 2 AND in study 3 etc.
 
 $$
-p(miss) = \prod^{M=22}_{i=1}{p(miss_i)}
+p(miss) = \prod^{M=22}_{i=1}{1 - f(19.5; k=1, \lambda=n_{i}r^2)}
 $$
 
-where 
+where $f(x; k, \lambda)$ is the probability density function for the non-central chi-square distribution with $k$ df and $\lambda$ non-centrality parameter based on the postulated variance explained by an mQTL ($r^2$) and the study sample size $n_i$; and 19.5 denotes the chi-square threshold at p = 1e-5 with 1 df.
 
-$$
-p(miss_i) = 1 - f(19.5; k=1, \lambda=n_{i}r^2)
-$$
-
-where $f()$ is the probability density function for the non-central chi-square distribution with $k$ df and $\lambda$ non-centrality parameter based on the postulated variance explained by an mQTL ($r^2$) and the study sample size $n_i$; and 19.5 denotes the chi-square threshold at p = 1e-5 with 1 df.
+This can be done in R using either
 
 
 ```{r, eval=FALSE}
@@ -44,10 +40,17 @@ pchisq(
 )
 ```
 
+or
+
+```{r, eval=FALSE}
+pwr.chisq.test(w=sqrt(R2), N=SAMPLESIZE, df=1, sig.level=THRESHOLD)$power
+```
+
 Calculate the probability of detection (or missing = 1 - probability of detection) of an association across a range of $r^2$ values. 
 
 
 ```{r}
+r2 <- seq(0, 1, by=0.0001)
 dat <- expand.grid(SS=as.numeric(ss$nsamples04), r2=r2)
 dat$chisq <- dat$SS * dat$r2
 dat$pow <- pwr.chisq.test(w=sqrt(dat$r2),N=dat$SS,df=1,sig.level=1e-5)$power
