@@ -10,13 +10,14 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(dplyr)
 	library(pwr)
 	library(ggplot2)
+	library(tidyr)
 }))
 opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r}
 load("studies.rdata")
-r2 <- seq(0,0.02,length.out=2000)
+r2 <- seq(0, 1, by=0.0001)
 ```
 
 ## Cis power
@@ -88,12 +89,70 @@ x2 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=28000,df=1,sig
 
 ```{r}
 out <- rbind(z,y,x1,x2)
-ggplot(out, aes(x=r2,y=power_overall)) +
+ggplot(out %>% filter(r2 <= 0.02), aes(x=r2,y=power_overall)) +
 geom_line(aes(colour=cist, linetype=what)) +
 labs(x="mQTL r2", y="Power")
 ```
 
 
+## How does phase1 and phase2 power compare
+
+```{r}
+out2 <- group_by(out, cist) %>% select(-missed_overall) %>% spread(key="what", value="power_overall")
+
+ggplot(out2 %>% filter(r2 <= 0.02), aes(x=r2*100, y=(phase1 - phase2)*100)) +
+geom_line(aes(colour=cist)) +
+labs(x="mQTL % variance explained", y="Loss in % power of two stage design", colour="")
+
+```
+
+
+## Genetic architecture
+
+If we know the number of mQTLs with a particular $r^2$ value, and the power of detecting mQTLs with that value, then we can back-calculate how many mQTLs would expect to exist with that value.
+
+Here we use the replication mQTL $r^2$ values, and estimate the expected number of mQTLs for a particular $r^2$ value as being
+
+$$
+n_{expected} = \frac{n_{observed}}{1 - p(miss)}
+$$
+
+```{r}
+load("../14_replication/replication.rdata")
+hist(replication$r2, breaks=100)
+replication$r2r <- round(replication$r2, 4)
+
+emp <- replication %>% group_by(r2r,cist) %>% summarise(observed=n())
+emp$cist <- tolower(emp$cist)
+emp$tempr <- as.character(emp$r2r)
+out$tempr <- as.character(out$r2)
+emp2 <- inner_join(subset(out, what == "phase1"), emp) %>%
+	mutate(expected = 1 / power_overall * observed) %>%
+	gather(key="key", value="value", c(observed, expected)) %>% 
+	group_by(cist,key) %>% mutate(value2 = value / sum(value))
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_line(aes(colour=key)) +
+geom_point(aes(colour=key)) +
+scale_x_log10() +
+facet_grid(key ~ cist, scale="free_y") +
+labs(x="% variance explained by mQTL", y = "Counts")
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_smooth(aes(colour=key)) +
+scale_x_log10() +
+scale_y_log10() +
+facet_grid(. ~ cist) +
+labs(x="% variance explained by mQTL", y = "Counts")
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_point(aes(colour=key)) +
+scale_x_log10() +
+scale_y_log10() +
+facet_grid(. ~ cist) +
+labs(x="% variance explained by mQTL", y = "Counts")
+
+```
 
 
 ## Probability of being significant in meta-analysis
