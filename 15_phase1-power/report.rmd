@@ -5,9 +5,14 @@ title: Power of study design
 Get sample sizes and set range of r2 values to look at
 
 ```{r}
+suppressWarnings(suppressPackageStartupMessages(library(knitr)))
+opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
 library(dplyr)
 library(pwr)
 library(ggplot2)
+```
+
+```{r}
 #sample sizes for the 22 Phase 1 cohorts
 ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/descriptives.phase2.txt",sep="\t",he=T)
 ss<-ss[,c("study","nsamples04")]
@@ -98,7 +103,7 @@ p(sig_{total} | sig_{subset}) = p(sig_{subset} | sig_{total}) p(sig_{total}) / p
 $$
 
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 library(simulateGP)
 
 param <- expand.grid(
@@ -130,7 +135,7 @@ Basically if detected in a subsample it will almost certainly be detected overal
 
 ## Simulations to check power calcs
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 a <- group_by(param, r2, nsub) %>%
 summarise(
 	pow=sum(subpval < 1e-2)/n()
