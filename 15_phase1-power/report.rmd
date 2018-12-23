@@ -5,22 +5,17 @@ title: Power of study design
 Get sample sizes and set range of r2 values to look at
 
 ```{r}
-suppressWarnings(suppressPackageStartupMessages(library(knitr)))
-opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
-library(dplyr)
-library(pwr)
-library(ggplot2)
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(dplyr)
+	library(pwr)
+	library(ggplot2)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r}
-#sample sizes for the 22 Phase 1 cohorts
-ss<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/descriptives.phase2.txt",sep="\t",he=T)
-ss<-ss[,c("study","nsamples04")]
-ss1<-data.frame(study="DunedinAge38",nsamples04="757")
-ss<-rbind(ss,ss1)
-cohorts<-read.table("/panfs/panasas01/shared-godmc/scripts/cohorts_noRAINE.txt",sep=" ",header=F)
-ss<-ss[which(ss$study%in%cohorts$V2),]
-
+load("studies.rdata")
 r2 <- seq(0,0.02,length.out=2000)
 ```
 
@@ -57,7 +52,7 @@ dat$chisq <- dat$SS * dat$r2
 dat$pow <- pwr.chisq.test(w=sqrt(dat$r2),N=dat$SS,df=1,sig.level=1e-5)$power
 dat$missed <- 1 - dat$pow
 y <- group_by(dat, r2) %>%
-summarise(missed_overall = prod(missed), power_overall=1-missed_overall, what="cis")
+summarise(missed_overall = prod(missed), power_overall=1-missed_overall, cist="cis", what="phase1")
 ```
 
 ## Trans power
@@ -78,16 +73,27 @@ dat <- group_by(dat, r2) %>% summarise(pow = 1-prod(1-powboth))
 dat$missed <- 1 - dat$pow
 
 z <- group_by(dat, r2) %>%
-summarise(missed_overall = prod(missed), power_overall=1-missed_overall, what="trans")
+summarise(missed_overall = prod(missed), power_overall=1-missed_overall, cist="trans", what="phase1")
 ```
+
+Power of full dataset
+
+```{r}
+x1 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=28000,df=1,sig.level=1e-10)$power, missed_overall = 1 - power_overall, cist="cis", what="phase2")
+x2 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=28000,df=1,sig.level=1e-14)$power, missed_overall = 1 - power_overall, cist="trans", what="phase2")
+```
+
 
 ## How does cis and trans power compare
 
 ```{r}
-out <- rbind(z,y)
+out <- rbind(z,y,x1,x2)
 ggplot(out, aes(x=r2,y=power_overall)) +
-geom_line(aes(colour=what))
+geom_line(aes(colour=cist, linetype=what)) +
+labs(x="mQTL r2", y="Power")
 ```
+
+
 
 
 ## Probability of being significant in meta-analysis
@@ -103,8 +109,48 @@ p(sig_{total} | sig_{subset}) = p(sig_{subset} | sig_{total}) p(sig_{total}) / p
 $$
 
 
-```{r, eval=TRUE}
-library(simulateGP)
+```{r}
+fast_assoc <- function(y, x)
+{
+	index <- is.finite(y) & is.finite(x)
+	n <- sum(index)
+	y <- y[index]
+	x <- x[index]
+	vx <- var(x)
+	bhat <- cov(y, x) / vx
+	ahat <- mean(y) - bhat * mean(x)
+	rsq <- (bhat * vx)^2 / (vx * var(y))
+	fval <- rsq * (n-2) / (1-rsq)
+	tval <- sqrt(fval)
+	se <- abs(bhat / tval)
+	p <- pf(fval, 1, n-2, lower.tail=FALSE)
+	return(list(
+		ahat=ahat, bhat=bhat, se=se, fval=fval, pval=p, n=n
+	))
+}
+
+make_phen <- function(effs, indep, vy=1, vx=rep(1, length(effs)), my=0)
+{
+	if(is.null(dim(indep))) indep <- cbind(indep)
+	stopifnot(ncol(indep) == length(effs))
+	stopifnot(length(vx) == length(effs))
+	cors <- effs * vx / sqrt(vx) / sqrt(vy)
+	sc <- sum(cors^2)
+	if(sc >= 1)
+	{
+		print(sc)
+		stop("effects explain more than 100% of variance")
+	}
+	cors <- c(cors, sqrt(1-sum(cors^2)))
+	indep <- t(t(scale(cbind(indep, rnorm(nrow(indep))))) * cors * c(vx, 1))
+	y <- drop(scale(rowSums(indep)) * sqrt(vy)) + my
+	return(y)
+}
+
+make_geno <- function(nid, nsnp, af)
+{
+	return(matrix(rbinom(nid * nsnp, 2, af), nid, nsnp))
+}
 
 param <- expand.grid(
 	r2 = seq(0.001, 0.01, by=0.001),
@@ -135,7 +181,9 @@ Basically if detected in a subsample it will almost certainly be detected overal
 
 ## Simulations to check power calcs
 
-```{r, eval=TRUE}
+Is the cis calculation agreeing with simulations
+
+```{r}
 a <- group_by(param, r2, nsub) %>%
 summarise(
 	pow=sum(subpval < 1e-2)/n()
@@ -147,23 +195,25 @@ b <- group_by(param, r2, nsim) %>% summarise(
 ) %>% group_by(r2) %>% summarise(pow=sum(pow)/n())
 
 c <- group_by(a, r2) %>% summarise(pow=1 - prod(1-powt))
-b
+plot(c$pow, b$pow, xlab="simulations", ylab="theoretical")
 
-# cis
-plot(c$pow, b$pow)
+```
+
+Is the trans calculation agreeing with simulations
+
+```{r}
 
 b1 <- group_by(param, r2, nsim) %>% summarise(
 	pow = sum(subpval < 1e-2) >= 2 %>% as.numeric) %>%
 	group_by(r2) %>% summarise(pow = sum(pow)/n())
 
-b2 <- expand.grid(r2=seq(0.001, 0.02, by=0.001),s1=c(500,1000,2000),s2=c(500,1000,2000)) %>% subset(s1 > s2)
+b2 <- expand.grid(r2=seq(0.001, 0.01, by=0.001),s1=c(500,1000,2000),s2=c(500,1000,2000)) %>% subset(s1 > s2)
 b2$pow1 <- pwr.chisq.test(w=sqrt(b2$r2), N=b2$s1, df = 1, sig.level=1e-2)$power
 b2$pow2 <- pwr.chisq.test(w=sqrt(b2$r2), N=b2$s2, df = 1, sig.level=1e-2)$power
 b2$pow <- b2$pow1 * b2$pow2
 b3 <- group_by(b2, r2) %>% summarise(pow = 1-prod(1-pow))
 
-# trans
-plot(b3$pow, b1$pow)
+plot(b3$pow, b1$pow, xlab="simulations", ylab="theoretical")
 
 ```
 
