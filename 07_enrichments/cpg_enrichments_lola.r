@@ -132,7 +132,8 @@ process_LOLA = function (LOLA_res, collections=c("codex","encode_tfbs"),cellType
   LOLA_res=LOLA_res[!is.na(userSet)]
   
   LOLA_res=LOLA_res[collection%in%collections]
-  #changed form exp() to 10^ to accomodate change in LOLA   
+  #changed form exp() to 10^ to accomodate change in LOLA
+  
   LOLA_res[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
   LOLA_res[,mlog10p.adjust:=-log10(p.adjust),]
   
@@ -194,6 +195,23 @@ plotLOLA=function(locResults_all,plot_pref,height=35,width=18){
   print(pl3)
   dev.off()
   
+  pdf(paste0(plot_pref,"_OR_All.pdf"),height=10,width=16)
+  m<-max(sub$oddsRatio)+1
+  pl4<-ggplot(sub,aes(x=target,y=oddsRatio,size=pValueLog))+
+  geom_hline(yintercept=1,col="black",linetype="dotted")+
+  geom_point(aes(color=Tissue))+
+    facet_wrap(~Annotation,scale="free_x",ncol=1)+
+    theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
+    scale_size(range=c(1,4))+
+    guides(fill = guide_legend(ncol=20))+
+    scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,10,20),limits=c(0.2,round(m))) +
+    labs(y="Odds ratio (log scale)",x="Transcription factor") +
+    scale_fill_brewer(type="qual") +
+    theme(legend.text=element_text(size=12))
+  
+    print(pl4)
+  dev.off()
+  
 }
 
 produceLOLA_plots_intern = function(grs,plot_pref,height=35,width=18,recreate=FALSE){
@@ -226,40 +244,10 @@ data[,cpgchr:=gsub("24","Y",cpgchr),]
 data[,cpg_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("cpgchr","cpgstart","cpgend")]
 grs_cis=create_grs(data=data,selector=c("cpg_cis=='TRUE'","cpg_cis=='FALSE'","cpg_cis=='ambivalent'"))
 
-table(data$cpg_cis)
-
+test<-unique(data.frame(data$cpg,data$cpg_cis))
+table(test[,2])
 #ambivalent      FALSE       TRUE 
-#     58803       4917     219215 
-
-#filtered p<1e-14
-#ambivalent      FALSE       TRUE 
-#     51782       5421     197134 
-
-#ambivalent      FALSE       TRUE 
-#     54062       5076     210619
-
-w<-which(data$cpg_cis=="FALSE")
-dim(unique(data[w,"cpg"]))
-#[1] 4260    1
-
-w<-which(data$cpg_cis=="TRUE")
-dim(unique(data[w,"cpg"]))
-#[1] 157633      1
-
-w<-which(data$cpg_cis=="ambivalent")
-dim(unique(data[w,"cpg"]))
-#[1] 27910     1
-
-table(data$cis)
-
-# FALSE   TRUE 
-# 24276 258659
-
-#FALSE   TRUE 
-# 22913 246844 
-
-#produceLOLA_plots_intern(grs=grs_cis,plot_pref="cis",height=35,width=18,recreate=TRUE)
-
+#     28023       4267     157812 
 
 ####run with external background for CpGs
 
@@ -274,7 +262,7 @@ Illumina450_dt[,isGoDMC:=ifelse(cpgID%in%data$cpg,TRUE,FALSE),]
 Illumina450_dt<-Illumina450_dt[Illumina450_dt$cpgID%in%retaincpg,]
 
 df<-unique(data.frame(cpg=data$cpg,cpg_cis=data$cpg_cis))
-m<-match(Illumina450_dt$cpgID,data$cpg,)
+m<-match(Illumina450_dt$cpgID,data$cpg)
 df<-data[m,"cpg_cis"]
 Illumina450_dt$cpg_cis<-df
 
@@ -352,18 +340,25 @@ Illumina450_bg_matchedcis<-list()
 res_all<-list()
 l<-list()
 
+data.frame(t[,2]/sum(t[,2]),t[,3]/sum(t[,3]),t[,4]/sum(t[,4]))
+a<-apply(t,2,sum)
+#identify column with most annotations
+col<-apply(t[,-1],2,sum)
+col<-which(col==max(col))+1
+
 for (j in 1:length(n)){
 cat(n[j],"\n")
+#w<-which(t[,col]<5)
+#pr<-data.frame(t[-w,1]/t[-w,col])
 w<-which(t[,(j+1)]<5)
-pr<-data.frame(t[-w,1]/t[-w,2])
-m<-min(pr)*t[,2]
+pr<-data.frame(t[-w,1]/t[-w,(j+1)])
+m<-min(pr)*t[,(j+1)]
 
 controllist<-list()
 
-
 for (i in 1:dim(t)[1]){
 cat(i,"\n")
-if(t[i,1]>5&t[i,2]>0){
+if(t[i,1]>5&t[i,(j+1)]>0){
 subgroup<-Illumina450_dt[which(Illumina450_dt$quantiles==row.names(t)[i]&Illumina450_dt$isGoDMC==FALSE),]
 id<-subgroup[sample(nrow(subgroup), size=round(m[i],0), replace=FALSE),"cpgID"]
 controllist[[i]]<-id
@@ -392,9 +387,14 @@ w<-which(res_all$userSet==3)
 res_all$userSet[w]<-paste0("cis_only (", l[3]," regions)")
 
 
-plotLOLA(locResults_all=res_all,plot_pref="cpg_corebg_matched_cis",height=10,width=18)
+save(res_all,file="../results/enrichments/lola_core_mqtlcpg_cis_updated.rdata")
 
-save(res_all,file="../results/enrichments/lola_core_mqtlcpg_cis.rdata")
+res_all$Annotation<-res_all$userSet
+res_all$Annotation<-gsub("ambivalent (10941 regions)","cis+trans",res_all$Annotation,fixed=T)
+res_all$Annotation<-gsub("cis_only (107004 regions)","cis only",res_all$Annotation,fixed=T)
+res_all$Annotation<-gsub("trans_only (3864 regions)","trans only",res_all$Annotation,fixed=T)
+
+plotLOLA(locResults_all=res_all,plot_pref="cpg_corebg_matched_cis_updated",height=10,width=18)
 
 
 res_all2<-res_all[which(res_all$collection%in%c("codex","encode_tfbs")),]
@@ -403,12 +403,15 @@ length(unique(res_all2$antibody))
 res_all2$antibody<-gsub("_.*","",res_all2$antibody)
 length(unique(res_all2$antibody))
 #[1] 228
+
+
 m<-match(res_all2$cellType,cellType_conversions$cellType)
 res_all2<-data.table(data.frame(res_all2,cellType_conversions[m,]))
 length(unique(res_all2$cellType_corr))
 #27
 length(unique(res_all2$Tissue))
 #26
+
 t1<-table(res_all2$Tissue)
 dim(res_all2)
 #[1] 2634   32
@@ -419,10 +422,26 @@ table(res_all2[which(res_all2$logOddsRatio=="-Inf"),"pValueLog"])
 #10 
 
 res_all2<-res_all2[which(res_all2$logOddsRatio!="-Inf"),]
+res_all2[,Pvalue:=10^(-pValueLog)]
 res_all2[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
+res_all2<-data.frame(res_all2)
+
+w1<-which(res_all2$Tissue=="Blood")
+w2<-which(res_all2$Tissue!="Blood")
+
+
 res_all2<-res_all2[which(res_all2$p.adjust<0.001),]
 dim(res_all2)
-#[1] 1052   33
+#[1] 1258 35
+
+res_all2$Annotation<-res_all2$userSet
+res_all2$Annotation<-gsub("ambivalent (10941 regions)","cis+trans",res_all2$Annotation,fixed=T)
+res_all2$Annotation<-gsub("cis_only (107004 regions)","cis only",res_all2$Annotation,fixed=T)
+res_all2$Annotation<-gsub("trans_only (3864 regions)","trans only",res_all2$Annotation,fixed=T)
+
+res_all3<-res_all2[,c("antibody","oddsRatio","Pvalue","p.adjust","support","b","c","d","cellType","cellType_corr","Tissue","Annotation")]
+names(res_all3)<-c("Type","OR","Pvalue","FDR_Pvalue","support","b","c","d","CellType","cellType_category","Tissue","Annotation")                                                   
+write.table(res_all3,"TableSXX_LOLA_tfbs_updated.txt",sep="\t",quote=F,row.names=F,col.names=T)
 t2<-table(res_all2$Tissue)
 data.frame(t1,t2)
 #             Var1 Freq         Var1.1 Freq.1
@@ -494,17 +513,35 @@ pval_lim=0.001
   
 
 pdf(paste0("meanmethylation_tfbs_cis.pdf"),height=10,width=18)
-  p1<-ggplot(sub,aes(x=antibody,y=mean,fill=lineage_count,col=(cellState=="Malignant")))+
+  p1<-ggplot(sub,aes(x=antibody,y=mean))+
   geom_hline(yintercept=mean(df.out0$mean),col="black",linetype="dashed")+
-  geom_point(size=4,alpha=0.7,shape=21,stroke=1)+
+    geom_point(aes(color=Tissue)) +
   #facet_wrap(~userSet,scale="free_x",ncol=1)+
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
-  scale_size(range=c(1,4))+scale_fill_manual(values=structure(sub_colors$color, names=sub_colors$lineage_count))+
-  scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+guides(fill = guide_legend(ncol=3))
-  labs(y="mean methylation")
+  scale_size(range=c(1,4))+
+  #scale_fill_manual(values=structure(sub_colors$color, names=sub_colors$lineage_count))+
+  #scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
+  guides(fill = guide_legend(ncol=20)) +
+  scale_fill_brewer(type="qual") +
+  labs(y="Weighted mean methylation",x="Transcription factor")
+  theme(legend.text=element_text(size=12))
   print(p1)
   dev.off()
 
+  pdf(paste0(plot_pref,"_OR_All.pdf"),height=10,width=16)
+  m<-max(sub$oddsRatio)+1
+  pl4<-ggplot(sub,aes(x=target,y=oddsRatio,size=pValueLog))+
+    geom_hline(yintercept=1,col="black",linetype="dotted")+
+    geom_point(aes(color=Tissue))+
+    facet_wrap(~Annotation,scale="free_x",ncol=1)+
+    theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
+    scale_size(range=c(1,8))+
+    guides(fill = guide_legend(ncol=20))+
+    scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,10,20),limits=c(0.2,round(m))) +
+    labs(y="Odds ratio (log scale)",x="Transcription factor") +
+    scale_fill_brewer(type="qual") +
+    theme(legend.text=element_text(size=12))
+  
 
 m<-match(df.out1$cellType,cellType_conversions$cellType)
 df.out1<-data.table(data.frame(df.out1,cellType_conversions[m,]))
@@ -533,11 +570,12 @@ hypo[which(hypo$antibody%in%c("BRCA1")),c("mean","Lineage","Tissue","cellType")]
 #.SD is the (S)ubset of (D)ata excluding group columns
 
 
-
+res_all2<-data.table(res_all2)
 res_all2[userSet=="trans_only (3864 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
 res_all2[userSet=="ambivalent (10941 regions)",][collection=="encode_tfbs"|collection=="codex", ][1:15,]
 res_all2[userSet=="ambivalent (10941 regions)",][antibody=="CTCF"][collection=="encode_tfbs"|collection=="codex", ][1:15,]
 res_all2[userSet=="ambivalent (10941 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] 
+
 dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="CTCF",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
 #19
 dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="Rad21",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
@@ -545,11 +583,12 @@ dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="Rad21",][
 dim(unique(res_all2[userSet=="ambivalent (10941 regions)",][antibody=="SMC3",][collection=="encode_tfbs"|collection=="codex","cellType_corr"] ))
 #5
 
-amb<-unique(res_all2[userSet=="ambivalent (10941 regions)",][collection=="encode_tfbs"|collection=="codex"])
+amb<-unique(res_all2[userSet=="ambivalent (10941 regions)",][collection=="encode_tfbs"|collection=="codex"]) #375
+amb<-amb[which(amb$oddsRatio>1),] #375
 df<-unique(data.frame(amb$antibody,amb$cellType_corr))
 df<-data.frame(table(df[,1]))
-dim(df) #127
-dim(df[df$Freq>3,]) #12
+dim(df) #127 125
+dim(df[df$Freq>3,]) #12 12
 
 #df[df$Freq>5,]
 #    Var1 Freq
@@ -580,11 +619,12 @@ or<-ddply(amb,~antibody,summarise,mean=mean(oddsRatio))
 mean(or$mean)
 #1.335355
 
-trans<-unique(res_all2[userSet=="trans_only (3864 regions)",][collection=="encode_tfbs"|collection=="codex"])
+trans<-unique(res_all2[userSet=="trans_only (3864 regions)",][collection=="encode_tfbs"|collection=="codex"]) #693
 df<-unique(data.frame(trans$antibody,trans$cellType_corr))
 df<-data.frame(table(df[,1]))
-dim(df) #168
-dim(df[df$Freq>3,]) #36
+dim(df) #168 #182
+dim(df[df$Freq>3,]) #36 41
+
 or<-ddply(trans,~antibody,summarise,mean=mean(oddsRatio))
 mean(or$mean)
 #[1]  1.54232
@@ -618,8 +658,8 @@ print(tf[i])
 cis<-unique(res_all2[userSet=="cis_only (107004 regions)",][collection=="encode_tfbs"|collection=="codex"])
 df<-unique(data.frame(cis$antibody,cis$cellType_corr))
 df<-data.frame(table(df[,1]))
-dim(df) #17
-dim(df[df$Freq>3,]) #0
+dim(df) #17 #41
+dim(df[df$Freq>3,]) #0 4
 
 df<-unique(data.frame(cis$antibody,cis$Tissue))
 df<-data.frame(table(df[,1]))

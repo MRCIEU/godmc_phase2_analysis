@@ -9,9 +9,14 @@ load("../results/difres/difres0.rdata")
 load("../data/annotations.rdata")
 load("../data/blood.rdata")
 
-encode_tfbs <- anno$index[anno$collection == "encode_tfbs"]
-anno$code <- paste0(anno$antibody2, " : ", anno$cellType, ", ", anno$tissue, " : ", anno$treatment )
-temp <- subset(anno, select=c(index, code))[encode_tfbs,]
+anno$code <- paste0(anno$antibody3, " : ", anno$cellType, ", ", anno$tissue, " : ", anno$treatment )
+blood$code <- paste0(blood$antibody3, " : ", blood$cellType, ", ", blood$tissue, " : ", blood$treatment )
+encode_tfbs <- subset(anno, !duplicated(code) & collection == "encode_tfbs")$index
+blood_tfbs <- subset(blood, !duplicated(code) & collection == "encode_tfbs")$index
+
+temp <- subset(anno, select=c(index, code))[encode_tfbs,] %>% filter(!duplicated(code))
+temp2 <- subset(blood, index %in% blood_tfbs, select=c(index, code)) %>% filter(!duplicated(code))
+
 stab <- subset(difres, Var1 %in% encode_tfbs & Var2 %in% encode_tfbs & sddif >= 10)
 
 stab <- merge(stab, temp, by.x="Var1", by.y="index", all.x=TRUE)
@@ -21,9 +26,6 @@ names(stab)[names(stab) == "code"] <- "cpg_tfbs"
 
 stab <- subset(stab, select=c(snp_tfbs, cpg_tfbs, val, Min., Max., sddif)) %>% arrange(desc(sddif))
 write.csv(stab, file="../results/2d_enrichment.csv")
-
-load("../data/blood.rdata")
-tfbs <- subset(anno, collection == "encode_tfbs")
 
 l <- data_frame(
   perm = 0:100,
@@ -39,8 +41,8 @@ for(i in 0:100)
 {
   message(i)
   load(paste0("../results/difres/difres", i, ".rdata"))
-  a <- subset(difres, Var1 %in% tfbs$index & Var2 %in% tfbs$index)
-  b <- subset(difres, Var1 %in% blood$index & Var2 %in% blood$index)
+  a <- subset(difres, Var1 %in% encode_tfbs & Var2 %in% encode_tfbs)
+  b <- subset(difres, Var1 %in% blood_tfbs & Var2 %in% blood_tfbs)
   l$max[i+1] <- max(difres$sddif)
   l$sum20[i+1] <- sum(difres$sddif>20)
   l$maxtfbs[i+1] <- max(a$sddif)
@@ -60,21 +62,21 @@ difres$sddif2[difres$val < difres$Mean] <- difres$sddif2[difres$val < difres$Mea
 summary(difres$sddif2)
 # hist(difres$sddif2)
 # All values that are 'depleted' are not significant
-a <- subset(difres, Var1 %in% tfbs$index & Var2 %in% tfbs$index)
-b <- subset(difres, Var1 %in% blood$index & Var2 %in% blood$index)
+a <- subset(difres, Var1 %in% encode_tfbs & Var2 %in% encode_tfbs)
+b <- subset(difres, Var1 %in% blood_tfbs & Var2 %in% blood_tfbs)
 thresh_tfbs <- l$maxtfbs[-1] %>% sort(decreasing = TRUE) %>% .[5]
 thresh_blood <- l$maxblood[-1] %>% sort(decreasing = TRUE) %>% .[5]
-sum(a$sddif > thresh_tfbs)
-sum(b$sddif > thresh_blood)
+sum(a$sddif > thresh_tfbs, na.rm=T)
+sum(b$sddif > thresh_blood, na.rm=T)
 
-sum(a$sddif > thresh_tfbs) / nrow(tfbs)^2
-sum(b$sddif > thresh_blood) / nrow(blood)^2
+sum(a$sddif > thresh_tfbs) / length(encode_tfbs)^2
+sum(b$sddif > thresh_blood) / length(blood_tfbs)^2
 
-sum(a$sddif2 > thresh_tfbs) / nrow(tfbs)^2
-sum(b$sddif2 > thresh_blood) / nrow(blood)^2
+sum(a$sddif2 > thresh_tfbs) / length(encode_tfbs)^2
+sum(b$sddif2 > thresh_blood) / length(blood_tfbs)^2
 
-sum(a$sddif > max(l$maxtfbs[-1])) / nrow(tfbs)^2
-sum(b$sddif > max(l$maxblood[-1])) / nrow(blood)^2
+sum(a$sddif > max(l$maxtfbs[-1])) / length(encode_tfbs)^2
+sum(b$sddif > max(l$maxblood[-1])) / length(blood_tfbs)^2
 
 arrange(b, sddif2) %>% head
 

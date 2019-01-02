@@ -22,5 +22,5 @@ fi
 
 i=${PBS_ARRAYID}
 cd /panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/05_cis-trans-networks/scripts
-R CMD BATCH --no-save --no-restore KEGG_gsa_enrichment.R KEGG_gsa_enrichment.Rout
-
+#R CMD BATCH --no-save --no-restore KEGG_gsa_enrichment.R KEGG_gsa_enrichment.Rout
+R CMD BATCH --no-save --no-restore GOenrichment.R GOenrichment.Rout

@@ -7,6 +7,7 @@ library(Rsamtools)
 library(ggplot2)
 library(biovizBase)
 library(meffil)
+library(dplyr)
 library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 library("BSgenome.Hsapiens.UCSC.hg19")
 theme_set(theme_bw())
@@ -33,17 +34,6 @@ max(clumped[which(clumped$cis==TRUE),"pval"])
 #1e-4
 max(clumped[which(clumped$cis==FALSE),"pval"])
 #5e-8
-
-
-#flip<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/ref/flipped_snps.txt",he=F)
-#w<-which(clumped$snp%in%flip[,1])
-#clumped<-clumped[-w,]
-
-#indels<-read.table("/panfs/panasas01/shared-godmc/INDELs/indels_equal_seq_length.txt")
-#w<-which(clumped$snp%in%indels[,1]) #129
-#if(length(w)>0){
-#clumped<-clumped[-w,]}
-
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  
 #exclusion probes from TwinsUK
@@ -52,49 +42,7 @@ excl<-read.table("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/450k_ex
 rm<-which(retaincpg%in%excl[,1])
 #14882
 retaincpg<-retaincpg[-rm]
-#420509
- 
-#clumped<-clumped[which(clumped$cpg%in%retaincpg),]
-#nrow(clumped)
-
 clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
-
-#head(dat)
-#  cpgchr    cpgpos    cpgname snpchr    snppos              snpname
-#1   chr1 230560793 cg00000363   chr1 230638673   chr1:230638673:SNP
-#2   chr1 166958439 cg00001349   chr1 166953284   chr1:166953284:SNP
-#3   chr1 166958439 cg00001349   chr1 166319590 chr1:166319590:INDEL
-#4   chr1 200011786 cg00001583   chr1 199963470   chr1:199963470:SNP
-#5   chr1 153515502 cg00002646   chr1 153484034   chr1:153484034:SNP
-#6   chr1 169396706 cg00002719   chr1 169358424   chr1:169358424:SNP
-#  effect_allele other_allele effect_allele_freq mqtl_effect mqtl_pval
-#1             a            c             0.0612   0.2209044 1.025e-07
-#2             t            c             0.2456  -0.2167937 2.828e-27
-#3             d            i             0.0195   0.6823649 4.763e-06
-#4             a            g             0.8575   0.2051145 1.632e-16
-#5             t            c             0.8907  -0.1466724 6.052e-07
-#6             a            g             0.1224  -0.2381370 1.886e-19
-#  meta_directions  Isq samplesize  cis ld80_start  ld80_end ld80_proxies
-#1         ++++??+  0.0       5400 TRUE  230638673 230638673            0
-#2         ------- 66.4       6673 TRUE  166953455 166958937           14
-#3         ?+?????  0.0       1177 TRUE  166327630 166327630            1
-#4         +++++++  0.0       6673 TRUE  199963622 199967877            4
-#5         ---?---  0.0       5954 TRUE  153484148 153512347           44
-#6         -------  0.0       6673 TRUE  169361319 169447279           30
-#  ld80_dist                            code
-#1         0   cg00000363 chr1:230638673:SNP
-#2      5482   cg00001349 chr1:166953284:SNP
-#3         0 cg00001349 chr1:166319590:INDEL
-#4      4255   cg00001583 chr1:199963470:SNP
-#5     28199   cg00002646 chr1:153484034:SNP
-#6     85960   cg00002719 chr1:169358424:SNP
-#                                                                           pchic
-#1                                                                           <NA>
-#2                                                                           <NA>
-#3                                                                           <NA>
-#4                                                                           <NA>
-#5 Mon,Mac0,Mac1,Mac2,Neu,MK,MK,EP,EP,Ery,Ery,FoeT,nCD4,tCD4,aCD4,naCD4,nCD8,tCD8
-#6                                                                           <NA>
 
 data=as.data.table(clumped)
 
@@ -183,6 +131,7 @@ plotLOLA=function(locResults_all,plot_pref,height=35,width=18){
   ylim(0,350)+
   guides(fill = guide_legend(ncol=10))+
   theme(legend.text=element_text(size=10))
+  
   print(pl3)
   dev.off()
 } 
@@ -201,12 +150,13 @@ plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){
   #sub[,tissue_count:=paste0(tissue," ",length(unique(filename[which(p.adjust<=pval_lim)])),"/",tissue_count_all),by=c("tissue")]
   
    ##bubble plots
+  m<-max(locResults$oddsRatio)+1
   if(locResults$description[1]=="25states"){
   pdf(paste0(plot_pref,"_All_OR.pdf"),height=height,width=width+2)
   pl3=ggplot(locResults,aes(x=seg_explanation,y=oddsRatio))+
   geom_hline(yintercept=1, linetype="dotted")+
   geom_jitter(width = 0.2, aes(colour=tissue,size=pValueLog))+
-  facet_wrap(~userSet,scale="free_x",ncol=1)+
+  facet_wrap(~Annotation,scale="free_x",ncol=1)+
   theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
   scale_size(range=c(1,8))+
   #scale_color_manual(values=c("TRUE"="black","FALSE"="#EEEEEE"))+
@@ -214,8 +164,10 @@ plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){
   #guides(colour = guide_legend(override.aes = list(size=10,ncol=10))) +
   guides(fill = guide_legend(ncol=20))+
   scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,6),limits=c(0.2,6)) +
-  ylab("Odds ratio (log scale)") +
-  theme(legend.text=element_text(size=12))
+  theme(legend.text=element_text(size=12)) +
+  labs(y="Odds ratio (log scale)",x="State") +
+  scale_fill_brewer(type="qual")
+  
   print(pl3)
   dev.off()
 } 
@@ -241,55 +193,19 @@ table(data[,ill_pos==cpgpos,])
 
 data[,cpgchr:=gsub("23","X",cpgchr),]
 data[,cpgchr:=gsub("24","Y",cpgchr),]
-#data[,cpg_change:=ifelse(all(mqtl_effect>0),"mqtl_effect>0",ifelse(all(mqtl_effect<0),"mqtl_effect<0","ambivalent")),by=c("cpgchr","cpgstart","cpgend")]
+#data[,cpg_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("cpg")]
+#test<-unique(data.frame(data$cpg,data$cpg_cis))
+#table(test[,2])
 
-####run with internal background
-#grs_mqtl_effect=create_grs(data=data,selector=c("cpg_change=='mqtl_effect>0'","cpg_change=='mqtl_effect<0'","cpg_change=='ambivalent'","snp_change=='mqtl_effect>0'","snp_change=='mqtl_effect<0'","snp_change=='ambivalent'"))
-#produceLOLA_plots_intern(grs=grs_mqtl_effect,plot_pref="mqtl_effect",height=35,width=18)
-
-
+#ambivalent      FALSE       TRUE 
+#     11902       7214     170986 
 data[,cpg_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent")),by=c("cpgchr","cpgstart","cpgend")]
+test<-unique(data.frame(data$cpg,data$cpg_cis))
+table(test[,2])
+#ambivalent      FALSE       TRUE 
+#     28023       4267     157812
+
 grs_cis=create_grs(data=data,selector=c("cpg_cis=='TRUE'","cpg_cis=='FALSE'","cpg_cis=='ambivalent'"))
-
-table(data$cpg_cis)
-
-#ambivalent      FALSE       TRUE 
-#     58803       4917     219215 
-
-#filtered
-#ambivalent      FALSE       TRUE 
-#     54062       5076     210619
-
-table(data$cpg_cis)
-
-#ambivalent      FALSE       TRUE 
-#     54698       5098     211827 
-
-w<-which(data$cpg_cis=="FALSE")
-dim(unique(data[w,"cpg"]))
-#[1] 4260    1
-#4265
-
-w<-which(data$cpg_cis=="TRUE")
-dim(unique(data[w,"cpg"]))
-#[1] 157633      1
-#157795
-
-w<-which(data$cpg_cis=="ambivalent")
-dim(unique(data[w,"cpg"]))
-#[1]  27910    1
-#28019     1
-
-table(data$cis)
-
-#FALSE   TRUE 
-# 22913 246844 
-
-#FALSE   TRUE 
-# 23103 248520 
-
-#produceLOLA_plots_intern(grs=grs_cis,plot_pref="cis",height=35,width=18,recreate=TRUE)
-
 
 ####run with external background for CpGs
 
@@ -304,7 +220,7 @@ Illumina450_dt[,isGoDMC:=ifelse(cpgID%in%data$cpg,TRUE,FALSE),]
 Illumina450_dt<-Illumina450_dt[Illumina450_dt$cpgID%in%retaincpg,]
 
 df<-unique(data.frame(cpg=data$cpg,cpg_cis=data$cpg_cis))
-m<-match(Illumina450_dt$cpgID,data$cpg,)
+m<-match(Illumina450_dt$cpgID,data$cpg)
 df<-data[m,"cpg_cis"]
 Illumina450_dt$cpg_cis<-df
 
@@ -391,7 +307,7 @@ w<-which(is.na(m))
 lola_res0_matched<-lola_res0_matched[-w,]
 
 tiss<-read.table("jul2013.roadmapData_tissues.txt",sep="\t",he=T)
-m<-match(lola_res0_matched$dataSource,as.character(tiss$ID),)
+m<-match(lola_res0_matched$dataSource,as.character(tiss$ID))
 lola_res0_matched$tissue<-tiss[m,"Tissue"]
 
 plotLOLA(locResults_all=lola_res0_matched,plot_pref="cpg_extbg_chromstates_matched",height=10,width=18)
@@ -404,25 +320,33 @@ save(lola_res0_matched,file="../results/enrichments/lola_chromstates_mqtlcpg.rda
 w<-which(is.na(Illumina450_dt$cpg_cis))
 Illumina450_dt$cpg_cis[w]<-"0bg"
 n<-names(table(Illumina450_dt$cpg_cis))[-1]
+#[1] "ambivalent" "FALSE"      "TRUE"      
 
 t<-table(Illumina450_dt$quantiles,Illumina450_dt$cpg_cis)
 bg.matched.subset<-list()
 Illumina450_bg_matchedcis<-list()
 res_all<-list()
 l<-list()
+#proportion for each bin are different for each annotation category
+data.frame(t[,2]/sum(t[,2]),t[,3]/sum(t[,3]),t[,4]/sum(t[,4]))
+a<-apply(t,2,sum)
+#identify column with most annotations
+col<-apply(t[,-1],2,sum)
+col<-which(col==max(col))+1
 
 for (j in 1:length(n)){
 cat(n[j],"\n")
+#w<-which(t[,col]<5)
+#pr<-data.frame(t[-w,1]/t[-w,col])
 w<-which(t[,(j+1)]<5)
-pr<-data.frame(t[-w,1]/t[-w,2])
-m<-min(pr)*t[,2]
+pr<-data.frame(t[-w,1]/t[-w,(j+1)])
+m<-min(pr)*t[,(j+1)]
 
 controllist<-list()
 
-
 for (i in 1:dim(t)[1]){
 cat(i,"\n")
-if(t[i,1]>5&t[i,2]>0){
+if(t[i,1]>5&t[i,(j+1)]>0){
 subgroup<-Illumina450_dt[which(Illumina450_dt$quantiles==row.names(t)[i]&Illumina450_dt$isGoDMC==FALSE),]
 id<-subgroup[sample(nrow(subgroup), size=round(m[i],0), replace=FALSE),"cpgID"]
 controllist[[i]]<-id
@@ -465,21 +389,170 @@ w<-which(is.na(m))
 res_all<-res_all[-w,]
 #res_all$seg_explanation[which(is.na(m))]<-"expanded"
 
+
+plotLOLA(locResults_all=res_all,plot_pref="cpg_extbg_chromstates_matched_cis_updated",height=10,width=18)
+
+
+save(res_all,file="../results/enrichments/lola_chromstates_mqtlcpg_cis_updated.rdata")
+
 tiss<-read.table("jul2013.roadmapData_tissues.txt",sep="\t",he=T)
-m<-match(res_all$dataSource,as.character(tiss$ID),)
+m<-match(res_all$dataSource,as.character(tiss$ID))
 res_all$tissue<-tiss[m,"Tissue"]
+res_all$tissue<-gsub("GI_","",res_all$tissue)
+res_all$tissue<-tolower(res_all$tissue)
 
-plotLOLA(locResults_all=res_all,plot_pref="cpg_extbg_chromstates_matched_cis",height=10,width=18)
 
-plotLOLA_OR(locResults_all=res_all,plot_pref="cpg_extbg_chromstates_matched_cis_OR",height=10,width=18)
+simpleCap <- function(x) {
+  s <- strsplit(x, " ")[[1]]
+  paste(toupper(substring(s, 1,1)), substring(s, 2),
+        sep="", collapse=" ")
+}
 
-save(res_all,file="../results/enrichments/lola_chromstates_mqtlcpg_cis.rdata")
+
+res_all$tissue<-sapply(res_all$tissue, simpleCap)
+res_all$tissue<-gsub("Esc","ESC",res_all$tissue)
+res_all$tissue<-gsub("Ipsc","iPSC",res_all$tissue)
+res_all$Annotation<-res_all$userSet
+res_all$Annotation<-gsub("ambivalent (10941 regions)","cis+trans",res_all$Annotation,fixed=T)
+res_all$Annotation<-gsub("cis_only (107004 regions)","cis only",res_all$Annotation,fixed=T)
+res_all$Annotation<-gsub("trans_only (3864 regions)","trans only",res_all$Annotation,fixed=T)
+tiss<-read.table("~/repo/godmc_phase2_analysis/07_enrichments/jul2013.roadmapData_tissues.txt",sep="\t",he=T)
+m<-match(res_all$dataSource,tiss$ID)
+res_all$cellType<-tiss$Name[m]
+
+
+
+plotLOLA_OR(locResults_all=res_all,plot_pref="cpg_extbg_chromstates_matched_cis_OR_updated",height=10,width=18)
 
 res_all<-res_all[which(res_all$logOddsRatio!="-Inf"),]
 res_all[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
+res_all[,Pvalue:=10^(-pValueLog)]
+
+res_all2<-res_all[which(res_all$p.adjust<0.001),]
+dim(res_all2)
+
+res_all3<-res_all2[,c("seg_explanation","oddsRatio","Pvalue","p.adjust","support","b","c","d","cellType","tissue","Annotation")]
+names(res_all3)<-c("State","OR","Pvalue","FDR_Pvalue","support","b","c","d","CellType","Tissue","Annotation")                                                   
+
+write.table(res_all3,"TableSXX_LOLA_segmentationstate_updated.txt",sep="\t",quote=F,row.names=F,col.names=T)
+
+ORs<-res_all %>%
+  group_by(seg_explanation,userSet) %>%
+  summarise(mean = mean(oddsRatio),meanPadj=mean(p.adjust))
+
+ORs_cis<-ORs %>%
+  group_by(userSet) %>%
+  summarise(mean = mean(mean),meanPadj=mean(meanPadj))
+
+####
+notblood<-res_all[which(res_all$tissue!="Blood"),]
+notblood<-notblood[order(notblood$p.adjust,decreasing=F),]
+
+ORs_notblood<-notblood %>%
+  group_by(seg_explanation,userSet) %>%
+  summarise(mean = mean(oddsRatio),meanPadj=mean(p.adjust))
+names(ORs_notblood)<-paste0("notblood.",names(ORs_notblood))
+
+####
+blood<-res_all[which(res_all$tissue=="Blood"),]
+blood<-blood[order(blood$p.adjust,decreasing=F),]
+
+ORs_blood<-blood %>%
+  group_by(seg_explanation,userSet) %>%
+  summarise(mean = mean(oddsRatio),meanPadj=mean(p.adjust))
+names(ORs_blood)<-paste0("blood.",names(ORs_blood))
+####
+
+ORs_all<-data.frame(ORs,ORs_blood[,3:4],ORs_notblood[,3:4])
+ORs_all<-data.frame(ORs_all,OR_bloodminusother=(ORs_all$blood.mean-ORs_all$notblood.mean), ORfold=(ORs_all$blood.mean/ORs_all$notblood.mean)) #positive is stronger in blood
+mean(ORs_all[which(ORs_all$OR_bloodminusother>0&ORs_all$meanPadj<0.001),"ORfold"]) #[1] 1.122
+ORs_all[which(ORs_all$OR_bloodminusother>0&ORs_all$meanPadj<0.001&ORs_all$userSet=="cis_only (107004 regions)"),]
+ORs_all<-ORs_all[which(ORs_all$userSet=="cis_only (107004 regions)"),]
+
+w<-which(res_all$tissue=="Blood")
+res_all$blood<-"0-Not in Blood"
+res_all$blood[w]<-"Blood"
+
+w1<-which(res_all$Annotation=="cis only")
+w2<-which(res_all$Annotation=="cis+trans")
+w3<-which(res_all$Annotation=="trans only")
+summary(lm(res_all$oddsRatio~res_all$blood))
+summary(lm(res_all$oddsRatio[w1]~res_all$blood[w1]))
+summary(lm(res_all$oddsRatio[w2]~res_all$blood[w2]))
+summary(lm(res_all$oddsRatio[w3]~res_all$blood[w3]))
+
+enh<-res_all[grep("Enh",res_all$seg_explanation),]
+w1<-which(enh$Annotation=="cis only")
+w2<-which(enh$Annotation=="cis+trans")
+w3<-which(enh$Annotation=="trans only")
+summary(lm(enh$oddsRatio~enh$blood))
+summary(lm(enh$oddsRatio[w1]~enh$blood[w1]))
+summary(lm(enh$oddsRatio[w2]~enh$blood[w2]))
+summary(lm(enh$oddsRatio[w3]~enh$blood[w3]))
+
+prom<-res_all[grep("Prom",res_all$seg_explanation),]
+w1<-which(prom$Annotation=="cis only")
+w2<-which(prom$Annotation=="cis+trans")
+w3<-which(prom$Annotation=="trans only")
+summary(lm(prom$oddsRatio~prom$blood))
+summary(lm(prom$oddsRatio[w1]~prom$blood[w1]))
+summary(lm(prom$oddsRatio[w2]~prom$blood[w2]))
+summary(lm(prom$oddsRatio[w3]~prom$blood[w3]))
+
+dnase<-res_all[grep("DNase",res_all$seg_explanation),]
+summary(lm(dnase$oddsRatio~dnase$blood))
+tx<-res_all[grep("Tx",res_all$seg_explanation),]
+summary(lm(tx$oddsRatio~tx$blood))
+
+#cis only  cis+trans trans only 
+#      3175       3175       3175 
+
+
+ORs<-data.frame(ORs)
+o<-order(ORs$meanPadj)
+ORs<-ORs[o,]
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("PromD1","PromD2","PromBiv","PromU","PromP")),]
+ORs1<-ORs1[which(ORs1$userSet=="cis_only (107004 regions)"),]
+mean(ORs1$mean)
+#1.313537
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("PromD1","PromD2","PromBiv","PromU","PromP")),]
+ORs1<-ORs1[which(ORs1$userSet=="ambivalent (10941 regions)"),]
+mean(ORs1$mean)
+#1.407478
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("PromD1","PromD2","PromBiv","PromU","PromP")),]
+ORs1<-ORs1[which(ORs1$userSet=="trans_only (3864 regions)"),]
+mean(ORs1$mean)
+#[1] 1.389386
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("EnhW1","EnhW2","EnhAF","EnhA2","EnhA1","EnhAc")),]
+ORs1<-ORs1[which(ORs1$userSet=="cis_only (107004 regions)"),]
+mean(ORs1$mean)
+#[1] 1.371817
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("EnhW1","EnhW2","EnhAF","EnhA2","EnhA1","EnhAc")),]
+ORs1<-ORs1[which(ORs1$userSet=="ambivalent (10941 regions)"),]
+mean(ORs1$mean)
+#1.648661
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("EnhW1","EnhW2","EnhAF","EnhA2","EnhA1","EnhAc")),]
+ORs1<-ORs1[which(ORs1$userSet=="trans_only (3864 regions)"),]
+mean(ORs1$mean)
+#[1] 0.9716326
+
+ORs1<-ORs[which(ORs$seg_explanation%in%c("TssA")),]
+
+write.table(res_all,"../results/enrichments/lola_chromstates_mqtlcpg_cis_updated.txt",sep="\t",col.names=T,quote=F,row.names=F)
 res_all<-res_all[which(res_all$p.adjust<0.001),]
 
 #
+trans<-res_all[res_all$userSet=="trans_only (3864 regions)",]
+df<-unique(data.frame(amb$seg_explanation,amb$tissue))
+df<-data.frame(table(df[,1]))
+dim(df) #127
+dim(df[df$Freq>3,]) #12
 
 amb<-unique(res_all[userSet=="ambivalent (10941 regions)",])
 df<-unique(data.frame(amb$seg_explanation,amb$tissue))
@@ -492,6 +565,30 @@ df<-unique(data.frame(cis$seg_explanation,cis$tissue))
 df<-data.frame(table(df[,1]))
 dim(df) #127
 dim(df[df$Freq>3,]) #12
+
+sub_blood<-sub[sub$tissue=="BLOOD",]
+
+amb<-sub_blood[sub_blood$userSet=="ambivalent (10941 regions)",]
+amb<-amb[amb$p.adjust<0.05&amb$oddsRatio>0,]
+table(amb$seg_explanation)
+
+cis<-sub_blood[sub_blood$userSet=="cis_only (107004 regions)",]
+cis<-cis[cis$p.adjust<0.05&cis$oddsRatio>0,]
+table(cis$seg_explanation)
+
+
+trans<-sub_blood[sub_blood$userSet=="trans_only (3864 regions)",]
+trans<-trans[trans$p.adjust<0.05&trans$oddsRatio>0,]
+table(trans$seg_explanation)
+
+
+prom<-data.frame(sub_blood[grep("Prom",sub_blood$seg_explanation),])
+prom_amb<-prom[prom$userSet=="ambivalent (10941 regions)",]
+prom_cis<-prom[prom$userSet=="cis_only (107004 regions)",]
+prom_trans<-prom[prom$userSet=="trans_only (3864 regions)",]
+
+prom<-data.frame(sub_blood[grep("PromD1",sub_blood$seg_explanation),])
+prom[prom$p.adjust<0.05,c(1,5,22,26,27)]
 
 
 ####

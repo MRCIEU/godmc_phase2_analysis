@@ -69,8 +69,8 @@ summarise(
 
 g<-grepl("metabolites__", dat$fn) 
 dat2<-dat[g==FALSE,] #1843
-dat2<-dat2[which(dat2$nsnp>=5),] #1843
-dat2<-dat2[which(dat2$id.y %in% temp$id.y),] #302
+dat2<-dat2[which(dat2$nsnp>=5),] #1843 1325
+dat2<-dat2[which(dat2$id.y %in% temp$id.y),] #302 125
 
 min(dat2$binom4)
 #[1] 3.048592e-39

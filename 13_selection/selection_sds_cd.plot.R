@@ -1,4 +1,79 @@
 library(ggplot2)
+contingency<-function (af, prop, odds_ratio, eps = 1e-15) 
+{
+    a <- odds_ratio - 1
+    b <- (af + prop) * (1 - odds_ratio) - 1
+    c_ <- odds_ratio * af * prop
+    if (abs(a) < eps) {
+        z <- -c_/b
+    }
+    else {
+        d <- b^2 - 4 * a * c_
+        if (d < eps * eps) {
+            s <- 0
+        }
+        else {
+            s <- c(-1, 1)
+        }
+        z <- (-b + s * sqrt(max(0, d)))/(2 * a)
+    }
+    y <- vapply(z, function(a) zapsmall(matrix(c(a, prop - a, 
+        af - a, 1 + a - af - prop), 2, 2)), matrix(0, 2, 2))
+    i <- apply(y, 3, function(u) all(u >= 0))
+    return(y[, , i])
+}
+
+get_population_allele_frequency<-function (af, prop, odds_ratio, prevalence) 
+{
+    co <- contingency(af, prop, odds_ratio)
+    af_controls <- co[1, 2]/(co[1, 2] + co[2, 2])
+    af_cases <- co[1, 1]/(co[1, 1] + co[2, 1])
+    af <- af_controls * (1 - prevalence) + af_cases * prevalence
+    return(af)
+}
+
+
+get_r_from_lor <- function(lor, af, ncase, ncontrol, prevalence, model="logit")
+{
+        stopifnot(length(lor) == length(af))
+        stopifnot(length(ncase) == 1 | length(ncase) == length(lor))
+        stopifnot(length(ncontrol) == 1 | length(ncontrol) == length(lor))
+        stopifnot(length(prevalence) == 1 | length(prevalence) == length(lor))
+        if(length(prevalence) == 1 & length(lor) != 1)
+        {
+                prevalence <- rep(prevalence, length(lor))
+        }
+        if(length(ncase) == 1 & length(lor) != 1)
+        {
+                ncase <- rep(ncase, length(lor))
+        }
+        if(length(ncontrol) == 1 & length(lor) != 1)
+        {
+                ncontrol <- rep(ncontrol, length(lor))
+        }
+
+        nsnp <- length(lor)
+        r <- array(NA, nsnp)
+        for(i in 1:nsnp)
+        {
+                if(model == "logit")
+                {
+                        ve <- pi^2/3
+                } else if(model == "probit") {
+                        ve <- 1
+                } else {
+                        stop("Model must be probit or logit")
+                }
+                popaf <- get_population_allele_frequency(af[i], ncase[i] / (ncase[i] + ncontrol[i]), exp(lor[i]), prevalence[i])
+                vg <- lor[i]^2 * popaf * (1-popaf)
+                r[i] <- sqrt(vg / (vg + ve) / 0.58)
+        }
+        return(r)
+}
+
+prevalence=0.005
+ncase=5956
+ncontrol=14927
 
 load("../results/enrichments/snpcontrolsets_selection.rdata")
 w<-which(is.na(f.all$snp_cis))
@@ -18,21 +93,21 @@ f.all$min_log10pval<--log10(as.numeric(f.all$min_log10pval))
 w<-which(f.all$mqtl_clumped=="TRUE")
 f.all2<-f.all[w,]
 
-#r2<-read.table("./cd_sds/vars.GIANT_HEIGHT_mqtl",sep=" ",he=T)
-#r2[,8]<-gsub("\\([^\\)]+\\)","",as.character(r2[,5])) #260 #40
+r2<-read.table("./cd_sds/vars.IBD_CD_mqtl_6cols",sep=" ",he=T)
+r2[,8]<-gsub("\\([^\\)]+\\)","",as.character(r2[,5])) #260 #40
 
 r3<-read.table("./cd_sds/vars.IBD_CD_sds",sep=" ",he=T)
 r3[,8]<-gsub("\\([^\\)]+\\)","",as.character(r3[,5]))
 
-#mqtl<-paste0("chr",unique(r2[,8]),":SNP")
+mqtl<-paste0("chr",unique(r2[,8]),":SNP")
 
 f.all$cd_mqtl<-"no mqtl"
 
 w<-which(f.all$mqtl_clumped=="TRUE")
 f.all$cd_mqtl[w]<-"clumped mqtl"
 
-#w<-which(f.all$SNP%in%mqtl)
-#f.all$cd_mqtl[w]<-"cd mqtl"
+w<-which(f.all$SNP%in%mqtl)
+f.all$cd_mqtl[w]<-"cd mqtl"
 
 sds<-paste0("chr",r3[,8],":SNP")
 w<-which(f.all$SNP%in%sds)
@@ -43,14 +118,14 @@ sds[w]<-gsub(":SNP",":INDEL",sds[w])}
 w<-which(f.all$SNP%in%sds)
 f.all$cd_mqtl[w]<-"cd mqtl sds"
 
-#ES = 2β^2f(1 − f)
-f.all$max_abs_Effect_sq<-f.all$max_abs_Effect^2
-f.all$es<-(2*f.all$max_abs_Effect_sq)*(f.all$MAF*(1-f.all$MAF))
+##ES = 2β^2f(1 − f)
+#f.all$max_abs_Effect_sq<-f.all$max_abs_Effect^2
+#f.all$es<-(2*f.all$max_abs_Effect_sq)*(f.all$MAF*(1-f.all$MAF))
 
-p1<-ggplot(f.all, aes(es, colour=cd_mqtl)) +
-geom_density() +
-labs(x="Genetic Variance")
-ggsave(p1,file="Mqtl_GeneticVariance.pdf")
+#p1<-ggplot(f.all, aes(es, colour=cd_mqtl)) +
+#geom_density() +
+#labs(x="Genetic Variance")
+#ggsave(p1,file="Mqtl_GeneticVariance.pdf")
 
 #how much of the cd variance
 
@@ -64,34 +139,37 @@ h[w,"SNP"]<-paste0("chr",h[w,"CHR"],":",h$BP[w],":","INDEL")
 #bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
 #m<-match(h$SNP,bim$V2)
 #h<-data.frame(SNP=paste0("chr",bim[m,1],":",bim[m,4],":SNP"),h)
-h$b_sq<-h$OR^2
-h$MAF<-h$FRQ_A_5956
+
+#h$b_sq<-h$OR^2
+h$MAF<-h$FRQ_U_14927
 w<-which(h$MAF>0.5)
 h$MAF[w]<-1-h$MAF[w]
-h$es<-(2*h$b_sq)*(h$MAF*(1-h$MAF))
+#h$es<-(2*h$b_sq)*(h$MAF*(1-h$MAF))
+h$logodds<-log(h$OR)
+h$es<-get_r_from_lor (lor=h$logodds, af=h$MAF, ncase=ncase, ncontrol=ncontrol, prevalence=prevalence, model="logit")
 
-r<-read.table("./cd_sds/cd_snps.txt",he=F,sep="\t")
+r<-read.table("./cd_sds/cd_snps_chrpos.txt",he=F,sep="\t")
 
 h$cd_mqtl<-"no_mqtl"
-w<-which(h$SNP.1%in%r$V1)
-h$cd_mqtl[w]<-"cd SNPs (n=33)"
+w<-which(h$SNP%in%r$V1)
+h$cd_mqtl[w]<-"cd SNPs (n=31)"
 h_all<-h[w,]
 
-#w<-which(h$SNP%in%mqtl)
-#h$cd_mqtl[w]<-"cd mqtl"
-#h_all2<-h[w,]
+w<-which(h$SNP%in%mqtl)
+h$cd_mqtl[w]<-"cd mqtl (n=60)"
+h_all2<-h[w,]
 
 w<-which(h$SNP%in%sds)
 h$cd_mqtl[w]<-"cd mqtl sds (n=3)"
 h_all3<-h[w,]
 
 h_all<-rbind(h_all,h_all2,h_all3)
-h_all<-rbind(h_all,h_all3)
+#h_all<-rbind(h_all,h_all3)
 
 table(h_all$cd_mqtl)
 
-#cd mqtl sds (n=3)    cd SNPs (n=33) 
-#                3                33 
+#   cd mqtl (n=60) cd mqtl sds (n=3)    cd SNPs (n=31) 
+#               60                 3                31 
 
 p1<-ggplot(h_all, aes(es, colour=cd_mqtl)) +
 geom_density() +
@@ -100,12 +178,19 @@ ggsave(p1,file="cd_GeneticVariance.pdf")
 
 library(dplyr)
 h_all%>%group_by(cd_mqtl)%>%summarise(es=mean(es,na.rm=T))
+# A tibble: 3 x 2
+#            cd_mqtl         es
+#              <chr>      <dbl>
+#1    cd mqtl (n=60) 0.06206499
+#2 cd mqtl sds (n=3) 0.06075588
+#3    cd SNPs (n=31) 0.03340113
 
-# A tibble: 2 x 2
-#            height_mqtl          es
-#                  <chr>       <dbl>
-#1 height mqtl sds (n=4) 0.013163220
-#2    height SNPs (n=60) 0.005124636
 
+h_all$cd_mqtl <- factor(h_all$cd_mqtl, levels = c("cd SNPs (n=31)","cd mqtl (n=60)", "cd mqtl sds (n=3)"))
+p1<-ggplot(h_all, aes(y=es, x=cd_mqtl)) +
+  geom_boxplot() +
+  labs(y="Genetic Variance",x="mQTL category")
+ggsave(p1,file="CD_GeneticVariance_boxplot.pdf")
 
+save(h_all,file="./cd_sds/cd_plot.Robj")
 

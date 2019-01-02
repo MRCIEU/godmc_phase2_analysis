@@ -736,7 +736,8 @@ summary(lm(rsq ~ TotalSampleSize, a))
 temp1 <- subset(clumped2, cpgchr == snpchr)
 temp1$posdif <- temp1$snppos - temp1$cpgpos 
 cisdist<-temp1[which(temp1$cis=="TRUE"),]
-mediandist<-round(median(abs(cisdist$posdif))/1000,0)
+mediandist<-round(median(abs(cisdist$posdif))/1000,0) #36
+iqrdist<-round(iqr(abs(cisdist$posdif))/1000,0)
 temp1$log10pval<--log10(temp1$pval)
 #p1 <- ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
 #	geom_density() +
@@ -745,7 +746,7 @@ temp1$log10pval<--log10(temp1$pval)
 
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
 geom_point(size=0.1) +
-labs(x="Distance of SNP from CpG",y="-log10 (mqtl Pvalue)")
+labs(x="Distance of SNP from methylation site",y="-log10 (mQTL Pvalue)")
 
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
   stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
@@ -767,12 +768,15 @@ temp1$log10pval<--log10(temp1$pval)
 #	annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
-  stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
+  #stat_density_2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
+  # stat_bin2d(bins=1000, aes(fill = ..density..)) +
+  stat_bin2d(bins=1000, alpha=0.1) +
+  #geom_bin2d(bins=3000) +
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance of SNP from CpG",y="-log10 (mQTL Pvalue)")
-  scale_fill_gradientn(colours = colorRampPalette(c("white", blues9))(256))
-
+  labs(x="Distance of SNP from methylation site",y="-log10 (mQTL Pvalue)")
+  #scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+#scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 
 
@@ -818,7 +822,7 @@ temp4<-data.frame(temp4,Ncatsd=as.character(labs[m,-1]))
 p3 <- ggplot(temp4, aes(x=Direction, y=HetISq)) +
 geom_boxplot(fill="red") +
 theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5,size=4)) +
-labs(y="I^2 for mQTL")
+ylab(bquote(I^2))
 
 temp4$Effect_abs<-abs(temp4$Effect)
 temp4$i2cat<-cut(as.numeric(as.character(temp4$HetISq)), breaks = seq(0,100,by=10))
@@ -838,11 +842,23 @@ temp4<-data.frame(temp4,maxbeta=abs(m[m2,]))
 #  return(data.frame(y = median(x), label = length(x)))
 #}
 
+library(dplyr)
+
+#labeldat = temp4 %>%
+#     group_by(factor(i2cat)) %>%
+#     summarize(ypos = max(Effect_abs)+0.1 ) %>%
+#     inner_join(., labs)
+labels<-unique(data.frame(i2cat=temp4$i2cat,maxbeta=temp4$maxbeta,Ncati2=temp4$Ncati2))
+
 p4<-ggplot(temp4, aes(x=i2cat, y=Effect_abs)) +
 geom_boxplot() +
 #stat_summary(fun.data = n_fun, geom = "text", fun.y = median,position=position_dodge(width=0.9), size=3) +
-geom_text(data=temp4, aes(x=temp4$i2cat,y = (maxbeta+0.1),label = Ncati2),vjust = 0,size=3) +
-labs(y="Beta coefficient",x="I^2 category") 
+#geom_text(data=temp4, aes(x=temp4$i2cat,y = (maxbeta+0.1),label = Ncati2),vjust = 0,size=3) +
+geom_text(data = labels, aes(label = Ncati2, y = maxbeta+0.1), 
+               position = position_dodge(width = .75), 
+               show.legend = FALSE ) +
+labs(y="Beta coefficient") +
+xlab(bquote(I^2 ~ category))
 
 pdf("./images/heterogeneity_qc.pdf", width=12, height=7)
 grid.arrange(p1,p2,p3,p4,ncol=2,nrow=2)
@@ -981,15 +997,38 @@ ggsave(p1,file="./images/qcatvsbeta.pdf",height=6,width=16)
 
 # Conditioanl 
 
-load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_conditional.rdata")
+load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_conditional.rdata") #1321186
+sig<-conditional[which(conditional$cis==TRUE & conditional$p<1e-8 | conditional$cis==FALSE & conditional$p<1e-14),]#1321186
+sig<-conditional[which(conditional$cis==TRUE & conditional$pJ<1e-8 | conditional$cis==FALSE & conditional$pJ<1e-14),] #1058292
 
+table(sig$cis)
 
+table(sig$cis)
+
+#  FALSE    TRUE 
+#  47427 1010865 
+dim(sig)
+#[1] 1058292      16
 
 ## Number of independent SNPs per cis and trans
 
-sig <- subset(conditional, (cis & p < 1e-8))
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
 	dplyr::summarise(numbersnps=n(),samplesize=mean(n), max_samplesize=max(n),min_samplesize=min(n))
+
+length(which(clump_counts$samplesize>27750))
+#5112
+
+cis_counts<-clump_counts[clump_counts$cis==TRUE,]
+trans_counts<-clump_counts[clump_counts$cis!=TRUE,]
+median(cis_counts$numbersnps) #3
+median(trans_counts$numbersnps) #1
+median(clump_counts$numbersnps) #2
+min(cis_counts$numbersnps) #1
+min(trans_counts$numbersnps) #1
+min(clump_counts$numbersnps) #1
+max(cis_counts$numbersnps) #98
+max(trans_counts$numbersnps) #51
+max(clump_counts$numbersnps) #98
 
 
 p1 <- ggplot(clump_counts, aes(x=numbersnps)) +
@@ -1024,9 +1063,6 @@ p1<-ggplot(df, aes(max_samplesize, colour = cat)) +
 geom_density()
 ggsave(p1, file="./images/conditional_counts_cpg_maxsamplesize_density.pdf", width=7, height=7)
 
-sig <- subset(conditional, (!cis & p < 1e-14))
-clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
-	dplyr::summarise(numbersnps=n(),samplesize=mean(n), max_samplesize=max(n),min_samplesize=min(n))
 
 df<-data.frame(clump_counts)
 w1<-which(df$numbersnps<5)
@@ -1068,23 +1104,52 @@ clump_countsf7 <- dplyr::group_by(sigf7, gene, cis) %>%
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
 	dplyr::summarise(numbersnps=n(),data="godmc")
 
+
 df<-rbind(clump_counts,clump_countsf7)
 p1<-ggplot(df, aes(x=numbersnps,colour=data)) +
 geom_density() +
 xlim(0, 20)
 ggsave(p1, file="./images/conditional_counts_cpg_cis_godmc_vs_aries.pdf", width=7, height=7)
 
-df<-data.frame(table(clump_counts$numbersnps),data="godmc")
-df7<-data.frame(table(clump_countsf7$numbersnps),data="aries f7")
-df<-rbind(df,df7)
+#bonder
+bonder<-read.table("Bonder.txt",sep="\t",he=T)
+bonder<-data.frame(Var1=bonder$noSNPs,Freq=bonder$Bonder,data="Bonder et al. (n=3,841)")
+bonder$perc<-bonder$Freq/sum(bonder$Freq)
 
-p1<-ggplot(df, aes(x=as.factor(Var1),y=as.numeric(Freq),fill=data)) +
+clump_counts_cis<-clump_counts[clump_counts$cis=="TRUE",]
+df<-data.frame(table(clump_counts_cis$numbersnps),data="GoDMC (n=27,750)")
+w<-which(as.numeric(as.character(df$Var1))<26)
+s<-sum(df[-w,"Freq"])
+df<-rbind(df[w,],data.frame(Var1=">25",Freq=s,data="GoDMC (n=27,750)"))
+sum(df$Freq)
+#[1] 181467
+df$perc<-df$Freq/sum(df$Freq)
+
+clump_counts_trans<-clump_counts[clump_counts$cis=="FALSE",]
+df_trans<-data.frame(table(clump_counts_trans$numbersnps),data="GoDMC (n=27,750)")
+w<-which(as.numeric(as.character(df_trans$Var1))<26)
+s<-sum(df_trans[-w,"Freq"])
+df_trans<-rbind(df_trans[w,],data.frame(Var1=">25",Freq=s,data="GoDMC (n=27,750)"))
+sum(df_trans$Freq)
+#[1] 181467
+df_trans$perc<-df_trans$Freq/sum(df_trans$Freq)
+
+
+df7<-data.frame(table(clump_countsf7$numbersnps),data="ARIES childhood (n=834)")
+df7$perc<-df7$Freq/sum(df7$Freq)
+
+df<-rbind(df,df7,bonder)
+df$data<-factor(df$data, levels = c("GoDMC (n=27,750)","Bonder et al. (n=3,841)","ARIES childhood (n=834)"))
+
+pdf("./images/conditional_counts_cpg_cis_godmc_vs_aries_bonder_barplot.pdf", width=7, height=7)
+p1<-ggplot(df, aes(x=as.factor(Var1),y=as.numeric(perc),fill=data)) +
 geom_bar(stat="identity",position="dodge") +
-labs(x="Number of SNPs per CpG",y="Count")
-ggsave(p1, file="./images/conditional_counts_cpg_cis_godmc_vs_aries_barplot.pdf", width=7, height=7)
+scale_fill_brewer(type="qual")+
+labs(x="Number of SNPs per CpG",y="Fraction of CpGs with a cis association",fill="study")
+#ggsave(p1, file="./images/conditional_counts_cpg_cis_godmc_vs_aries_bonder_barplot.pdf", device="pdf",width=7, height=7)
+print(p1)
+dev.off()
 
-p1 <- ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
-geom_bar(stat="identity") +
 
 ## Number of hits per SNP
 
@@ -1115,8 +1180,5 @@ cl_counts <- dplyr::group_by(clumped2, cpg, cis) %>%
 
 #In the conditional analysis there is one probe with 113 cis associations (cg13601595) and 160 probes with more than 50 cisassociations. 
 #In clumped there are no probes with more than 50 associations and only 29 probes with more than 4 associations.
-
-
-
 
 
