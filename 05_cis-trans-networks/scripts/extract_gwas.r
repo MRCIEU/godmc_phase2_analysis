@@ -1,59 +1,39 @@
-# For each SNP in the clusters find if they are associated with a particular trait
-
-# Take every cluster with more than 10 CpGs
-
-library(dplyr)
-library(data.table)
-
-load("../results/graph.rdata")
-communities <- merge(dat, mem, by.x="creg", by.y="cpg")
-
-communities <- bind_rows(
-	data_frame(cpg = communities$creg, snp=communities$snp, cluster=communities$cluster, type="creg"),
-	data_frame(cpg = communities$tcpg, snp=communities$snp, cluster=communities$cluster, type="tcpg")
-)
-communities$id <- 1:nrow(communities)
-
-comms <- group_by(communities, cluster) %>% summarise(nsnp=length(unique(snp)), ncpg=length(unique(cpg))) %>% arrange(desc(nsnp)) %>% filter(nsnp >= 2)
-
-selcom <- subset(communities, cluster %in% comms$cluster) %>% arrange(cluster)
-
-
-# convert to rsids
-
-
-snp_1kg <- fread("../../10_mr-cpg-gwas/data/eur.bim.orig")
-
-snp_1kg$c1 <- nchar(snp_1kg$V5)
-snp_1kg$c2 <- nchar(snp_1kg$V6)
-
-snp_1kg <- subset(snp_1kg, c1 == 1 & c2 == 1)
-snp_1kg$snp <- paste0("chr", snp_1kg$V1, ":", snp_1kg$V4, ":SNP")
-snp_1kg <- subset(snp_1kg, !duplicated(snp))
-
-selcom <- merge(selcom, subset(snp_1kg, select=c(V2, snp)), by="snp")
-
-write.table(unique(selcom$V2), "../data/cluster_rsids.txt", row=F, col=F, qu=F)
-
-
-# fn <- list.files("../../10_mr-cpg-gwas/data/extracted/")
-# fn <- fn[grepl("filtered_gwas_\\d", fn)]
-
-fn <- list.files("../../data/gwas", full.names=TRUE) %>% grep("txt.gz$", ., value=TRUE)
-
-l <- list()
-for(i in 1:length(fn))
+if(!require(gwasvcftools))
 {
-	message(i, " ", fn[i])
-	cmd <- paste0("zfgrep -wf ../data/cluster_rsids.txt ", fn[i], " > ", fn[i], ".cluster")
-	system(cmd)
-	x <- read.table(paste0(fn[i], ".cluster"), he=FALSE)
-	x$i <- i
-	x$fn <- fn[i]
-	l[[i]] <- x
+	if(!required(devtools)) install.packages("devtools")
+	devtools::install_github("MRCIEU/gwasvcftools")
 }
+library(gwasvcftools)
+library(argparse)
 
-save(l, selcom, file="../data/cluster_extract.rdata")
+# create parser object
+parser <- ArgumentParser()
+parser$add_argument('--entities', required=TRUE)
+parser$add_argument('--bcf-dir', required=TRUE)
+parser$add_argument('--gwas-id', required=TRUE)
+parser$add_argument('--out', required=TRUE)
+parser$add_argument('--bfile', required=TRUE)
+parser$add_argument('--get-proxies', default='yes')
+parser$add_argument('--vcf-ref', required=FALSE)
+parser$add_argument('--tag-r2', type="double", default=0.6)
+parser$add_argument('--tag-kb', type="double", default=5000)
+parser$add_argument('--tag-nsnp', type="double", default=5000)
+parser$add_argument('--palindrome-freq', type="double", default=0.4)
+parser$add_argument('--threads', type="integer", default=1)
+parser$add_argument('--no-clean', action="store_true", default=FALSE)
 
+args <- parser$parse_args()
+print(args)
+tempname <- tempfile(pattern="extract", tmpdir=dirname(args[['out']]))
+bcf <- file.path(args[['bcf_dir']], args[['gwas_id']], "harmonised.bcf")
+load(args[['entities']])
 
+snplist <- subset(entities, type != "creg_cpg") %$%
+	data_frame(V1=snp_chr, V2=snp_pos, V3=snp_a1, V4=snp_a2, V5="b37", V6=snp_rsid) %>%
+	subset(!duplicated(paste(V1,V2)))
+
+extracted <- gwasvcftools::extract(bcf, snplist, tempname, args[['get_proxies']], args[["bfile"]], args[["vcf_ref"]], threads=args[["threads"]])
+extracted$mrbaseid <- args[['gwas_id']]
+
+save(extracted, file=args[["out"]])
 

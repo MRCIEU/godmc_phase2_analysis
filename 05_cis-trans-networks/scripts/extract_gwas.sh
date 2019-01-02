@@ -1,18 +1,15 @@
 #!/bin/bash
 
-#SBATCH --job-name=extr
-#SBATCH --nodes=1 --mem=20G --time=0-04:00:00
-#SBATCH --partition=veryshort
+id=$1
 
-echo "Running on ${HOSTNAME}"
-module add R/3.2.3-foss-2016a
+dir="/mnt/storage/private/mrcieu/research/mr-eve"
 
-if [ -n "${1}" ]; then
-  echo "${1}"
-  SLURM_ARRAY_TASK_ID=${1}
-fi
-
-cd ~/godmc/godmc_phase2_analysis/05_cis-trans-networks/scripts
-
-Rscript extract_gwas.r
+Rscript extract_gwas.r \
+--entities ../data/entity_info.rdata \
+--bcf-dir $dir/gwas-files \
+--out ../data/extract_gwas/$id.rdata \
+--bfile $dir/vcf-reference-datasets/ukb/ukb_ref \
+--vcf-ref $dir/vcf-reference-datasets/1000g/1kg_v3_nomult.bcf \
+--gwas-id $id \
+--get-proxies yes
 
