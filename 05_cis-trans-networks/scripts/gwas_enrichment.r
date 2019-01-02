@@ -39,14 +39,15 @@ temp2 <- temp1 %>%
 
 dat <- expand.grid(
 	clust=unique(temp2$cluster), 
-	id=unique(extracted$mrbaseid),
-	nsnp=NA,
-	min_p=NA,
-	fisher=NA
+	id=unique(extracted$mrbaseid)
 )
+dat$j <- 1:nrow(dat)
 
 o <- mclapply(1:nrow(dat), run, mc.cores=20)
-save(o, entities, file="../results/gwas_enrichment.rdata")
+p <- bind_rows(o)
+names(p) <- c("lor", "se", "z", "p", "nsnp", "j")
+gwas_enrichment <- inner_join(dat, p)
+save(gwas_enrichment, file="../results/gwas_enrichment.rdata")
 
 
 
