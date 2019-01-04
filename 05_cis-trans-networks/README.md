@@ -96,4 +96,14 @@ Add extended database which includes roadmap
 Look at differences across tissues for the same motif
 
 
+## Enrichments for GWAS signals
+
+Question: Are the regions marked by a community enriched for a GWAS trait more than expected by chance, comparing against the p-values for all other community regions.
+
+1. `scripts/extract_gwas_setup.r` - Get a representative SNP for each region (basically just the closest 1kg common variant to the CpG)
+2. `scripts/extract_gwas.sh` - Extract all community representative SNPs from GWAS datasets
+3. `scripts/extract_gwas_finalise.r` - Aggregate extraction
+4. `scripts/gwas_enrichment.sh` - Perform enrichment analysis
+5. `scripts/gwas_enrichment_plots.r` - Generate plots
+
 
