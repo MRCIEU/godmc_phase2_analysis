@@ -83,8 +83,8 @@ summarise(missed_overall = prod(missed), power_overall=1-missed_overall, cist="t
 Power of full dataset
 
 ```{r}
-x1 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=28000,df=1,sig.level=1e-10)$power, missed_overall = 1 - power_overall, cist="cis", what="phase2")
-x2 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=28000,df=1,sig.level=1e-14)$power, missed_overall = 1 - power_overall, cist="trans", what="phase2")
+x1 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=27750,df=1,sig.level=1e-8)$power, missed_overall = 1 - power_overall, cist="cis", what="phase2")
+x2 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=27750,df=1,sig.level=1e-14)$power, missed_overall = 1 - power_overall, cist="trans", what="phase2")
 ```
 
 
@@ -140,13 +140,11 @@ geom_point(aes(colour=key)) +
 scale_x_log10() +
 facet_grid(key ~ cist, scale="free_y") +
 labs(x="% variance explained by mQTL", y = "Counts")
+```
 
-ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
-geom_smooth(aes(colour=key)) +
-scale_x_log10() +
-scale_y_log10() +
-facet_grid(. ~ cist) +
-labs(x="% variance explained by mQTL", y = "Counts")
+Same as before but now log the counts and plot everything together
+
+```{r}
 
 ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
 geom_point(aes(colour=key)) +
@@ -157,10 +155,22 @@ labs(x="% variance explained by mQTL", y = "Counts")
 
 ```
 
+Instead of showing the actual points, now just show a smoothed line to represent the distribution
+
+```{r}
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_smooth(aes(colour=key)) +
+scale_x_log10() +
+scale_y_log10() +
+facet_grid(. ~ cist) +
+labs(x="% variance explained by mQTL", y = "Counts")
+
+```
 
 ## Probability of being significant in meta-analysis
 
-After detection in phase 1, what is the probability of being significant in the overall meta analysis? We have to assume that the meta analysis is basically an overall analysis (i.e. no heternogeneity). So, if one mQTL is significant at 1e-5 in one study then what is the probability of it being significant at 1e-10 in the full meta analysis of 28k samples?
+After detection in phase 1, what is the probability of being significant in the overall meta analysis? We have to assume that the meta analysis is basically an overall analysis (i.e. no heternogeneity). So, if one mQTL is significant at 1e-5 in one study then what is the probability of it being significant at 1e-8 in the full meta analysis of 28k samples?
 
 The basic answer is that if a true positive is detected at phase 1 it will almost certainly be detected in phase 2.
 
@@ -216,7 +226,7 @@ make_geno <- function(nid, nsnp, af)
 
 param <- expand.grid(
 	r2 = seq(0.001, 0.01, by=0.001),
-	ntot = 28000,
+	ntot = 27750,
 	nsub = c(500,1000,2000),
 	nsim = 1:100,
 	totpval = NA,
@@ -233,7 +243,7 @@ for(i in 1:nrow(param))
 	param$subpval[i] <- fast_assoc(y1,x1)$pval
 	param$totpval[i] <- fast_assoc(y,x)$pval
 }
-table(param$totpval < 1e-10, param$subpval < 1e-5)
+table(param$totpval < 1e-8, param$subpval < 1e-5)
 table(param$totpval < 1e-14, param$subpval < 1e-5)
 table(param$subpval < param$totpval)
 ```
