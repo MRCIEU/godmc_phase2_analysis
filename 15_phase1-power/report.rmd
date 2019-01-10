@@ -1,0 +1,292 @@
+---
+title: Power of study design
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+Get sample sizes
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(dplyr)
+	library(pwr)
+	library(ggplot2)
+	library(tidyr)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+load("studies.rdata")
+```
+
+## Cis power
+
+For cis associations we want to know the power of detecting an association in at least one of 22 studies at p < 1e-5. To do this we calculate what is the probability of missing an association as being the product of the probability of missing it in study 1 AND in study 2 AND in study 3 etc.
+
+$$
+p(miss) = \prod^{M=22}_{i=1}{1 - f(19.5; k=1, \lambda=n_{i}r^2)}
+$$
+
+where $f(x; k, \lambda)$ is the probability density function for the non-central chi-square distribution with $k$ df and $\lambda$ non-centrality parameter based on the postulated variance explained by an mQTL ($r^2$) and the study sample size $n_i$; and 19.5 denotes the chi-square threshold at p = 1e-5 with 1 df.
+
+This can be done in R using either
+
+
+```{r, eval=FALSE}
+pchisq(
+	qchisq(THRESHOLD, df=1,low=F), 
+	ncp=R2 * SAMPLESIZE, df=1, low=F
+)
+```
+
+or
+
+```{r, eval=FALSE}
+pwr.chisq.test(w=sqrt(R2), N=SAMPLESIZE, df=1, sig.level=THRESHOLD)$power
+```
+
+Calculate the probability of detection (or missing = 1 - probability of detection) of an association across a range of $r^2$ values. 
+
+
+```{r}
+r2 <- seq(0, 1, by=0.0001)
+dat <- expand.grid(SS=as.numeric(ss$nsamples04), r2=r2)
+dat$chisq <- dat$SS * dat$r2
+dat$pow <- pwr.chisq.test(w=sqrt(dat$r2),N=dat$SS,df=1,sig.level=1e-5)$power
+dat$missed <- 1 - dat$pow
+y <- group_by(dat, r2) %>%
+summarise(missed_overall = prod(missed), power_overall=1-missed_overall, cist="cis", what="phase1")
+```
+
+## Trans power
+
+For trans associations we only allowed a candidate assoc to go forward if it was present at 1e-5 in at least 2 studies. So now we need to modify the calcs in the cis section to enumerate over pairs of studies. We calculate what is the probability of missing an association as being the product of the probability of missing it in both study 1 and study 2 AND in study 1 and study 3 AND in study 1 and study 4 etc.
+
+$$
+p(miss) = \prod^{22}_{i=1} {\prod^{i-1}_{j=1} 1 - {f(19.5; 1, n_{i}r^2) f(19.5; 1, n_{j}r^2)}}
+$$
+
+
+```{r}
+dat <- expand.grid(SS1=as.numeric(ss$nsamples04),SS2=as.numeric(ss$nsamples04), r2=r2) %>% subset(SS1 > SS2)
+dat$p1 <- pwr.chisq.test(w=sqrt(dat$r2), N=dat$SS1, df = 1, sig.level=1e-5)$power
+dat$p2 <- pwr.chisq.test(w=sqrt(dat$r2), N=dat$SS2, df = 1, sig.level=1e-5)$power
+dat$powboth <- dat$p1 * dat$p2
+dat <- group_by(dat, r2) %>% summarise(pow = 1-prod(1-powboth))
+dat$missed <- 1 - dat$pow
+
+z <- group_by(dat, r2) %>%
+summarise(missed_overall = prod(missed), power_overall=1-missed_overall, cist="trans", what="phase1")
+```
+
+Power of full dataset
+
+```{r}
+x1 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=27750,df=1,sig.level=1e-8)$power, missed_overall = 1 - power_overall, cist="cis", what="phase2")
+x2 <- data_frame(r2=r2, power_overall=pwr.chisq.test(w=sqrt(r2),N=27750,df=1,sig.level=1e-14)$power, missed_overall = 1 - power_overall, cist="trans", what="phase2")
+```
+
+
+## How does cis and trans power compare
+
+```{r}
+out <- rbind(z,y,x1,x2)
+ggplot(out %>% filter(r2 <= 0.02), aes(x=r2,y=power_overall)) +
+geom_line(aes(colour=cist, linetype=what)) +
+labs(x="mQTL r2", y="Power")
+```
+
+
+## How does phase1 and phase2 power compare
+
+```{r}
+out2 <- group_by(out, cist) %>% select(-missed_overall) %>% spread(key="what", value="power_overall")
+
+ggplot(out2 %>% filter(r2 <= 0.02), aes(x=r2*100, y=(phase1 - phase2)*100)) +
+geom_line(aes(colour=cist)) +
+labs(x="mQTL % variance explained", y="Loss in % power of two stage design", colour="")
+
+```
+
+
+## Genetic architecture
+
+If we know the number of mQTLs with a particular $r^2$ value, and the power of detecting mQTLs with that value, then we can back-calculate how many mQTLs would expect to exist with that value.
+
+Here we use the replication mQTL $r^2$ values, and estimate the expected number of mQTLs for a particular $r^2$ value as being
+
+$$
+n_{expected} = \frac{n_{observed}}{1 - p(miss)}
+$$
+
+```{r}
+load("../14_replication/replication.rdata")
+hist(replication$r2, breaks=100)
+replication$r2r <- round(replication$r2, 4)
+
+emp <- replication %>% group_by(r2r,cist) %>% summarise(observed=n())
+emp$cist <- tolower(emp$cist)
+emp$tempr <- as.character(emp$r2r)
+out$tempr <- as.character(out$r2)
+emp2 <- inner_join(subset(out, what == "phase1"), emp) %>%
+	mutate(expected = 1 / power_overall * observed) %>%
+	gather(key="key", value="value", c(observed, expected)) %>% 
+	group_by(cist,key) %>% mutate(value2 = value / sum(value))
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_line(aes(colour=key)) +
+geom_point(aes(colour=key)) +
+scale_x_log10() +
+facet_grid(key ~ cist, scale="free_y") +
+labs(x="% variance explained by mQTL", y = "Counts")
+```
+
+Same as before but now log the counts and plot everything together
+
+```{r}
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_point(aes(colour=key)) +
+scale_x_log10() +
+scale_y_log10() +
+facet_grid(. ~ cist) +
+labs(x="% variance explained by mQTL", y = "Counts")
+
+```
+
+Instead of showing the actual points, now just show a smoothed line to represent the distribution
+
+```{r}
+
+ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_smooth(aes(colour=key)) +
+scale_x_log10() +
+scale_y_log10() +
+facet_grid(. ~ cist) +
+labs(x="% variance explained by mQTL", y = "Counts")
+
+```
+
+## Probability of being significant in meta-analysis
+
+After detection in phase 1, what is the probability of being significant in the overall meta analysis? We have to assume that the meta analysis is basically an overall analysis (i.e. no heternogeneity). So, if one mQTL is significant at 1e-5 in one study then what is the probability of it being significant at 1e-8 in the full meta analysis of 28k samples?
+
+The basic answer is that if a true positive is detected at phase 1 it will almost certainly be detected in phase 2.
+
+I think we are trying to calculate this:
+
+$$
+p(sig_{total} | sig_{subset}) = p(sig_{subset} | sig_{total}) p(sig_{total}) / p(sig_{subset})
+$$
+
+
+```{r}
+fast_assoc <- function(y, x)
+{
+	index <- is.finite(y) & is.finite(x)
+	n <- sum(index)
+	y <- y[index]
+	x <- x[index]
+	vx <- var(x)
+	bhat <- cov(y, x) / vx
+	ahat <- mean(y) - bhat * mean(x)
+	rsq <- (bhat * vx)^2 / (vx * var(y))
+	fval <- rsq * (n-2) / (1-rsq)
+	tval <- sqrt(fval)
+	se <- abs(bhat / tval)
+	p <- pf(fval, 1, n-2, lower.tail=FALSE)
+	return(list(
+		ahat=ahat, bhat=bhat, se=se, fval=fval, pval=p, n=n
+	))
+}
+
+make_phen <- function(effs, indep, vy=1, vx=rep(1, length(effs)), my=0)
+{
+	if(is.null(dim(indep))) indep <- cbind(indep)
+	stopifnot(ncol(indep) == length(effs))
+	stopifnot(length(vx) == length(effs))
+	cors <- effs * vx / sqrt(vx) / sqrt(vy)
+	sc <- sum(cors^2)
+	if(sc >= 1)
+	{
+		print(sc)
+		stop("effects explain more than 100% of variance")
+	}
+	cors <- c(cors, sqrt(1-sum(cors^2)))
+	indep <- t(t(scale(cbind(indep, rnorm(nrow(indep))))) * cors * c(vx, 1))
+	y <- drop(scale(rowSums(indep)) * sqrt(vy)) + my
+	return(y)
+}
+
+make_geno <- function(nid, nsnp, af)
+{
+	return(matrix(rbinom(nid * nsnp, 2, af), nid, nsnp))
+}
+
+param <- expand.grid(
+	r2 = seq(0.001, 0.01, by=0.001),
+	ntot = 27750,
+	nsub = c(500,1000,2000),
+	nsim = 1:100,
+	totpval = NA,
+	subpval = NA
+)
+set.seed(1)
+for(i in 1:nrow(param))
+{
+	x <- make_geno(param$ntot[i], 1, 0.5)
+	y <- make_phen(sqrt(param$r2[i]), x)
+	ind <- 1:param$nsub[i]
+	x1 <- x[ind]
+	y1 <- y[ind]
+	param$subpval[i] <- fast_assoc(y1,x1)$pval
+	param$totpval[i] <- fast_assoc(y,x)$pval
+}
+table(param$totpval < 1e-8, param$subpval < 1e-5)
+table(param$totpval < 1e-14, param$subpval < 1e-5)
+table(param$subpval < param$totpval)
+```
+
+Basically if detected in a subsample it will almost certainly be detected overall. 
+
+
+## Simulations to check power calcs
+
+Is the cis calculation agreeing with simulations
+
+```{r}
+a <- group_by(param, r2, nsub) %>%
+summarise(
+	pow=sum(subpval < 1e-2)/n()
+)
+a$powt <- pwr.chisq.test(sqrt(a$r2), a$nsub, df=1, sig.level=1e-2)$power
+
+b <- group_by(param, r2, nsim) %>% summarise(
+	pow = as.numeric(any(subpval < 1e-2))
+) %>% group_by(r2) %>% summarise(pow=sum(pow)/n())
+
+c <- group_by(a, r2) %>% summarise(pow=1 - prod(1-powt))
+plot(c$pow, b$pow, xlab="simulations", ylab="theoretical")
+
+```
+
+Is the trans calculation agreeing with simulations
+
+```{r}
+
+b1 <- group_by(param, r2, nsim) %>% summarise(
+	pow = sum(subpval < 1e-2) >= 2 %>% as.numeric) %>%
+	group_by(r2) %>% summarise(pow = sum(pow)/n())
+
+b2 <- expand.grid(r2=seq(0.001, 0.01, by=0.001),s1=c(500,1000,2000),s2=c(500,1000,2000)) %>% subset(s1 > s2)
+b2$pow1 <- pwr.chisq.test(w=sqrt(b2$r2), N=b2$s1, df = 1, sig.level=1e-2)$power
+b2$pow2 <- pwr.chisq.test(w=sqrt(b2$r2), N=b2$s2, df = 1, sig.level=1e-2)$power
+b2$pow <- b2$pow1 * b2$pow2
+b3 <- group_by(b2, r2) %>% summarise(pow = 1-prod(1-pow))
+
+plot(b3$pow, b1$pow, xlab="simulations", ylab="theoretical")
+
+```
+
+

@@ -55,7 +55,7 @@ arguments <- commandArgs(T)
 i <- as.numeric(arguments[1])
 out <- arguments[2]
 
-bfile <- "../data/ref/out"
+bfile <- "../data/ref/out_hrc"
 
 ##
 
