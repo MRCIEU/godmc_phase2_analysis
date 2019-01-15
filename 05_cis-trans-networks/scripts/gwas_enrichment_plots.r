@@ -110,3 +110,9 @@ ggplot(enr_bias, aes(x=pval)) +
 geom_histogram() +
 facet_grid(. ~ factor)
 ggsave("../images/test_communit_enrichment_bias.pdf", width=10, height=5)
+
+min(enr_bias$pval)
+subset(enr_bias, pval < 1e-5)
+
+enr_bias$fdr <- p.adjust(enr_bias$pval, "fdr")
+subset(enr_bias,fdr < 0.05)
