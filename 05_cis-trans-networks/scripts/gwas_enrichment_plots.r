@@ -80,3 +80,33 @@ rownames(temp) <- temp$trait
 temp <- as.matrix(temp[,-1])
 heatmap(temp)
 
+
+
+####
+
+# Are the regions for one community in preferential regions compared to other community regions?
+
+load("../data/entity_info.rdata")
+load("../data/snpcontrolsets_selection.rdata")
+
+clusters <- unique(entities$cluster)
+table(entities$snp_name %in%f.all$SNP)
+f.all2 <- subset(f.all, SNP %in% entities$snp_name)
+temp <- merge(f.all2, entities, by.x="SNP", by.y="snp_name")
+l <- list()
+for(i in 1:length(clusters))
+{
+	message(i)
+	dum <- as.numeric(temp$cluster == clusters[i])
+	o <- summary(glm(dum ~ nproxies+tssdist+GC_freq+CpG_freq+MAF, data=temp, family="binomial"))$coefficients[-1,]
+	l[[i]] <- data_frame(cluster=clusters[i], n=sum(dum), factor=rownames(o), pval=o[,4])
+}
+
+enr_bias <- bind_rows(l)
+save(enr_bias, file="../results/enr_bias.rdata")
+load("../results/enr_bias.rdata")
+
+ggplot(enr_bias, aes(x=pval)) +
+geom_histogram() +
+facet_grid(. ~ factor)
+ggsave("../images/test_communit_enrichment_bias.pdf", width=10, height=5)
