@@ -111,6 +111,24 @@ geom_histogram() +
 facet_grid(. ~ factor)
 ggsave("../images/test_communit_enrichment_bias.pdf", width=10, height=5)
 
+ggplot(subset(enr_bias, n >10), aes(x=pval)) +
+geom_histogram() +
+facet_grid(. ~ factor)
+ggsave("../images/test_communit_enrichment_bias_gt10.pdf", width=10, height=5)
+
+sig_clust <- subset(gwas_enrichment, p < 0.05/nrow(gwas_enrichment))$clust %>% unique
+
+ggplot(subset(enr_bias, cluster %in% sig_clust), aes(x=pval)) +
+geom_histogram() +
+facet_grid(. ~ factor)
+ggsave("../images/test_communit_enrichment_bias_gwassig.pdf", width=10, height=5)
+
+temp <- subset(enr_bias, cluster %in% sig_clust)
+subset(temp, p.adjust(pval, "fdr") < 0.05)
+
+subset(enr_bias, cluster %in% sig_clust)$pval %>% p.adjust(., "fdr") %>% table(. < 0.05)
+
+
 min(enr_bias$pval)
 subset(enr_bias, pval < 1e-5)
 
