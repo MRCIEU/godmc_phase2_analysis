@@ -108,4 +108,42 @@ for(i in 1:nrow(lambtop))
 }
 lambdatoploo <- bind_rows(l)
 
-save(lam, lama, lamb, lambtop, lambdatop, lambdatopchr, lambdatoploo, file="../results/lambda.rdata")
+
+
+## EWAS
+library(dplyr)
+library(TwoSampleMR)
+library(magrittr)
+
+ewas <- read.table("../data/EWAS_Catalog_20-02-2018.txt.gz", he=T, sep="\t", stringsAsFactors=FALSE)
+ewas$code <- paste(ewas$PMID, ewas$Trait)
+b <- group_by(subset(ewas, P < 1e-7), code) %>% summarise(n=n()) %>% arrange(desc(n))
+
+smok <- read.csv("../data/smok.csv") %>% subset(Dose.Response == 1) %$% data_frame(code="Cigarettes per day", CpG = X...Name, pval=P.value)
+ewas <- bind_rows(ewas, smok)
+
+ewas_lambda <- data_frame(
+	trait = c("28194238 High-density lipoprotein cholesterol",
+		"28194238 Total cholesterol",
+		"28213390 Serum low-density lipoprotein cholesterol",
+		"28194238 Triglycerides",
+		"28002404 Body mass index",
+		"Cigarettes per day"
+	),
+	jid = c(22, 23, 24, 21, 7, 100)
+)
+
+for(i in 1:nrow(ewas_lambda))
+{
+	message(i)
+	load(paste0("../results/out/gwas", ewas_lambda$jid[i], ".rdata"))
+	ewas_lambda$lambda_full[i] <- lambda(res$pval)[1]
+	cpglist <- subset(ewas, code %in% ewas_lambda$trait[i])$CpG %>% unique
+	ewas_lambda$ewas_hits[i] <- length(cpglist)
+	ewas_lambda$lambda_ewas[i] <- lambda(subset(res, outcome %in% cpglist)$pval)[1]
+	ewas_lambda$fisher_ewas[i] <- fishers_combined_test(subset(res, outcome %in% cpglist)$pval)$pval
+}
+
+save(lam, lama, lamb, lambtop, lambdatop, lambdatopchr, lambdatoploo, ewas_lambda, file="../results/lambda.rdata")
+
+
