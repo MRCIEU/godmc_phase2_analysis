@@ -51,11 +51,13 @@ do_conditional <- function(pval_file, bfile, pval_threshold)
 
 ##
 setwd("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/04_conditional_16")
+
 arguments <- commandArgs(T)
 i <- as.numeric(arguments[1])
-out <- arguments[2]
+out.cis <- arguments[2]
+out.trans <- arguments[3]
 
-bfile <- "../data/ref/out"
+bfile <- "../data/ref/out_hrc"
 
 ##
 
@@ -79,28 +81,83 @@ system(cmd)
 # e.g. 1e-8 for cis
 # e.g. 1e-14 for trans
 # res <- head(res, 100)
-clumped <- group_by(res, cpg, cis) %>%
-	do({
-		x <- .
-		# write clump file
-		cpgname <- x$cpg[1]
-		fn <- paste0(cpgname, "_", i, ".txt")
-		system(paste0("rm -f ", fn, "*"))
 
-		y <- x[, c("snp", "Allele1", "Allele2", "Freq1", "Effect", "StdErr", "Pvalue", "TotalSampleSize")]
-		write.table(y, file=fn, row=FALSE, col=TRUE, qu=FALSE)
+#clumped <- group_by(res, cpg, cis) %>%
+#	do({
+#		x <- .
+		# write clump file
+#		cpgname <- x$cpg[1]
+#		fn <- paste0(cpgname, "_", i, ".txt")
+#		system(paste0("rm -f ", fn, "*"))
+
+#		y <- x[, c("snp", "Allele1", "Allele2", "Freq1", "Effect", "StdErr", "Pvalue", "TotalSampleSize")]
+#		write.table(y, file=fn, row=FALSE, col=TRUE, qu=FALSE)
+
+cis<-res[which(res$cis=="TRUE"),]
+clumped<-data.frame()
+cpgs<-unique(res$cpg)
+
+for (j in 1:length(cpgs)){
+cpgname <- cpgs[j]
+fn <- paste0(cpgname, "_", i, ".txt")
+system(paste0("rm -f ", fn, "*"))	
+y<-cis[cis$cpg==cpgs[j],c("snp", "Allele1", "Allele2", "Freq1", "Effect", "StdErr", "Pvalue", "TotalSampleSize")]
+write.table(y, file=fn, row=FALSE, col=TRUE, qu=FALSE)
+
+
 
 		# Get cis/trans clumping threshold
-		thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
+		#thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
+		thresh <-1e-4
 		cat(fn,"\n")
 		keep <- do_conditional(fn, newbfile, thresh)
 		system(paste0(
 			"cp ", fn, "*bad* bad_3coh/"
 		))
+        
 		system(paste0("rm ", fn, "*"))
-		return(keep)
-	})
+        
+        keep<-data.frame(cpg=rep(cpgs[j],nrow(keep)),keep)
+		clumped<-rbind(clumped,keep)
+		#return(keep)
+	}
+#system(paste0("rm ", newbfile, ".*"))
+save(clumped, file=out.cis)
 
-save(clumped, file=out)
+####
+trans<-res[which(res$cis=="FALSE"),]
+clumped<-data.frame()
+cpgs<-unique(res$cpg)
 
+for (j in 1:length(cpgs)){
+cpgname <- cpgs[j]
+fn <- paste0(cpgname, "_", i, ".txt")
+system(paste0("rm -f ", fn, "*"))	
+y<-cis[cis$cpg==cpgs[j],c("snp", "Allele1", "Allele2", "Freq1", "Effect", "StdErr", "Pvalue", "TotalSampleSize")]
+write.table(y, file=fn, row=FALSE, col=TRUE, qu=FALSE)
+
+
+
+		# Get cis/trans clumping threshold
+		#thresh <- ifelse(x$cis[1], 1e-4, 5e-8)
+		thresh <-5e-8
+		cat(fn,"\n")
+		keep <- do_conditional(fn, newbfile, thresh)
+		system(paste0(
+			"cp ", fn, "*bad* bad_3coh/"
+		))
+        
+		system(paste0("rm ", fn, "*"))
+        
+        keep<-data.frame(cpg=rep(cpgs[j],nrow(keep)),keep)
+		clumped<-rbind(clumped,keep)
+		#return(keep)
+	}
 system(paste0("rm ", newbfile, ".*"))
+save(clumped, file=out.trans)
+
+
+
+
+
+
