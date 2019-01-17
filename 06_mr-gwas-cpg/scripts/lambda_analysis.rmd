@@ -1,0 +1,124 @@
+---
+title: Lambda inflation of GWAS->CpG levels
+output: 
+  html_document:
+    toc: true
+    theme: united
+---
+
+Get sample sizes
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(dplyr)
+	library(ggplot2)
+	library(ggrepel)
+	library(tidyr)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+load("../results/lambda.rdata")
+load("../data/traitlist.rdata")
+```
+
+Is there a general influence of a single trait having an influence on large numbers of CpGs? To test this calculate the lambda value for the MR p-values of trait->CpG scan. This should be done on MR estimates that exclude any chromosome 6 instruments.
+
+
+```{r}
+ggplot(lamb %>% arrange(lambda), aes(x=phen, y=lambda)) +
+geom_point() +
+geom_hline(yintercept=1, linetype="dotted") +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
+labs(x="Phenotype", y="Inflation factor")
+ggsave("../images/lambda.pdf", width=15, height=8)
+```
+
+Also calculate the proportion of MR effect estimates that are positive. If there is substantial over or under representation of positive MR estimates then it indicates that there is a general directionality of that trait on the methylation levels.
+
+```{r}
+table(lam$pdir < 0.05)
+```
+
+This level of imbalance is strange - not sure why majority would be more than expected. 
+
+There is not a particularly strong relationship between directional enrichment and lambda
+
+```{r}
+summary(lm(lambda ~ I(abs(0.5 - proppos)), lamb))
+```
+
+```{r}
+lamb$imbalance <- abs(lamb$proppos - 0.5)
+ggplot(lamb, aes(x=lambda, y=imbalance)) +
+geom_point() +
+geom_smooth(method="lm") +
+geom_label_repel(data=subset(lamb, lambda > 1.05), aes(label=phen), size=2) +
+labs(x="p-value inflation", y="Enrichment of positive or negative causal effects")
+ggsave("../images/lambda_vs_imbalance.pdf")
+```
+
+Is there a higher number of significant associations for higher lambda values?
+
+```{r}
+ggplot(lam, aes(x=lambda, y=nsig)) +
+geom_point(aes(colour=chr6))
+```
+
+
+```{r}
+summary(lm(nsig ~ lambda, lam))
+```
+
+
+## Look at highest lambda values
+
+Which traits have high lambda values?
+
+```{r}
+kable(lambtop)
+```
+
+What if we take random subsets of CpGs, can we make sure it is not some outliers pushing up the lambda value (this is not likely cos it's based on median)
+
+```{r}
+ggplot(lambdatop, aes(x=lambda)) +
+geom_histogram() +
+geom_vline(data=lambtop, aes(xintercept=lambda), colour="red") +
+geom_vline(xintercept=1, linetype="dotted") +
+facet_wrap(~ phen) +
+theme(strip.text=element_text(size=6))
+ggsave("../images/lambda_top.pdf")
+```
+
+Lambda by chromosome
+
+```{r}
+ggplot(lambdatopchr %>% filter(n > 500), aes(y=lambda, x=gsub("chr", "", chr) %>% as.numeric)) +
+geom_point() +
+geom_hline(data=lambtop, aes(yintercept=lambda), colour="red") +
+geom_hline(yintercept=1, linetype="dotted") +
+facet_wrap(~ phen) +
+theme(strip.text=element_text(size=6)) +
+labs(x="Chromosome")
+ggsave("../images/lambda_top_chr.pdf")
+```
+
+Note that IgG has a large influence on chr6 but the enrichments here are from chr14. Note also that there is agreement in the lambda values for each of the two variants:
+
+```{r}
+subset(lam, grepl("Immuno", trait), select=-c(trait)) %>% kable
+```
+
+After leave-one-chromsome-out analysis is the lambda value staying large?
+
+```{r}
+ggplot(lambdatoploo %>% filter(n > 500), aes(y=lambda, x=chr)) +
+geom_point() +
+geom_hline(data=lambtop, aes(yintercept=lambda), colour="red") +
+geom_hline(yintercept=1, linetype="dotted") +
+facet_wrap(~ phen) +
+theme(strip.text=element_text(size=6)) +
+labs(x="Excluded chromosome")
+ggsave("../images/lambda_top_loo.pdf")
+```
+
