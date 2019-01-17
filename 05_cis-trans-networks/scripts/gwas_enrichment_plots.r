@@ -80,3 +80,57 @@ rownames(temp) <- temp$trait
 temp <- as.matrix(temp[,-1])
 heatmap(temp)
 
+
+
+####
+
+# Are the regions for one community in preferential regions compared to other community regions?
+
+load("../data/entity_info.rdata")
+load("../data/snpcontrolsets_selection.rdata")
+
+clusters <- unique(entities$cluster)
+table(entities$snp_name %in%f.all$SNP)
+f.all2 <- subset(f.all, SNP %in% entities$snp_name)
+temp <- merge(f.all2, entities, by.x="SNP", by.y="snp_name")
+l <- list()
+for(i in 1:length(clusters))
+{
+	message(i)
+	dum <- as.numeric(temp$cluster == clusters[i])
+	o <- summary(glm(dum ~ nproxies+tssdist+GC_freq+CpG_freq+MAF, data=temp, family="binomial"))$coefficients[-1,]
+	l[[i]] <- data_frame(cluster=clusters[i], n=sum(dum), factor=rownames(o), pval=o[,4])
+}
+
+enr_bias <- bind_rows(l)
+save(enr_bias, file="../results/enr_bias.rdata")
+load("../results/enr_bias.rdata")
+
+ggplot(enr_bias, aes(x=pval)) +
+geom_histogram() +
+facet_grid(. ~ factor)
+ggsave("../images/test_communit_enrichment_bias.pdf", width=10, height=5)
+
+ggplot(subset(enr_bias, n >10), aes(x=pval)) +
+geom_histogram() +
+facet_grid(. ~ factor)
+ggsave("../images/test_communit_enrichment_bias_gt10.pdf", width=10, height=5)
+
+sig_clust <- subset(gwas_enrichment, p < 0.05/nrow(gwas_enrichment))$clust %>% unique
+
+ggplot(subset(enr_bias, cluster %in% sig_clust), aes(x=pval)) +
+geom_histogram() +
+facet_grid(. ~ factor)
+ggsave("../images/test_communit_enrichment_bias_gwassig.pdf", width=10, height=5)
+
+temp <- subset(enr_bias, cluster %in% sig_clust)
+subset(temp, p.adjust(pval, "fdr") < 0.05)
+
+subset(enr_bias, cluster %in% sig_clust)$pval %>% p.adjust(., "fdr") %>% table(. < 0.05)
+
+
+min(enr_bias$pval)
+subset(enr_bias, pval < 1e-5)
+
+enr_bias$fdr <- p.adjust(enr_bias$pval, "fdr")
+subset(enr_bias,fdr < 0.05)
