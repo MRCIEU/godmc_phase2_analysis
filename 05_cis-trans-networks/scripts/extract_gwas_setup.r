@@ -4,11 +4,16 @@ library(magrittr)
 
 
 load("../../10_mr-cpg-gwas/data/snp_1kg.rdata")
+names(snp_1kg) <- c("snp_chr", "snp_rsid", "snp_gp", "snp_pos", "snp_a1", "snp_a2", "snp_c1", "snp_c2", "snp_name")
+
+load("../../results/16/16_clumped.rdata")
 
 load("../results/graph.rdata")
 communities <- merge(dat, mem, by.x="creg", by.y="cpg")
 communities$creg_chr <- gsub("chr", "", communities$creg_chr)
 communities$tcpg_chr <- gsub("chr", "", communities$tcpg_chr)
+
+
 
 entities <- bind_rows(
 	data_frame(name = communities$creg, chr=gsub("chr", "", communities$creg_chr), pos=communities$creg_pos, cluster=communities$cluster, type="creg_cpg"),
@@ -22,24 +27,37 @@ entities <- bind_rows(
 	arrange(as.numeric(chr))
 entities$id <- 1:nrow(entities)
 
-out <- group_by(entities, chr) %>%
+table(
+	subset(entities, type == "tcpg_cpg") %$% unique(name) %in%
+	subset(clumped, cis)$cpg
+)
+cis <- subset(clumped, cis) %>% arrange(pval) %>% filter(!duplicated(cpg)) %>% ungroup %>% select(cpg, snp)
+
+mentities <- left_join(entities, cis, by=c("name"="cpg"))
+mentities <- left_join(mentities, snp_1kg, c("snp"="snp_name"))
+names(mentities)[names(mentities) == "snp"] <- "snp_name"
+
+unmatched <- subset(mentities, is.na(snp_rsid))
+
+out <- group_by(unmatched, chr) %>%
 do({
 	ents <- .
 	message(ents$chr[1])
-	temp <- subset(snp_1kg, V1 == ents$chr[1])
+	temp <- subset(snp_1kg, snp_chr == ents$chr[1])
 	l <- list()
 	for(i in 1:nrow(ents))
 	{
 		message(i, " of ", nrow(ents))
 		l[[i]] <- temp %>%
-			mutate(posd = abs(V4 - ents$pos[i])) %>%
+			mutate(posd = abs(snp_pos - ents$pos[i])) %>%
 			arrange(posd) %>% head(1) %$%
-			data_frame(snp_chr=V1, snp_pos=V4, snp_rsid=V2, snp_a1 = V5, snp_a2 = V6, snp_name=snp, snp_distance=posd, id=ents$id[i])
+			data_frame(snp_chr=snp_chr, snp_pos=snp_pos, snp_rsid=snp_rsid, snp_a1 = snp_a1, snp_a2 = snp_a2, snp_name=snp_name, snp_distance=posd, id=ents$id[i])
 	}
 	bind_rows(l)
 })
+outt <- ungroup(out) %>% select(-c(chr))
+eout <- inner_join(entities, outt, by="id")
 
-entities <- inner_join(entities, out, by="id")
-
+entities <- bind_rows(eout, subset(mentities, !is.na(snp_rsid)))
 save(entities, file="../data/entity_info.rdata")
 

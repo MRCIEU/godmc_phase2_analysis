@@ -4,6 +4,8 @@ library(ggrepel)
 library(TwoSampleMR)
 library(gridExtra)
 library(tidyr)
+library(qqman)
+library(magrittr)
 
 
 
@@ -28,15 +30,16 @@ dat$subcategory[dat$subcategory=="Autoimmune / inflammatory"] <- "Immune"
 dat$subcategory[dat$subcategory=="Psychiatric / neurological"] <- "Neurological"
 dat$subcategory[is.na(dat$subcategory)] <- "Kidney"
 
+dat$fdr <- p.adjust(dat$p, "fdr")
 
-dat_sig <- subset(dat, p < 0.05/nrow(dat))
-dat_nsig <- subset(dat, p >= 0.05/nrow(dat))
+dat_sig <- subset(dat, fdr < 0.1)
+dat_nsig <- subset(dat, fdr >= 0.1)
 
 p1 <- ggplot(dat %>% subset(!grepl("Difference", trait)), aes(x=trait, y=-log10(p))) +
 geom_point(aes(size=nsnp.x)) +
 geom_point(data=dat_sig, aes(colour=lor, size=nsnp.x)) +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
-geom_hline(yintercept=-log10(0.05/nrow(dat)), linetype="dotted") +
+geom_hline(yintercept=-log10(max(dat_sig$p)), linetype="dotted") +
 labs(x="", y="-log10(p) enrichment", size="Number\nof regions in\ncommunity", colour="log(OR)") +
 # scale_colour_brewer(type="qual") +
 facet_grid(. ~ subcategory, scale="free", space="free") +
@@ -46,9 +49,19 @@ p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=18, height=13)
 ggsave(p1, file="../images/gwas_clusters_full.png", width=18, height=13)
 
+qq(dat$p)
+median(qchisq(dat$p, 1,low=FALSE) / qchisq(0.5, 1))
+
+o <- rep(NA, 1000)
+for(i in 1:1000)
+{
+	o[i] <- median(qchisq(runif(nrow(dat)), 1,low=FALSE) / qchisq(0.5, 1))
+}
+
+quantile(o, 0.95)
+hist(o)
 
 ####
-
 
 pvals <- dat$p[is.finite(dat$p)]
 temp <- data_frame(obs=-log10(sort(pvals)), exp=-log10((1:length(pvals) - 0.5)/(length(pvals))))
@@ -134,3 +147,26 @@ subset(enr_bias, pval < 1e-5)
 
 enr_bias$fdr <- p.adjust(enr_bias$pval, "fdr")
 subset(enr_bias,fdr < 0.05)
+
+
+
+##
+
+load("../results/core_communities_cpg_tophits.rdata")
+load("../results/ext_communities_cpg_tophits.rdata")
+load("../results/graph.rdata")
+load("../data/entity_info.rdata")
+
+subset(core_communities_cpg_tophits, userSet %in% dat_sig$clust)
+
+subset(entities, cluster==32)
+
+subset(core_communities_cpg_tophits, userSet %in% 32)
+subset(ext_communities_cpg_tophits, userSet %in% 32) %>% as.data.frame
+
+subset(ext_communities_cpg_tophits, userSet %in% dat_sig$clust) %>% group_by(collection) %>% summarise(n=n())
+
+
+subset(core_communities_cpg_tophits, userSet %in% dat_sig$clust) %>% group_by(userSet, antibody) %>% summarise(n=n())
+
+subset(gwas_enrichment, clust == 2) %$% min(p)
