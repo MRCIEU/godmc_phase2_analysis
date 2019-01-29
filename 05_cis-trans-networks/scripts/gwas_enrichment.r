@@ -31,7 +31,7 @@ run <- function(j)
 load("../data/extract_gwas.rdata")
 load("../data/entity_info.rdata")
 
-temp1 <- subset(entities, type != "creg_cpg" & snp_rsid %in% extracted$ID)
+temp1 <- subset(entities, type == "tcpg_cpg" & snp_rsid %in% extracted$ID)
 temp2 <- temp1 %>%
 	group_by(cluster) %>%
 	summarise(n=n()) %>%
@@ -43,11 +43,14 @@ dat <- expand.grid(
 )
 dat$j <- 1:nrow(dat)
 
-o <- mclapply(1:nrow(dat), run, mc.cores=20)
+o <- mclapply(1:nrow(dat), run, mc.cores=100)
 p <- bind_rows(o)
 names(p) <- c("lor", "se", "z", "p", "nsnp", "j")
 gwas_enrichment <- inner_join(dat, p)
+gwas_enrichment$fdr <- p.adjust(gwas_enrichment$p, "fdr")
+table(gwas_enrichment$fdr < 0.05)
 save(gwas_enrichment, file="../results/gwas_enrichment.rdata")
+
 
 
 
