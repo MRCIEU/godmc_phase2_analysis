@@ -122,3 +122,11 @@ labs(x="Excluded chromosome")
 ggsave("../images/lambda_top_loo.pdf")
 ```
 
+## EWAS hits
+
+For some traits, the EWAS hits might show higher GWAS->CpG MR values than all CpGs in general.
+
+
+```{r}
+kable(ewas_lambda)
+```
