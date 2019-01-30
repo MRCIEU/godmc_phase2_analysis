@@ -104,6 +104,11 @@ cats$subcategory[cats$subcategory == "Metal"] <- "Haematological"
 cats$subcategory[cats$subcategory == "Haemotological"] <- "Haematological"
 
 cats <- subset(cats, !duplicated(paste(trait, subcategory))) %>% arrange(trait)
+cats$subcategory[cats$trait == "Iron"] <- "Haematological"
+cats$subcategory[cats$trait == "Birth weight"] <- "Anthropometric"
+cats$subcategory[cats$trait == "Height"] <- "Anthropometric"
+cats <- subset(cats, !duplicated(trait))
+
 temp <- merge(temp, cats, by=c("trait"), all.x=TRUE)
 
 ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval)) +
@@ -160,7 +165,7 @@ geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) 
 scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#000000", "#b3de69", "#ffffff", "#d9d9d9", "#bc80bd")) +
 # scale_colour_brewer(palette="BrBg") +
 scale_y_continuous(breaks=seq(-100, 100, 20)) +
-labs(x="CpG position", y="", colour="") +
+labs(x="DNAm site position", y="MR -log10 p-value", colour="") +
 ylim(-60, 60) +
 geom_hline(yintercept=-log10(threshold2), linetype="dotted") +
 geom_hline(yintercept=log10(threshold2), linetype="dotted") +
@@ -168,8 +173,8 @@ geom_hline(yintercept=0, linetype="solid") +
 guides(colour=guide_legend(ncol=5)) +
 theme(
 	legend.position="top",
-	axis.text=element_blank(),
-	axis.ticks=element_blank(),
+	axis.text.x=element_blank(),
+	axis.ticks.x=element_blank(),
 	panel.grid=element_blank(),
 	panel.background=element_rect(fill="white", linetype="blank"),
 	panel.spacing=unit(0, "lines"),

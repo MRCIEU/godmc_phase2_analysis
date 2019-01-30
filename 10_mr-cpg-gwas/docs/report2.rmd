@@ -110,6 +110,54 @@ table(table(dat_cis2$code))
 mr_cis <- mr(dat_cis2, method_list=c("mr_wald_ratio", "mr_ivw"))
 mr_cis2 <- subset(mr_cis, method %in% c("Wald ratio", "Inverse variance weighted"))
 
+ggplot(mr_cis, aes(x=abs(b) / se, y=1:nrow(mr_cis))) +
+geom_point(aes(colour=abs(b) / se > 5))
+
+res$code2 <- paste(res$snp, res$exposure, res$outcome)
+dat_cis$code2 <- paste(dat_cis$rsid, dat_cis$code)
+table(res$code2 %in% dat_cis$code2)
+
+
+discovery <- bind_rows(
+	subset(dat_cis, paste(dat_cis$rsid, dat_cis$code) %in% res$code2) %>% mutate(cistrans="cis"),
+	subset(dat, paste(dat$rsid, dat$code) %in% res$code2) %>% mutate(cistrans="trans")
+)
+
+mr_discovery <- mr(discovery, method_list=c("mr_wald_ratio", "mr_ivw"))
+
+replication <- bind_rows(
+	subset(dat_cis, ! paste(dat_cis$rsid, dat_cis$code) %in% res$code2) %>% mutate(cistrans="cis"),
+	subset(dat, ! paste(dat$rsid, dat$code) %in% res$code2) %>% mutate(cistrans="trans")
+)
+
+mr_replication <- mr(replication, method_list=c("mr_wald_ratio", "mr_ivw"))
+
+mr_disc_repl <- inner_join(mr_discovery, mr_replication, by=c("exposure", "id.outcome"), suffix=c("disc", "repl"))
+mr_disc_repl$zdisc <- mr_disc_repl$bdisc / mr_disc_repl$sedisc
+mr_disc_repl$zrepl <- mr_disc_repl$brepl / mr_disc_repl$serepl
+
+
+i <- sign(mr_disc_repl$zdisc) == -1
+mr_disc_repl$zdisc <- abs(mr_disc_repl$zdisc)
+mr_disc_repl$zrepl[i] <- mr_disc_repl$zrepl[i] * -1
+
+
+plot(brepl ~ bdisc, mr_disc_repl)
+plot(zrepl ~ zdisc, mr_disc_repl)
+abline(0,1)
+summary(lm(zrepl ~ zdisc, mr_disc_repl))
+plot(zrepl ~ zdisc, mr_disc_repl)
+
+i <- sign(mr_disc_repl$zdisc) == -1
+mr_disc_repl$zdisc2 <- abs(mr_disc_repl$zdisc)
+mr_disc_repl$zrepl2 <- mr_disc_repl$zrepl
+mr_disc_repl$zrepl2[i] <- mr_disc_repl$zrepl2[i] * -1
+
+summary(lm(zrepl2 ~ zdisc2, mr_disc_repl))
+plot(zrepl2 ~ zdisc2, mr_disc_repl)
+abline(0,1)
+
+
 
 mr_cis_trans <- inner_join(mr_cis, mr_trans, by=c("exposure", "id.outcome"), suffix=c("cis", "trans"))
 
@@ -133,6 +181,7 @@ temp3 <- inner_join(temp1, temp2, by=c("outcome"="id.outcome", "exposure"="expos
 plot(temp3$b.x/temp3$se.x, temp3$b.y/temp3$se.y)
 
 temp2 <- inner_join(temp1, trans_extract, by="code")
+
 
 
 
