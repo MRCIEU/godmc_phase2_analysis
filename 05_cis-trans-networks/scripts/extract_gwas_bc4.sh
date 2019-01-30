@@ -5,7 +5,7 @@
 #SBATCH --nodes=1 --cpus-per-task=1 --time=0-00:30:00
 #SBATCH --partition=mrcieu
 #SBATCH --output=job_reports/slurm-%A_%a.out
-#SBATCH --mem=8G
+#SBATCH --mem=40G
 
 echo "Running on ${HOSTNAME}"
 module add languages/r/3.4.4
