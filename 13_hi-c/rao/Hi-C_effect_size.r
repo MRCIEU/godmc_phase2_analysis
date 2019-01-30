@@ -70,7 +70,7 @@ ggplot(counts, aes(x = effect_abs, color = overlap)) +
   geom_density() + 
   #geom_vline(aes(xintercept = dat[1,4]), color = "#F8766D") +
   #geom_vline(aes(xintercept = dat[2,4]), color = "#00BFC4") +
-  labs(title= "Density of absolute mQTL effect size", x = "Absolute mQTL effect Size", y = "Density", subtitle = "mQTL that overlap Hi-C interactions vs. no overlaps") +
+  labs(x = "Absolute mQTL effect Size", y = "Density") +
   scale_color_discrete(name ="mQTL Overlap Status", labels=c("Non-overlapping mQTL", "Overlapping mQTL")) +
   theme(legend.position = "bottom") 
   #annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
@@ -114,7 +114,7 @@ ggplot(dat1, aes(x = effect_abs, color = cpg_cis)) +
   geom_density() + 
   #geom_vline(aes(xintercept = dat2[1,4]), color = "#F8766D") +
   #geom_vline(aes(xintercept = dat2[2,4]), color = "#00BFC4") +
-  labs(title= "Density of Absolute Effect Size", x = "Absolute mQTL effect size", y = "Density", subtitle = "mQTL Hi-C overlaps by cis/trans category") +
+  labs(x = "Absolute mQTL effect size", y = "Density") +
   scale_color_discrete(name ="DNAm site annotation", labels="cis and trans", "trans only")) +
   theme(legend.position = "bottom")
   #annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
