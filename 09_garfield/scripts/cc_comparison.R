@@ -122,8 +122,11 @@ df$r2_cc<-df$F_cc/(df$F_cc+as.numeric(cc.n)-2)
 
 cat(length(which(df$r2 > df$r2_cc))/nrow(df),"\n")
 
-df2<-data.frame(id=id,r2_godmc_larger_than_cc=length(which(df$r2 > df$r2_cc)),no_assoc=nrow(df),prop=length(which(df$r2 > df$r2_cc))/nrow(df))
-write.table(df2,paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".txt"),sep="\t",quote=F,row.names=F,col.names=T)
+df2 <- subset(df, p_value < 0.05/nrow(df))
+cat(length(which(df2$r2 > df2$r2_cc))/nrow(df),"\n")
+
+df3<-data.frame(id=id,r2_godmc_larger_than_cc=length(which(df2$r2 > df2$r2_cc)),no_assoc=nrow(df),prop=length(which(df2$r2 > df2$r2_cc))/nrow(df))
+write.table(df3,paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".txt"),sep="\t",quote=F,row.names=F,col.names=T)
 #save(df,file=paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".Robj"))
 
 

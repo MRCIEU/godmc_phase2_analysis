@@ -200,7 +200,7 @@ labs(x="Estimated heritability (binned)", y="Proportion of variance explained", 
 scale_color_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
 scale_size_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
 guides(color= guide_legend(), size=guide_legend())
-ggsave("images/prop_h2_explained2.pdf")
+ggsave("images/prop_h2_explained.pdf")
 ```
 
 ## Create tables
@@ -235,7 +235,15 @@ p1 <- ggplot(tab2l, aes(x=as.factor(round(value*2, 1)/2), y=r2)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90, size=3)) +
 labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
-ggsave(p1, file="images/h2_vs_r2_2.png", width=9, height=4)
+ggsave(p1, file="images/h2_vs_r2.png", width=9, height=4)
+
+load("../results/16/16_clumped.rdata")
+clumped<- subset(clumped, pval < 1e-8 & cis | pval < 1e-14 & !cis)
+
+clumped$cist <- "cis"
+clumped$cist[!clumped$cis] <- "trans"
+clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
+clumped$code <- clumped %$% paste(snp, cpg)
 
 mqtlcount <- group_by(clumped, cpg) %>% summarise(mqtls=n())
 tab2l <- merge(tab2l, mqtlcount, by="cpg", all.x=TRUE)
@@ -245,8 +253,8 @@ p1 <- ggplot(tab2l, aes(x=as.factor(mqtls), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90)) +
 labs(x="Number of mQTL per DNA methylation site", y="Heritability estimate", fill="Heritability\nstudy design")
-ggsave(p1, file="images/mqtl_vs_h2_2.png", width=9, height=4)
-ggsave(p1, file="images/mqtl_vs_h2_2.pdf", width=9, height=4)
+ggsave(p1, file="images/mqtl_vs_h2.png", width=9, height=4)
+ggsave(p1, file="images/mqtl_vs_h2.pdf", width=9, height=4)
 
 
 tab2l %>% filter(key == "Twin") %>% lm(mqtls ~ value, data=.) %>% summary %>% coefficients
@@ -257,11 +265,11 @@ p1 <- ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90)) +
 labs(x="Variance explained in GS replication", y="Heritability estimate", fill="Heritability\nstudy design")
-ggsave(p1, file="images/r2_vs_h2_2.png", width=9, height=4)
-ggsave(p1, file="images/r2_vs_h2_2.pdf", width=9, height=4)
+ggsave(p1, file="images/r2_vs_h2.png", width=9, height=4)
+ggsave(p1, file="images/r2_vs_h2.pdf", width=9, height=4)
 
-write.csv(tab1, file="results/replication2.csv")
-write.csv(tab2, file="results/variance_explained2.csv")
+write.csv(tab1, file="results/replication.csv")
+write.csv(tab2, file="results/variance_explained.csv")
 
 ```
 
