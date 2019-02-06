@@ -258,8 +258,7 @@ mc3 <- gather(subset(mc, select=c(r2, h2_cc, prop, ord)),key, value, -ord)
 	summarise(mean=mean(value), median=median(value)) %>%
 	kable
 
-#tab2l %>% filter(key == "Twin") %>% lm(r2 ~ value, data=.) %>% summary %>% coefficients
-#tab2l %>% filter(key == "Family") %>% lm(r2 ~ value, data=.) %>% summary %>% coefficients
+mc%>% lm(r2 ~ h2_cc, data=.) %>% summary %>% coefficients
 
 ```
 
