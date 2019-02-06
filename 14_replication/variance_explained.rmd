@@ -13,8 +13,12 @@ suppressWarnings(suppressPackageStartupMessages(library(data.table)))
 suppressWarnings(suppressPackageStartupMessages(library(ggplot2)))
 suppressWarnings(suppressPackageStartupMessages(library(tidyr)))
 suppressWarnings(suppressPackageStartupMessages(library(knitr)))
+suppressWarnings(suppressPackageStartupMessages(library(scales)))
 opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
 load("replication.rdata")
+cis<-replication[which(replication$cist=="Cis"),]
+trans<-replication[which(replication$cist=="Trans"),]
+
 ```
 
 ## Variance explained
@@ -26,14 +30,66 @@ Using an independent replication allows unbiased estimate of phenotypic variance
 ggplot(replication, aes(x=r2)) +
 geom_density(aes(fill=cist), alpha=0.3) +
 labs(x="DNA methylation variance explained", fill="mQTL")
-ggsave("images/varexp2.pdf")
+ggsave("images/varexp.pdf")
+
+ggplot(replication, aes(x = r2,color=cist)) +  
+geom_bar(aes(y = (..count..)/sum(..count..))) + 
+scale_y_continuous(labels=percent)
+ggsave("images/varexp_histperc.pdf")
+
+ggplot(replication, aes(x=r2,fill=cist),color=cist,alpha=0.3) +
+geom_histogram(position="dodge") +
+labs(x="DNA methylation variance explained",color="mQTL",fill="mQTL")
+ggsave("images/varexp_hist.pdf")
 
 ggplot(replication, aes(x=r2,color=cist),alpha=0.3) +
 stat_ecdf() +
 scale_x_continuous(breaks=seq(0,1,0.05)) +
 labs(x="DNA methylation variance explained", y="Proportion of DNA methylation sites",color="mQTL")
-ggsave("images/varcumulative_exp2.pdf")
+ggsave("images/varcumulative_exp.pdf")
+
+y <- cumsum(table(round(cis$r2,4))/nrow(cis))
+y<-data.frame(names(y),y)
+cis99<-min(as.numeric(as.character(y[y[,2]>0.99,1])))
+
+y <- cumsum(table(round(trans$r2,4))/nrow(trans))
+y<-data.frame(names(y),y)
+trans99<-min(as.numeric(as.character(y[y[,2]>0.99,1])))
+
+
 ```
+
+The cumulative plot shows variance explained in various percentages of DNA methylation sites. 99 % of the cis associations explain less than `r cis99` and 99% of the trans associations explain less than `r trans99` of the variance.
+
+
+```{r, echo=FALSE}
+replication2 <- group_by(replication, cpg) %>%
+	summarise(r2=sum(r2))
+replication2$what <- "hsqtot"
+
+load("../07_enrichments/mean_allcpgs.Robj")
+m<-match(replication2$cpg,df.all$cpg)
+replication2<-data.frame(replication2,df.all[m,c("meancpg","sdcpg")])
+replication2$ord <- rank(replication2$meancpg)
+replication2$meancpg_r <- round(replication2$meancpg, 2)
+
+breaks <- seq(0,1,0.1)
+# specify interval/bin labels
+labels <- c("0-10%", "10-20%", "20-30%", "30-40%", "40-50%", "50-60%", "60-70%", "70-80%","80-90%","90-100%")
+# bucketing data points into bins
+bins <- cut(replication2$meancpg, breaks, include.lowest = T, right=FALSE, labels=labels)
+replication2<-data.frame(replication2,mean.bins=bins)
+
+ggplot(replication2,aes(x=replication2$mean.bins,y=r2)) +
+geom_boxplot() +
+labs(x="Weighted mean DNA methylation level",y="variance explained (r2)")
+ggsave("images/meanbeta_r2.pdf")
+
+summary(lm(replication2$r2~replication2$meancpg))
+```
+
+This plot shows that sites with intermediate methylation have larger r2
+ 
 
 We previously calculated (with low precision) the SNP h2 of each CpG
 
@@ -106,8 +162,8 @@ Use Van Dongen heritability estimates using twins
 # load("vanDongen_h2gt50_probes.RData")
 vandongen <- read.csv("/panfs/panasas01/shared-godmc/heritability/vanDongen_HeritabilityofDNAmethylation.csv")
 p <- sum(vandongen$cgid %in% replication2$cpg)
-```
 
+```
 * There are `r nrow(vandongen)` CpGs with significant h2 estimates in van Dongen. 
 * `r p` were present in the GS replication dataset
 
@@ -122,6 +178,9 @@ vd %>% filter(h2_twinAE != 0) %>%
 
 ```
 
+The mean h2 is `r mean(vd$h2_twinAE,na.rm=T)` across `r nrow(vd)` sites. 
+Correlation between variance explained in GoDMC and h2_twin: `r cor(vd$r2, vd$h2_twinAE)`
+
 ```{r, echo=FALSE}
 ggplot(subset(vd, !is.na(h2_twinAE) & !is.na(r2)), aes(x=as.factor(h2_twinAE), y=r2)) +
 geom_boxplot(outlier.size=0.01) +
@@ -129,9 +188,13 @@ theme(axis.text.x=element_text(angle=90, size=3)) +
 labs(x="Twin heritability estimate", y="Variance explained in GS replication")
 ```
 
+What proportion of h2 is explained? To summarise this remove probes with h2==0 because this gives division errors.
+
+
 ```{r, echo=FALSE}
 vd2 <- gather(subset(vd, h2_twinAE != 0, select=c(r2, h2_twinAE, ord)),key, value, -ord)
 vd <- subset(vd, h2_twinAE != 0)
+
 vd$prop <- (vd$r2 / vd$h2_twinAE)
 vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 
@@ -139,8 +202,6 @@ vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 	summarise(mean=mean(value), median=median(value)) %>%
 	kable
 ```
-
-Correlation between variance explained in GoDMC and h2_twin: `r cor(vd$r2, vd$h2_twinAE)`
 
 Do the same with McRae pedigree-based h2 estimates
 
@@ -170,6 +231,10 @@ labs(x="Pedigree heritability estimate", y="Variance explained in GS replication
 
 ```
 
+The mean h2 is `r mean(mc$h2_cc,na.rm=T)` across `r nrow(mc)` sites. 
+Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, mc$h2_cc)`
+
+
 ```{r, echo=FALSE}
 mc2 <- gather(subset(mc, h2_cc != 0, select=c(r2, h2_cc, ord)),key, value, -ord)
 mc <- subset(mc, h2_cc != 0)
@@ -181,9 +246,7 @@ mc3 <- gather(subset(mc, select=c(r2, h2_cc, prop, ord)),key, value, -ord)
 	kable
 ```
 
-Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, mc$h2_cc)`
-
-Visualise proportion variance explained
+## Visualise proportion variance explained
 
 ```{r}
 mc4 <- group_by(subset(mc, h2_cc_r!=0), h2_cc_r) %>%
@@ -196,11 +259,12 @@ ggplot(mc4, aes(x=h2_cc_r, y=propb)) +
 geom_errorbar(aes(ymin=range01(propb-propsd), ymax=range01(propm+propsd))) +
 geom_point(aes(size=n, colour=n)) +
 # ylim(0, 1) +
-labs(x="Estimated heritability (binned)", y="Proportion of variance explained", size="Number of CpGs in bin", colour="Number of CpGs in bin") +
+labs(x="Estimated heritability (binned)", y="Proportion of variance explained", size="Number of DNAm sites", colour="Number of DNAm sites") +
 scale_color_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
 scale_size_continuous(limits=c(0, 2500), breaks=seq(0, 2500, by=500)) +
 guides(color= guide_legend(), size=guide_legend())
-ggsave("images/prop_h2_explained.pdf")
+ggsave("images/prop_h2_explained.pdf",height=6,width=10)
+
 ```
 
 ## Create tables
@@ -237,14 +301,8 @@ theme(axis.text.x=element_text(angle=90, size=3)) +
 labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
 ggsave(p1, file="images/h2_vs_r2.png", width=9, height=4)
 
+
 load("../results/16/16_clumped.rdata")
-clumped<- subset(clumped, pval < 1e-8 & cis | pval < 1e-14 & !cis)
-
-clumped$cist <- "cis"
-clumped$cist[!clumped$cis] <- "trans"
-clumped <- subset(clumped, snpchr %in% paste0("chr",1:22) & snptype == "SNP")
-clumped$code <- clumped %$% paste(snp, cpg)
-
 mqtlcount <- group_by(clumped, cpg) %>% summarise(mqtls=n())
 tab2l <- merge(tab2l, mqtlcount, by="cpg", all.x=TRUE)
 tab2l$mqtls[is.na(tab2l$mqtls)] <- 0
@@ -259,7 +317,7 @@ ggsave(p1, file="images/mqtl_vs_h2.pdf", width=9, height=4)
 
 tab2l %>% filter(key == "Twin") %>% lm(mqtls ~ value, data=.) %>% summary %>% coefficients
 
-tab2l %>% group_by(key) %>% summarise(cor=cor(mqtls, value))
+tab2l %>% group_by(key) %>% summarise(cor=cor(mqtls, value)^2)
 
 p1 <- ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
