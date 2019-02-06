@@ -14,6 +14,7 @@ load("../data/labelids.rdata")
 ao <- available_outcomes()
 #load("../data/outcomes.RData")
 #dat <- merge(dat, ao, by.x="id.y", by.y="id")
+gwas_enrichment <- subset(gwas_enrichment, !is.na(cluster) & background == "clumped")
 dat <- merge(gwas_enrichment, ao, by="id")
 dat <- subset(dat, access != "developer")
 dat <- merge(dat, labelids, by="id")
@@ -32,8 +33,8 @@ dat$subcategory[is.na(dat$subcategory)] <- "Kidney"
 
 dat$fdr <- p.adjust(dat$p, "fdr")
 
-dat_sig <- subset(dat, fdr < 0.1)
-dat_nsig <- subset(dat, fdr >= 0.1)
+dat_sig <- subset(dat, fdr < 0.05)
+dat_nsig <- subset(dat, fdr >= 0.05)
 
 p1 <- ggplot(dat %>% subset(!grepl("Difference", trait)), aes(x=trait, y=-log10(p))) +
 geom_point(aes(size=nsnp.x)) +
