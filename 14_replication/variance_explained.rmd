@@ -20,6 +20,7 @@ cis<-replication[which(replication$cist=="Cis"),]
 trans<-replication[which(replication$cist=="Trans"),]
 
 ```
+There are `r nrow(replication)` associations in the replication file of which `r nrow(cis)` in cis and `r nrow(trans)`
 
 ## Variance explained
 
@@ -86,6 +87,8 @@ labs(x="Weighted mean DNA methylation level",y="variance explained (r2)")
 ggsave("images/meanbeta_r2.pdf")
 
 summary(lm(replication2$r2~replication2$meancpg))
+summary(lm(replication2$r2~replication2$sdcpg))
+
 ```
 
 This plot shows that sites with intermediate methylation have larger r2
@@ -196,6 +199,11 @@ vd2 <- gather(subset(vd, h2_twinAE != 0, select=c(r2, h2_twinAE, ord)),key, valu
 vd <- subset(vd, h2_twinAE != 0)
 
 vd$prop <- (vd$r2 / vd$h2_twinAE)
+length(which(vd$prop>1))
+
+w<-which(vd$prop>1)
+vd$prop[w]<-1
+
 vd3 <- gather(subset(vd, select=c(r2, h2_twinAE, prop, ord)),key, value, -ord)
 
 	group_by(vd3, key) %>%
@@ -239,11 +247,19 @@ Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, m
 mc2 <- gather(subset(mc, h2_cc != 0, select=c(r2, h2_cc, ord)),key, value, -ord)
 mc <- subset(mc, h2_cc != 0)
 mc$prop <-(mc$r2 / mc$h2_cc)
+
+length(which(mc$prop>1))
+w<-which(mc$prop>1)
+mc$prop[w]<-1
+
 mc3 <- gather(subset(mc, select=c(r2, h2_cc, prop, ord)),key, value, -ord)
 
 	group_by(mc3, key) %>%
 	summarise(mean=mean(value), median=median(value)) %>%
 	kable
+
+mc%>% lm(r2 ~ h2_cc, data=.) %>% summary %>% coefficients
+
 ```
 
 ## Visualise proportion variance explained
@@ -291,6 +307,7 @@ tab2 <- inner_join(tab2a, tab2b, by="cpg")
 tab2 <- merge(tab2, subset(replication2, select=-c(what)), by="cpg", all.x=TRUE)
 tab2$r2[is.na(tab2$r2)] <- 0
 
+tab2<-tab2[which(tab2$cpg%in%df.all$cpg),]
 tab2l <- tidyr::gather(tab2, key="key", value="value", h2_mcrae, h2_vandongen)
 tab2l$key[tab2l$key=="h2_mcrae"] <- "Family"
 tab2l$key[tab2l$key=="h2_vandongen"] <- "Twin"
@@ -307,6 +324,8 @@ mqtlcount <- group_by(clumped, cpg) %>% summarise(mqtls=n())
 tab2l <- merge(tab2l, mqtlcount, by="cpg", all.x=TRUE)
 tab2l$mqtls[is.na(tab2l$mqtls)] <- 0
 
+tab3<-tab2[which(tab2$cpg %in% replication2$cpg),]
+
 p1 <- ggplot(tab2l, aes(x=as.factor(mqtls), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90)) +
@@ -315,9 +334,12 @@ ggsave(p1, file="images/mqtl_vs_h2.png", width=9, height=4)
 ggsave(p1, file="images/mqtl_vs_h2.pdf", width=9, height=4)
 
 
-tab2l %>% filter(key == "Twin") %>% lm(mqtls ~ value, data=.) %>% summary %>% coefficients
+tab2l %>% filter(key == "Family") %>% lm(mqtls ~ value, data=.) %>% summary %>% coefficients
 
 tab2l %>% group_by(key) %>% summarise(cor=cor(mqtls, value)^2)
+tab2l %>% group_by(key) %>% summarise(cor=cor(mqtls, value))
+tab2l %>% filter(key == "Twin") %>% lm(r2 ~ value, data=.) %>% summary %>% coefficients
+tab2l %>% filter(key == "Family") %>% lm(r2 ~ value, data=.) %>% summary %>% coefficients
 
 p1 <- ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
@@ -327,7 +349,18 @@ ggsave(p1, file="images/r2_vs_h2.png", width=9, height=4)
 ggsave(p1, file="images/r2_vs_h2.pdf", width=9, height=4)
 
 write.csv(tab1, file="results/replication.csv")
-write.csv(tab2, file="results/variance_explained.csv")
+
+tab3<-tab2[which(tab2$cpg %in% replication2$cpg),]
+tab3$genetic_r2_mcrae<-tab3$r2/tab3$h2_mcrae
+
+tab3$genetic_r2_vandongen<-tab3$r2/tab3$h2_vandongen
+
+w1<-which(tab3$genetic_r2_mcrae=="Inf")
+w2<-which(tab3$genetic_r2_vandongen=="Inf")
+tab3$genetic_r2_vandongen[w2]<-NA
+tab3$genetic_r2_mcrae[w1]<-NA
+
+write.csv(tab3, file="results/variance_explained.csv")
 
 ```
 
