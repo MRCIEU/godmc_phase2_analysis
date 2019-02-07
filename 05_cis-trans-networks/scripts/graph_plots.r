@@ -47,6 +47,19 @@ extract_subset <- function(gr, dat, cpg_list)
 }
 
 
+plot_community <- function(cluster)
+{
+	temp <- extract_subset(gr, dat, mem$cpg[mem$cluster == cluster])
+	plot(temp$gr, 
+		layout=layout.fruchterman.reingold, 
+		# vertex.color=as.numeric(as.factor(V(temp$gr)$what)), 
+		vertex.size=(as.numeric(as.factor(V(temp$gr)$what))-5)^2, 
+		vertex.label=NA, 
+		edge.arrow.size=0, 
+		edge.color=as.numeric(as.factor(E(temp$gr)$type))
+	)
+}
+
 (temp <- farthest.nodes(gr))
 temp <- all_simple_paths(gr, temp$vertices[1], temp$vertices[2])
 temp <- extract_subset(gr, dat, names(temp[[1]]))
@@ -60,6 +73,11 @@ plot(temp$gr,
 	edge.color=as.numeric(as.factor(E(temp$gr)$type))
 )
 dev.off()
+
+
+plot_community(6)
+
+
 
 for(i in 1:20)
 {
