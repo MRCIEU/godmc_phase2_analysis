@@ -115,7 +115,7 @@ df$StdErr_sq<-df$StdErr^2
 df$F<-df$Effect_sq/df$StdErr_sq
 df$r2<-df$F/(df$F+27750-2)
 
-df$beta_sq<-df$beta^2
+df$beta_sq<-df$beta_a1^2
 df$se_sq<-df$standard_error^2
 df$F_cc<-df$beta_sq/df$se_sq
 df$r2_cc<-df$F_cc/(df$F_cc+as.numeric(cc.n)-2)
