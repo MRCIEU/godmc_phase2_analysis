@@ -59,5 +59,24 @@ outt <- ungroup(out) %>% select(-c(chr))
 eout <- inner_join(entities, outt, by="id")
 
 entities <- bind_rows(eout, subset(mentities, !is.na(snp_rsid)))
-save(entities, file="../data/entity_info.rdata")
+
+
+load("../data/snpcontrolsets_selection.rdata")
+
+targets <- subset(f.all, SNP %in% entities$snp_name)
+
+MAF, GC_freq, CpG_freq, nproxies, tssdist
+
+load("../../results/16/16_clumped.rdata")
+load("../../10_mr-cpg-gwas/data/snp_1kg.rdata")
+library(dplyr)
+snp_1kg <- data_frame(SNP=snp_1kg$snp, a1=snp_1kg$V5, a2=snp_1kg$V6, snp_rsid = snp_1kg$V2)
+clumped <- subset(clumped, !snp %in% entities$snp_name & cis)
+background <- subset(f.all, SNP %in% clumped$snp)
+targets$what <- "target"
+background$what <- "background"
+genomicinfo <- rbind(targets, background)
+genomicinfo <- merge(genomicinfo, snp_1kg, by="SNP")
+
+save(entities, genomicinfo, file="../data/entity_info.rdata")
 
