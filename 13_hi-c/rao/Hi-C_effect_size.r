@@ -115,7 +115,7 @@ ggplot(dat1, aes(x = effect_abs, color = cpg_cis)) +
   #geom_vline(aes(xintercept = dat2[1,4]), color = "#F8766D") +
   #geom_vline(aes(xintercept = dat2[2,4]), color = "#00BFC4") +
   labs(x = "Absolute mQTL effect size", y = "Density") +
-  scale_color_discrete(name ="DNAm site annotation", labels="cis and trans", "trans only")) +
+  scale_color_discrete(name ="DNAm site annotation", labels="cis and trans", "trans only") +
   theme(legend.position = "bottom")
   #annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
   #annotate("segment", x = x3, xend = dat2$effect_max, y = 5-0.2, yend = 4.5, colour = "black", size = 0.5, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
