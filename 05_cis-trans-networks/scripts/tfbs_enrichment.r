@@ -9,6 +9,8 @@ library(biovizBase)
 library(meffil)
 library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 library("BSgenome.Hsapiens.UCSC.hg19")
+library(ggrepel)
+
 theme_set(theme_bw())
 
 regionDB <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
@@ -275,10 +277,11 @@ t1<-table(res_all2$Tissue)
 dim(res_all2)
 #[1] 2634   32
 
-res_all2[which(res_all2$logOddsRatio=="-Inf"),]
-table(res_all2[which(res_all2$logOddsRatio=="-Inf"),"pValueLog"])
-# 0 
-#10 
+w1<-which(res_all2$logOddsRatio=="-Inf")
+table(res_all2$pValueLog[w1])
+
+w2<-which(res_all2$logOddsRatio=="Inf")
+table(res_all2$pValueLog[w2])
 
 res_all2<-res_all2[which(res_all2$logOddsRatio!="-Inf"),]
 res_all2[,Pvalue:=10^(-pValueLog)]
@@ -291,12 +294,14 @@ plot_pref="cpg_corebg_matched_cis_updated"
 pval_lim=0.001
   
   locResults=process_LOLA(LOLA_res=data.table(res_all2),cellType_conversions=cellType_conversions)
-  
+   
+
   sub=locResults
   sub[,signif:=any(p.adjust<=pval_lim),by="target"]
   sub=sub[signif==TRUE]
   sub[which(sub$logOddsRatio!="Inf"),]
 sub<-sub[which(sub$p.adjust<0.001),]
+
 res_all2<-res_all2[which(res_all2$p.adjust<0.001),]
 
 res_all3<-res_all2[,c("userSet","antibody","oddsRatio","Pvalue","p.adjust","support","b","c","d","cellType","cellType_corr","Tissue")]
@@ -304,23 +309,32 @@ names(res_all3)<-c("Community","Type","OR","Pvalue","FDR_Pvalue","support","b","
 write.table(res_all3,"TableSXX_LOLA_tfbs_communities.txt",sep="\t",quote=F,row.names=F,col.names=T)
 
 #pdf(paste0(plot_pref,"_OR_All.pdf"),height=10,width=18)
-  m1<-max(locResults$oddsRatio)+1
-  m2<-min(locResults$oddsRatio)-1
-  pl4<-ggplot(locResults,aes(x=target,y=oddsRatio,size=pValueLog))+
+locResults_sig <- subset(locResults, p.adjust < 0.001)
+p<-unique(paste(locResults_sig$userSet,locResults_sig$target))
+m <-match(p,paste(locResults_sig$userSet,locResults_sig$target))
+lab<-locResults_sig[m,c("target","userSet","p.adjust","oddsRatio")]
+
+  w1<-which(locResults$oddsRatio=="Inf")
+  locResults2<-locResults[-w1,]
+  m1<-max(locResults2$oddsRatio)+1
+  m2<-min(locResults2$oddsRatio)-1
+  pl4<-ggplot(locResults2,aes(x=target,y=oddsRatio,size=pValueLog,label=userSet))+
     geom_hline(yintercept=1,col="black",linetype="dotted")+
-    geom_point(aes(color=factor(userSet)))+
-    #facet_wrap(~userSet,scale="free_x",ncol=1)+
+    geom_point(aes(colour=factor(userSet),label=userSet))+
+    guides(colour = guide_legend(nrow = 3)) +
     theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
-    scale_size(range=c(1,4))+
-    guides(fill = guide_legend(ncol=20))+
+    #scale_size(range=c(1,4))+
+    geom_label_repel(data=lab, aes(x=target,y=oddsRatio,label=userSet), size=4) +
     scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1,2,3,4,5,10,20,50,100)) +
-    scale_fill_brewer(type="qual") +
     theme(legend.text=element_text(size=12)) +
-    #ylim(m2,m1) +
     labs(y="Odds ratio (log scale)",x="Transcription factor", fill="community")
-    pl4$labels$colour<-"community"
+    pl4$labels$colour<-"Community"
+   
     ggsave(pl4, file=paste0(plot_pref,"_OR_All.pdf"),height=10,width=18)
  # print(pl4)
  # dev.off()
 
-
+res16<-subset(res_all,userSet==16)
+res16[,Pvalue:=10^(-pValueLog)]
+res16[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
+res16[res16$Pvalue<0.05,]
