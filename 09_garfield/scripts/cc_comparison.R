@@ -110,20 +110,24 @@ guides(alpha=FALSE)
 ggsave(p1,file=paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/images/",id,".png"), width=9, height=4)
 
 ##
-df$Effect_sq<-df$Effect^2
-df$StdErr_sq<-df$StdErr^2
-df$F<-df$Effect_sq/df$StdErr_sq
-df$r2<-df$F/(df$F+27750-2)
+df$F <- df$Effect^2 / df$StdErr^2
+df$r2 <- df$F / (df$F + df$TotalSampleSize - 2)
 
 df$beta_sq<-df$beta_a1^2
 df$se_sq<-df$standard_error^2
-df$F_cc<-df$beta_sq/df$se_sq
+df$F_cc<-df$beta_a1^2/df$standard_error^2
 df$r2_cc<-df$F_cc/(df$F_cc+as.numeric(cc.n)-2)
+df$p_value <- as.numeric(df$p_value)
 
+df1 <- subset(df, p_value < 0.05)
+
+df2 <- subset(df, p_value < (0.05/nrow(df)))
+cat("Number of overlaps: ", nrow(df),"\n")
 cat(length(which(df$r2 > df$r2_cc))/nrow(df),"\n")
-
-df2 <- subset(df, p_value < 0.05/nrow(df))
-cat(length(which(df2$r2 > df2$r2_cc))/nrow(df),"\n")
+cat("Number of cc with p < 0.05: ", nrow(df1),"\n")
+cat(length(which(df1$r2 > df1$r2_cc))/nrow(df1),"\n")
+cat("Number of cc with p < 0.05/ntest: ", nrow(df2),"\n")
+cat(length(which(df2$r2 > df2$r2_cc))/nrow(df2),"\n")
 
 df3<-data.frame(id=id,r2_godmc_larger_than_cc=length(which(df2$r2 > df2$r2_cc)),no_assoc=nrow(df),prop=length(which(df2$r2 > df2$r2_cc))/nrow(df))
 write.table(df3,paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".txt"),sep="\t",quote=F,row.names=F,col.names=T)
