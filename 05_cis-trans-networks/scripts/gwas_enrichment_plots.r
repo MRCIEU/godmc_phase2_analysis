@@ -14,6 +14,7 @@ load("../data/labelids.rdata")
 ao <- available_outcomes()
 #load("../data/outcomes.RData")
 #dat <- merge(dat, ao, by.x="id.y", by.y="id")
+gwas_enrichment <- subset(gwas_enrichment, !is.na(cluster) & background == "clumped")
 dat <- merge(gwas_enrichment, ao, by="id")
 dat <- subset(dat, access != "developer")
 dat <- merge(dat, labelids, by="id")
@@ -32,19 +33,19 @@ dat$subcategory[is.na(dat$subcategory)] <- "Kidney"
 
 dat$fdr <- p.adjust(dat$p, "fdr")
 
-dat_sig <- subset(dat, fdr < 0.1)
-dat_nsig <- subset(dat, fdr >= 0.1)
+dat_sig <- subset(dat, fdr < 0.05)
+dat_nsig <- subset(dat, fdr >= 0.05)
 
 p1 <- ggplot(dat %>% subset(!grepl("Difference", trait)), aes(x=trait, y=-log10(p))) +
-geom_point(aes(size=nsnp.x)) +
-geom_point(data=dat_sig, aes(colour=lor, size=nsnp.x)) +
+geom_point(aes(size=ncase.x)) +
+geom_point(data=dat_sig, aes(colour=lor, size=ncase.x)) +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
 geom_hline(yintercept=-log10(max(dat_sig$p)), linetype="dotted") +
 labs(x="", y="-log10(p) enrichment", size="Number\nof regions in\ncommunity", colour="log(OR)") +
 # scale_colour_brewer(type="qual") +
 facet_grid(. ~ subcategory, scale="free", space="free") +
 theme(legend.position="none", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 8)) +
-geom_label_repel(data=dat_sig, aes(label=clust), size=2)
+geom_label_repel(data=dat_sig, aes(label=cluster), size=2)
 p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=18, height=13)
 ggsave(p1, file="../images/gwas_clusters_full.png", width=18, height=13)
@@ -60,6 +61,16 @@ for(i in 1:1000)
 
 quantile(o, 0.95)
 hist(o)
+
+##
+
+dat
+
+binom.test(
+	x = subset(dat, fdr < 0.05 & subcategory %in% c("Haematological", "Metal")) %>% nrow,
+	n = sum(dat$fdr < 0.05),
+	p = subset(dat, !duplicated(trait) & subcategory %in% c("Haematological", "Metal")) %>% nrow / subset(dat, !duplicated(trait)) %>% nrow
+	)
 
 ####
 
@@ -150,19 +161,42 @@ subset(enr_bias,fdr < 0.05)
 
 
 
-##
+## Follow up of interesting looking communities
 
 load("../results/core_communities_cpg_tophits.rdata")
 load("../results/ext_communities_cpg_tophits.rdata")
 load("../results/graph.rdata")
 load("../data/entity_info.rdata")
 
-subset(core_communities_cpg_tophits, userSet %in% dat_sig$clust)
+subset(entities, cluster %in% gwas_enrichment$cluster) %>% group_by(cluster) %>% summarise(n=n()) %>% arrange(n)
 
-subset(entities, cluster==32)
+o <- subset(gwas_enrichment, fdr < 0.05) %>% subset(background == "clumped" & !is.na(cluster)) %>% as.data.frame
 
-subset(core_communities_cpg_tophits, userSet %in% 32)
-subset(ext_communities_cpg_tophits, userSet %in% 32) %>% as.data.frame
+length(unique(o$cluster))
+length(unique(o$id))
+
+
+load("../data/entrez_genes.rdata"
+subset(entities, cluster == 16)
+g <- subset(anno, ind %in% subset(entities, cluster == 16)$name) %>% subset(., !duplicated(values) & values != "")
+#Plug these genes into GSEA
+#http://software.broadinstitute.org/gsea/msigdb/compute_overlaps.jsp
+
+
+subset(core_communities_cpg_tophits, userSet %in% dat_sig$clust) %>% group_by(userSet) %>% summarise(n=n())
+
+subset(core_communities_cpg_tophits, userSet == 16) %>% group_by(antibody) %>% summarise(pval=min(10^-pValueLog), n=n())
+
+subset(core_communities_cpg_tophits, userSet == 6) %>% group_by(antibody) %>% summarise(pval=min(10^-pValueLog), n=n())
+
+
+subset(core_communities_cpg_tophits, userSet == 9) %>% group_by(antibody) %>% summarise(pval=min(10^-pValueLog), n=n())
+
+
+subset(entities, cluster==16)
+
+subset(core_communities_cpg_tophits, userSet %in% 6) %>% as.data.frame
+subset(ext_communities_cpg_tophits, userSet %in% 3) %>% as.data.frame
 
 subset(ext_communities_cpg_tophits, userSet %in% dat_sig$clust) %>% group_by(collection) %>% summarise(n=n())
 
