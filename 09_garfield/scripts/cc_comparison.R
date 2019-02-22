@@ -21,6 +21,7 @@ arguments<-commandArgs(T)
 trait<-as.character(arguments[1])
 
 #trait<-as.character("27863252-GCST004599-EFO_0004584")
+trait<-as.character("27863252-GCST004610-EFO_0004308")
 spl<-strsplit(trait,split="-")
 trait_id<-spl[[1]][2]
 
@@ -97,8 +98,6 @@ w<-which(df$p_value<5e-8)
 df$GS<-"P>5e-8"
 df$GS[w]<-"P<5e-8"
 
-df2<-df[which(df$p_value<0.2),]
-
 p1<-ggplot(df, aes(x=Effect, y=beta_a1)) +
 geom_point(aes(colour=GS), cex=0.5) +
 geom_point(data=subset(df, GS=="P<5e-8"), aes(x = Effect, y = beta_a1, color = GS), cex=0.5) +
@@ -122,6 +121,7 @@ df$p_value <- as.numeric(df$p_value)
 df1 <- subset(df, p_value < 0.05)
 
 df2 <- subset(df, p_value < (0.05/nrow(df)))
+
 cat("Number of overlaps: ", nrow(df),"\n")
 cat(length(which(df$r2 > df$r2_cc))/nrow(df),"\n")
 cat("Number of cc with p < 0.05: ", nrow(df1),"\n")
@@ -129,8 +129,20 @@ cat(length(which(df1$r2 > df1$r2_cc))/nrow(df1),"\n")
 cat("Number of cc with p < 0.05/ntest: ", nrow(df2),"\n")
 cat(length(which(df2$r2 > df2$r2_cc))/nrow(df2),"\n")
 
-df3<-data.frame(id=id,r2_godmc_larger_than_cc=length(which(df2$r2 > df2$r2_cc)),no_assoc=nrow(df),prop=length(which(df2$r2 > df2$r2_cc))/nrow(df))
+#chrs<-unique(df1$snpchr)
+#for (chr in (1:length(chrs))){
+#chrno<-df1[which(df1$snpchr==chrs[chr]),]
+#cat(chrs[chr],"\n")
+#cat(length(which(chrno$r2 > chrno$r2_cc))/nrow(chrno),"\n")
+#}
+
+hla<-df1[which(df1$snpchr=="chr6"&df1$snppos>24570005&df1$snppos<38377657),]
+cat(length(which(hla$r2 > hla$r2_cc))/nrow(hla),"\n")
+hla<-df2[which(df2$snpchr=="chr6"&df2$snppos>24570005&df2$snppos<38377657),]
+cat(length(which(hla$r2 > hla$r2_cc))/nrow(hla),"\n")
+
+
+df3<-data.frame(id=id,no_assoc=nrow(df),r2_godmc_larger_than_cc=length(which(df$r2 > df$r2_cc))/nrow(df),No_cc_assoc_0.05=nrow(df1),r2_godmc_larger_than_cc_0.05=length(which(df1$r2 > df1$r2_cc))/nrow(df1),No_cc_assoc_0.05_ntested=nrow(df2),r2_godmc_larger_than_cc_0.05_ntested=length(which(df2$r2 > df2$r2_cc))/nrow(df2),No_cc_assoc_0.05_ntested_hla=nrow(hla),r2_godmc_larger_than_cc_0.05_ntested_hla=length(which(hla$r2 > hla$r2_cc))/nrow(hla))
 write.table(df3,paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".txt"),sep="\t",quote=F,row.names=F,col.names=T)
 #save(df,file=paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".Robj"))
-
 
