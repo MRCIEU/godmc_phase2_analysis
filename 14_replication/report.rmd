@@ -210,6 +210,8 @@ Final list of assocs that attempted replication in GS:
 ```{r}
 n_tested <- nrow(rep_fail)+nrow(replication) 
 n_tested
+
+save(n_tested,file="ntested.Robj")
 ```
 
 
