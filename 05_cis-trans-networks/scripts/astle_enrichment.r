@@ -54,7 +54,7 @@ astle_name <- args[1]
 output <- args[2]
 
 
-load("../../05_cis-trans-networks/data/entity_info.rdata")
+load("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/05_cis-trans-networks/data/entity_info.rdata")
 
 r <- fread(paste0("zcat ", astle_name, " | cut -f 2,11"), header=TRUE)
 extracted <- subset(r, variant_id %in% genomicinfo$snp_rsid)
