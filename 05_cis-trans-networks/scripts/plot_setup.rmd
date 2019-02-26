@@ -48,18 +48,17 @@ temp <- rbind(
 ) %>%
 filter(!duplicated(paste(cpg, snp)))
 
-l <- list()
-for(i in 1:nrow(core_communities_cpg_tophits))
-{
+l <- mclapply(1:nrow(core_communities_cpg_tophits), function(i) {
 	message(i)
-	l[[i]] <- extractEnrichmentOverlaps(as.data.frame(core_communities_cpg_tophits)[i,], community_cpgs_separate, tfbsdb) %>% as.data.frame
-	l[[i]] <- subset(temp, 
-			paste(cpg_chr, cpg_pos) %in% paste(l[[i]]$seqnames, l[[i]]$start)
+	out <- extractEnrichmentOverlaps(as.data.frame(core_communities_cpg_tophits)[i,], community_cpgs_separate, tfbsdb) %>% as.data.frame
+	out <- subset(temp, 
+			paste(cpg_chr, cpg_pos) %in% paste(out$seqnames, out$start)
 		) %>%
 	filter(!duplicated(paste(cpg, snp)))
-	l[[i]]$userSet <- core_communities_cpg_tophits$userSet[i]
-	l[[i]] <- merge(l[[i]], as.data.frame(core_communities_cpg_tophits)[i,])
-}
+	out$userSet <- core_communities_cpg_tophits$userSet[i]
+	out <- merge(out, as.data.frame(core_communities_cpg_tophits)[i,])
+	return(out)
+}, mc.cores=10)
 
 out <- bind_rows(l)
 out$antibody[is.na(out$antibody)] <- out$description[is.na(out$antibody)]
