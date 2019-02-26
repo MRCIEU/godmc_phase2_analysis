@@ -6,7 +6,7 @@ data: 25/02/2019
 
 ```{r}
 library(knitr)
-opts_chunk$set(cache=FALSE, echo=FALSE, message=FALSE, warning=FALSE)
+opts_chunk$set(cache=FALSE, echo=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r}
@@ -71,7 +71,7 @@ ind <- grepl("Znf143", out$antibody)
 out$antibody[ind] <- "Znf143"
 out$antibody <- toupper(out$antibody)
 
-out <- out %>%
+out2 <- out %>%
 	arrange(desc(pValueLog), cpg, antibody) %>%
 	group_by(userSet, cpg, antibody) %>%
 	mutate(count=n()) %>%
