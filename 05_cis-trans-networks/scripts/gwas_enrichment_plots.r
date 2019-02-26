@@ -36,19 +36,19 @@ dat$fdr <- p.adjust(dat$p, "fdr")
 dat_sig <- subset(dat, fdr < 0.05)
 dat_nsig <- subset(dat, fdr >= 0.05)
 
-p1 <- ggplot(dat %>% subset(!grepl("Difference", trait)), aes(x=trait, y=-log10(p))) +
+p1 <- ggplot(dat %>% subset(!grepl("Difference", trait)), aes(y=trait, x=-log10(p))) +
 geom_point(aes(size=ncase.x)) +
 geom_point(data=dat_sig, aes(colour=lor, size=ncase.x)) +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
-geom_hline(yintercept=-log10(max(dat_sig$p)), linetype="dotted") +
+geom_vline(xintercept=-log10(max(dat_sig$p)), linetype="dotted") +
 labs(x="", y="-log10(p) enrichment", size="Number\nof regions in\ncommunity", colour="log(OR)") +
 # scale_colour_brewer(type="qual") +
-facet_grid(. ~ subcategory, scale="free", space="free") +
-theme(legend.position="none", strip.text=element_text(angle=90, size=10), axis.text.x=element_text(size = 8)) +
+facet_grid(subcategory ~ ., scale="free", space="free") +
+theme(legend.position="none", strip.text.y=element_text(angle=0, size=10), axis.text.x=element_text(size = 8)) +
 geom_label_repel(data=dat_sig, aes(label=cluster), size=2)
 p1
-ggsave(p1, file="../images/gwas_clusters_full.pdf", width=18, height=13)
-ggsave(p1, file="../images/gwas_clusters_full.png", width=18, height=13)
+ggsave(p1, file="../images/gwas_clusters_full.pdf", width=6, height=12)
+ggsave(p1, file="../images/gwas_clusters_full.png", width=6, height=12)
 
 qq(dat$p)
 median(qchisq(dat$p, 1,low=FALSE) / qchisq(0.5, 1))
