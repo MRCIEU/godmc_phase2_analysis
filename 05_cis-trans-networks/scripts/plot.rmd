@@ -1,0 +1,139 @@
+---
+title: Community network plots
+author: Gibran Hemani
+data: 25/02/2019
+---
+
+```{r}
+library(knitr)
+opts_chunk$set(cache=FALSE, echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+Plot:
+
+- community 2 = largest
+- community 9 = cohesin
+- community 22 = nfkb
+- community 76 = ezh2
+
+```{r}
+library(dplyr)
+library(googleVis)
+library(networkD3)
+library(rbokeh)
+library(htmlwidgets)
+# Also need to install phantomjs
+# brew tap homebrew/cask
+# brew cask install phantomjs
+
+
+make_sankey <- function(userset, out, snpanno, options = list(height=600, width=700), method=c("googlevis", "networkd3")[1])
+{
+	temp <- subset(out, userSet == userset) %>% mutate(snp=gsub(":SNP", "", snp))
+	snpanno <- snpanno %>% ungroup %>% mutate(snp=gsub(":SNP", "", snp))
+	out <- mutate(out, snp=gsub(":SNP", "", snp))
+	bigdat <- list(
+		filter(snpanno, snp %in% temp$snp) %>% 
+			ungroup() %>% 
+			select(start=antibody, end=snp, weight=n) %>%
+			mutate(section=1),
+		filter(temp, !duplicated(paste(snp, cpg))) %>%
+			ungroup() %>%
+			mutate(weight=as.numeric(cis) * -1 + 2, section=2) %>%
+			select(start=snp, end=cpg, weight=weight, section=section),
+		temp %>% ungroup %>%
+			mutate(section=3) %>%
+			select(start=cpg, end=antibody, weight=pValueLog, section=section)
+	) %>% bind_rows()
+	# If any snp has no annotation, give it one
+	snplist <- unique(temp$snp)
+	missnp <- snplist[!snplist %in% subset(bigdat, section == 1)$end]
+	if(length(missnp) > 0)
+	{
+		message(missnp)
+		bigdat <- bind_rows(bigdat, data_frame(start="No annotation", end=missnp, weight=1, section=1)) %>% arrange(section)
+	}
+	cpglist <- unique(temp$cpg)
+	miscpg <- cpglist[!cpglist %in% subset(bigdat, section == 3)$start]
+	if(length(miscpg) > 0)
+	{
+		message(miscpg)
+		bigdat <- bind_rows(bigdat, data_frame(start=miscpg, end="No annotation", weight=1, section=3)) %>% arrange(section)
+	}
+
+	bigdat$end[bigdat$section==3] <- paste0(bigdat$end[bigdat$section==3], " ")
+	if(method == "googlevis")
+	{
+		a <- gvisSankey(subset(bigdat), from="start", to="end", weight="", options=options)
+		a$html$footer <- "</body>\n</html>"
+		a$html$caption <- ""
+		return(a)
+	} else if(method == "networkd3")
+	{
+		nom <- tibble(name=unique(c(bigdat$start, bigdat$end)))
+		nom$index <- 1:nrow(nom)-1
+
+		bigdat <- merge(bigdat, nom, by.x="start", by.y="name")
+		names(bigdat)[names(bigdat) == "index"] <- "source"
+		bigdat <- merge(bigdat, nom, by.x="end", by.y="name")
+		names(bigdat)[names(bigdat) == "index"] <- "target"
+		bigdat$value <- 1
+
+		o <- sankeyNetwork(Links=bigdat, Nodes=nom, Source="source", Target="target", Value="value", NodeID="name", fontSize = 18, fontFamily="Arial", height=options$height, width=options$width)
+		return(o)
+	}
+}
+
+```
+
+Load the results from `plot_setup.rmd` and modify the `sheffield_dnase` annotations to be only present for DNAse hypersensitivity in blood
+
+```{r}
+
+load("../results/plotting_community_enrichments.rdata")
+
+snpo2$antibody[is.na(snpo2$antibody)] <- snpo2$description[is.na(snpo2$antibody)]
+ind <- snpo2$collection == "sheffield_dnase"
+ind2 <- grepl("Hematop", snpo2$antibody) | grepl("sheffield_dnase", snpo2$antibody)
+snpo2$antibody[ind] <- NA
+snpo2$antibody[ind2] <- "Blood Dnase HS"
+snpo2 <- subset(snpo2, !is.na(antibody))
+snpanno <- group_by(snpo2, snp, antibody) %>%
+	summarise(n=n()) %>%
+	arrange(desc(n)) %>%
+	filter(between(row_number(), 1, pmin(10, n())))
+```
+
+Save plots in `networkD3` format
+
+```{r}
+a <- make_sankey(2, out, snpanno, list(height=1600, width=1000), "networkd3")
+widget2png(a, "../images/sankey2.png")
+
+a <- make_sankey(22, out, snpanno, list(height=600, width=1000), "networkd3")
+widget2png(a, "../images/sankey22.png")
+
+a <- make_sankey(76, out, snpanno, list(height=300, width=1000), "networkd3")
+widget2png(a, "../images/sankey76.png")
+
+a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "networkd3")
+widget2png(a, "../images/sankey9.png")
+```
+
+Save plots in `googleVis` format
+
+
+```{r}
+a <- make_sankey(2, out, snpanno, list(height=1600, width=1000), "googlevis")
+plot(a)
+
+a <- make_sankey(22, out, snpanno, list(height=600, width=1000), "googlevis")
+plot(a)
+
+a <- make_sankey(76, out, snpanno, list(height=300, width=1000), "googlevis")
+plot(a)
+
+a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "googlevis")
+plot(a)
+
+```

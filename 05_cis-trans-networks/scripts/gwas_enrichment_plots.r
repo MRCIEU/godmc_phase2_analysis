@@ -176,7 +176,7 @@ length(unique(o$cluster))
 length(unique(o$id))
 
 
-load("../data/entrez_genes.rdata"
+load("../data/entrez_genes.rdata")
 subset(entities, cluster == 16)
 g <- subset(anno, ind %in% subset(entities, cluster == 16)$name) %>% subset(., !duplicated(values) & values != "")
 #Plug these genes into GSEA
