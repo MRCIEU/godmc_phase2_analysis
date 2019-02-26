@@ -71,7 +71,7 @@ ind <- grepl("Znf143", out$antibody)
 out$antibody[ind] <- "Znf143"
 out$antibody <- toupper(out$antibody)
 
-out2 <- out %>%
+out <- out %>%
 	arrange(desc(pValueLog), cpg, antibody) %>%
 	group_by(userSet, cpg, antibody) %>%
 	mutate(count=n()) %>%
@@ -90,7 +90,7 @@ names(xsnps) <- nom
 
 snpo <- lapply(tfbsdb$regionGRL, function(x){
 	xsnps[queryHits(findOverlaps(xsnps, x))]
-})
+}, mc.cores=10)
 
 snpo2 <- list()
 for(i in 1:length(snpo))
@@ -104,7 +104,9 @@ for(i in 1:length(snpo))
 }
 snpo2 <- bind_rows(snpo2)
 snpo2 <- cbind(snpo2, temp[snpo2$ind, ])
+snpo2 <- cbind(snpo2, tfbsdb[[2]][snpo2$ind, ])
 glimpse(snpo2)
+
 
 temp <- tfbsdb[[2]]
 subset(temp, collection == "encode_tfbs" & cellType == "HFF")
@@ -130,6 +132,17 @@ m <- mclapply(1:nrow(out), function(i)
 	return(bind_rows(n))
 }, mc.cores=10)
 glimpse(m[1:5])
+
+M <- bind_rows(m)
+ind <- grepl("CTCF", M$antibody)
+M$antibody[ind] <- "CTCF"
+ind <- grepl("SMC3", M$antibody)
+M$antibody[ind] <- "SMC3"
+ind <- grepl("Znf143", M$antibody)
+M$antibody[ind] <- "Znf143"
+M$antibody <- toupper(M$antibody)
+
+
 ```
 
 Save:
