@@ -20,6 +20,7 @@ library(parallel)
 
 
 tfbsdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLACore/hg19")
+# extdb <- loadRegionDB("../../data/lola/scratch/ns5bc/resources/regions/LOLAExt/hg19")
 load("../results/core_communities_cpg_tophits.rdata")
 # load("../results/communities.rdata")
 load("../results/lola_snp_communities.rdata")
@@ -88,10 +89,13 @@ nom <- xsnps$snp
 xsnps <- GRanges(seqnames=xsnps$snpchr, IRanges(xsnps$min, xsnps$max))
 names(xsnps) <- nom
 
-snpo <- lapply(tfbsdb$regionGRL, function(x){
-	xsnps[queryHits(findOverlaps(xsnps, x))]
+
+# For each of 3012 datasets, we have a granges object that defines the segment overlaps. For each of those datasets, find which of our SNPs overlaps with those segments
+snpo <- mclapply(tfbsdb$regionGRL, function(x){
+	xsnps[queryHits(findOverlaps(xsnps, tfbsdb$regionGRL[[3011]]))]
 }, mc.cores=10)
 
+# Now for each of the datasets, label them accordingly and create a database of
 snpo2 <- list()
 for(i in 1:length(snpo))
 {
@@ -111,6 +115,11 @@ glimpse(snpo2)
 temp <- tfbsdb[[2]]
 subset(temp, collection == "encode_tfbs" & cellType == "HFF")
 
+```
+
+This next section isn't being used anymore so just going to not run it
+
+```{r, eval=FALSE}
 m <- mclapply(1:nrow(out), function(i)
 {
 	message(i)
@@ -148,6 +157,7 @@ M$antibody <- toupper(M$antibody)
 Save:
 
 ```{r}
-save(snpo2, out, m, file="../results/plotting_community_enrichments.rdata")
+# save(snpo2, out, m, file="../results/plotting_community_enrichments.rdata")
+save(snpo2, out, file="../results/plotting_community_enrichments.rdata")
 ```
 
