@@ -13,7 +13,7 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(ggthemes)
 	library(magrittr)
 }))
-opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r}
@@ -30,6 +30,7 @@ load("../results/cis_extract.rdata")
 load("../../results/16/16_clumped.rdata")
 load("../data/snp_1kg.rdata")
 load("../../05_cis-trans-networks/data/labelids.rdata")
+res <- as.data.frame(res, stringsAsFactors=FALSE)
 # snp_1kg <- with(snp_1kg, data_frame(snpchr=V1, snppos=V4, snp2=snp, snp=V2))
 
 ao <- available_outcomes() %>% filter(id %in% res$outcome, id %in% labelids$id, access != "developer")
