@@ -123,6 +123,7 @@ widget2png(a, "../images/sankey76.png")
 
 a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "networkd3")
 widget2png(a, "../images/sankey9.png")
+
 ```
 
 Save plots in `googleVis` format. This has to be done manually - `plot(a)` will open in a webpage. Print the webpage to pdf and then crop manually. This is how to create the files `../images/gvsankey2.pdf` etc.
@@ -140,6 +141,10 @@ plot(a)
 
 a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "googlevis")
 plot(a)
+
+a <- make_sankey(6, out, snpanno, list(height=200, width=1000), "googlevis")
+plot(a)
+
 
 ```
 
