@@ -44,7 +44,7 @@ geom_vline(xintercept=-log10(max(dat_sig$p)), linetype="dotted") +
 labs(y="", x="-log10(p) enrichment", size="Number\nof regions in\ncommunity", colour="log(OR)") +
 # scale_colour_brewer(type="qual") +
 facet_grid(subcategory ~ ., scale="free", space="free") +
-theme(legend.position="bottom", strip.text.y=element_text(angle=0, size=10), axis.text.x=element_text(size = 8)) +
+theme(legend.position="bottom", strip.text.y=element_text(angle=0, size=10), axis.text.y=element_text(size = 6)) +
 geom_label_repel(data=dat_sig, aes(label=cluster), size=2)
 p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=6, height=12)
