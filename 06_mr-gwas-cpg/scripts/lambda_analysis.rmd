@@ -64,11 +64,28 @@ ggplot(lam, aes(x=lambda, y=nsig)) +
 geom_point(aes(colour=chr6))
 ```
 
-
 ```{r}
-summary(lm(nsig ~ lambda, lam))
+ggplot(lam %>% filter(!chr6), aes(x=lambda, y=nsig)) +
+geom_point()
 ```
 
+```{r}
+summary(lm(nsig ~ lambda, lam %>% filter(!chr6)))
+```
+
+```{r}
+summary(lm(nsig ~ lambda, lam %>% filter(chr6)))
+```
+
+Is there a tendency for blood related traits to have higher lambda?
+
+```{r}
+load("../data/gkeeps.rdata")
+temp <- merge(gkeeps, lam %>% dplyr::select(-c(trait)), by.x="trait", by.y="phen")
+table(temp$subcategory)
+temp$blood <- temp$subcategory %in% c("Haemotological", "Hormone", "Metal", "Lipid", "Protein")
+summary(glm(as.numeric(blood) ~ lambda, temp %>% filter(!chr6), family="binomial"))
+```
 
 ## Look at highest lambda values
 

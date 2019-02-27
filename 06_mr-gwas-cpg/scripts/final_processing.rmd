@@ -42,7 +42,26 @@ table(gkeeps$trait %in% ao$trait)
 subset(gkeeps, !trait %in% ao$trait)
 category <- subset(ao, trait %in% gkeeps$trait) %>% filter(!is.na(category)) %>% filter(!duplicated(trait)) %>% dplyr::select(trait, category, subcategory)
 gkeeps <- merge(gkeeps, category, by="trait", all.x=TRUE)
+remove <- c(
+	grep("Father", gkeeps$trait),
+	grep("Mother", gkeeps$trait),
+	grep("Parent", gkeeps$trait),
+	grep("survival", gkeeps$trait),
+	grep("Difference", gkeeps$trait),
+	grep("Subjective", gkeeps$trait),
+	grep("Melanoma", gkeeps$trait)
+)
+remove
+gkeeps <- gkeeps[-remove,]
+
+save(gkeeps, file="../data/gkeeps.rdata")
 kable(head(gkeeps))
+```
+
+How many traits?
+
+```{r}
+nrow(gkeeps)
 ```
 
 How many disease traits?
@@ -220,6 +239,60 @@ Which multi-instrument traits?
 
 ```{r}
 subset(res, msig) %>% group_by(trait) %>% summarise(n=n()) %>% arrange(desc(n)) %>% kable
+```
+
+How many traits have at least one effect?
+
+```{r}
+subset(res, sig) %>% filter(!duplicated(trait)) %>% nrow
+```
+
+How many putative associations (before filtering) but with more than one instrument?
+
+```{r}
+sum(res$nsnp > 1 & res$pval < threshold)
+```
+
+How many traits?
+
+```{r}
+subset(res, nsnp > 1 & pval < threshold) %>% 
+filter(!duplicated(trait)) %>% nrow
+```
+
+How many traits have at least one effect and more than one instrument, after filtering?
+
+```{r}
+subset(res, msig) %>% filter(!duplicated(trait)) %>% nrow
+```
+
+How many associations?
+
+```{r}
+subset(res, msig) %>% nrow
+```
+
+Problem is that sometimes a trait is instrumented by more than one variant but the SNP isn't always available in the analysed CpGs? So some traits appear as having 2 and 1 instruments
+
+```{r}
+mtr <- subset(res, nsnp > 1 & pval < threshold) %>% 
+filter(!duplicated(trait)) %>% .$trait
+
+str <- subset(res, nsnp == 1 & pval < threshold) %>% 
+filter(!duplicated(trait)) %>% .$trait
+mtr[mtr %in% str]
+```
+
+For simplicity in reporting, do not include these in the single instrument trait list.
+
+```{r}
+length(str[!str %in% mtr])
+```
+
+How many CpGs involved in the multiple instrument traits?
+
+```{r}
+subset(res, msig) %>% filter(!duplicated(outcome)) %>% nrow
 ```
 
 ```{r}
