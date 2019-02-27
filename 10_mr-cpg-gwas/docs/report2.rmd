@@ -11,6 +11,7 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(TwoSampleMR)
 	library(ggplot2)
 	library(ggthemes)
+	library(magrittr)
 }))
 opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
 ```
@@ -28,9 +29,10 @@ load("../results/trans_extract.rdata")
 load("../results/cis_extract.rdata")
 load("../../results/16/16_clumped.rdata")
 load("../data/snp_1kg.rdata")
-snp_1kg <- with(snp_1kg, data_frame(snpchr=V1, snppos=V4, snp2=snp, snp=V2))
+load("../../05_cis-trans-networks/data/labelids.rdata")
+# snp_1kg <- with(snp_1kg, data_frame(snpchr=V1, snppos=V4, snp2=snp, snp=V2))
 
-ao <- available_outcomes() %>% filter(id %in% res$outcome)
+ao <- available_outcomes() %>% filter(id %in% res$outcome, id %in% labelids$id, access != "developer")
 sig <- res[res$H4 > 0.8 & res$p < threshold1,]
 sig <- subset(sig, !duplicated(paste(exposure, outcome)))
 sig <- merge(sig, subset(ao, select=c(id, trait, category, subcategory)), by.x="outcome", by.y="id")
@@ -69,7 +71,7 @@ exposure <- format_data(
 
 trans_extract$rsid <- trans_extract$SNP
 trans_extract$SNP <- tolower(trans_extract$transsnp)
-dat <- harmonise_data(exposure, trans_extract)
+dat <- harmonise_data(exposure, trans_extract %>% filter(id.outcome %in% ao$id))
 dat$code <- paste(dat$exposure, dat$id.outcome)
 
 to_extractt$code <- paste(to_extractt$exposure, to_extractt$outcome)
@@ -89,7 +91,7 @@ exposure <- format_data(
 
 cis_extract$rsid <- cis_extract$SNP
 cis_extract$SNP <- tolower(cis_extract$transsnp)
-dat_cis <- harmonise_data(exposure, cis_extract)
+dat_cis <- harmonise_data(exposure, cis_extract %>% filter(id.outcome %in% ao$id))
 dat_cis$code <- paste(dat_cis$exposure, dat_cis$id.outcome)
 
 to_extractc$code <- paste(to_extractc$exposure, to_extractc$outcome)
@@ -158,7 +160,6 @@ binom.test(x=sum(sign(mr_disc_repl$b.disc) == sign(mr_disc_repl$b.repl)), n=nrow
 What about direction of effect for just significant assocs?
 
 ```{r}
-library(magrittr)
 subset(mr_disc_repl, pval.repl < 0.05) %$% binom.test(x=sum(sign(b.disc) == sign(b.repl)), n=length(pval.repl), p=0.5)
 ```
 
