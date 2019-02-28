@@ -53,6 +53,21 @@ ggsave(p1, file="../images/gwas_clusters_full.png", width=6, height=12)
 qq(dat$p)
 median(qchisq(dat$p, 1,low=FALSE) / qchisq(0.5, 1))
 
+
+## Write table
+
+datt <- dat %>% dplyr::select(community=cluster, trait, mrbase_id=id, background, ncase=ncase.x, ncontrol=ncontrol.x, lor, se, z, pval=p) %>% arrange(pval)
+datt$community <- as.character(datt$community)
+datt$community[is.na(datt$community)] <- "All"
+write.csv(datt, file="../results/gwas_enrichment.csv")
+
+
+####
+
+
+
+
+
 o <- rep(NA, 1000)
 for(i in 1:1000)
 {

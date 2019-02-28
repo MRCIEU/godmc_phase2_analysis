@@ -34,11 +34,3 @@ dim(b01)
 write.csv(b01, "../results/trait_list.csv")
 
 
-##
-
-head(gwas_enrichment)
-gwas_enrichment <- inner_join(gwas_enrichment, subset(b, select=c(id, trait))) %>% ungroup() %>%
-dplyr::select(community=cluster, trait, mrbase_id=id, background, ncase, ncontrol, lor, se, z, pval=p) %>% arrange(pval)
-gwas_enrichment$community <- as.character(gwas_enrichment$community)
-gwas_enrichment$community[is.na(gwas_enrichment$community)] <- "All"
-write.csv(gwas_enrichment, file="../results/gwas_enrichment.csv")
