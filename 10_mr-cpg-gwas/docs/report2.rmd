@@ -129,7 +129,7 @@ mr_disc_repl$z.disc2 <- abs(mr_disc_repl$z.disc)
 mr_disc_repl$z.repl2 <- mr_disc_repl$z.repl
 mr_disc_repl$z.repl2[i] <- mr_disc_repl$z.repl2[i] * -1
 mr_disc_repl$fdr <- p.adjust(mr_disc_repl$pval.repl, "fdr")
-save(mr_discovery, mr_replication, mr_disc_repl, file="../results/mr_disc_repl.rdata")
+save(mr_discovery, mr_replication, mr_disc_repl, discovery, replication, file="../results/mr_disc_repl.rdata")
 ```
 
 There are `r nrow(mr_disc_repl)` initial colocalisation findings that have secondary mQTLs available (`r {nrow(mr_disc_repl) / nrow(sig) * 100} %>% round(., 1)`%). 
@@ -142,8 +142,25 @@ geom_abline(slope=1, linetype="dotted") +
 geom_smooth(method="lm") +
 ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
 labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\nFDR < 0.05")
+```
 
-summary(lm(z.repl ~ z.disc,  mr_disc_repl))
+```{r}
+library(ggrepel)
+sub <- subset(mr_disc_repl, abs(b.repl) > 1.5 & abs(b.repl) < 20 | (b.disc > 10 & b.repl > 0) )
+sub <- tidyr::separate(sub, outcome.disc, sep=" \\|", into=c("label", "other"))
+ggplot(mr_disc_repl %>% filter(!is.na(z.repl), b.repl > -50), aes(y=b.repl, x=b.disc)) +
+geom_point(aes(colour=fdr < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm") +
+geom_label_repel(data=sub, aes(label=label)) +
+# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\nFDR < 0.05")
+```
+
+
+```{r}
+summary(lm(b.repl ~ b.disc,  mr_disc_repl))
+summary(lm(b.repl ~ b.disc,  mr_disc_repl %>% filter(b.repl > -50)))
 ```
 
 Are there more small p-values than expected?
@@ -202,6 +219,29 @@ labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-va
 
 ```
 
+LDL cholesterol
+
+```{r}
+
+ggplot(mr_disc_repl %>% filter(id.outcome == 300), aes(y=b.repl, x=b.disc)) +
+geom_point(aes(colour=pval.repl < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm")
+# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+```
+
+Systemic lupus erythematosus
+
+```{r}
+ggplot(mr_disc_repl %>% filter(id.outcome == 288), aes(y=b.repl, x=b.disc)) +
+geom_point(aes(colour=pval.repl < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm")
+# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+
+```
 
 Create table
 
