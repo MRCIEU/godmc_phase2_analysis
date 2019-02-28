@@ -3,7 +3,10 @@ ao <- available_outcomes()
 library(magrittr)
 library(dplyr)
 
-load("../data/outcomes.RData")
+save(ao, file="../data/outcomes.rdata")
+
+
+load("../data/outcomes.rdata")
 load("~/repo/godmc-database/neo4j/data/trait_id_master.rdata")
 load("../results/gwas_enrichment.rdata")
 b <- subset(ao, access != "developer" & id %in% subset(master, !is.na(id_06))$id_mrb)
