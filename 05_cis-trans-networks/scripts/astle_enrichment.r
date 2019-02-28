@@ -49,9 +49,9 @@ run <- function(extracted, genomicinfo, entities)
 ####
 
 args <- commandArgs(T)
-astle_name <- args[1]
+astle_name <- as.character(args[1])
 # /projects/MRC-IEU/research/projects/ieu2/p5/021/working/data/Astle2016/27863252-GCST004629-EFO_0004833-Build37.f.tsv.gz
-output <- args[2]
+output <- as.character(args[2])
 
 
 load("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/05_cis-trans-networks/data/entity_info.rdata")
@@ -61,4 +61,4 @@ extracted <- subset(r, variant_id %in% genomicinfo$snp_rsid)
 names(extracted) <- c("SNP", "PVAL")
 
 res <- run(extracted, genomicinfo, entities)
-save(res, file=output)
+save(res, file=paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/05_cis-trans-networks/results/",output))

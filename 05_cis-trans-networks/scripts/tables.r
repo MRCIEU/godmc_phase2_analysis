@@ -3,6 +3,7 @@ ao <- available_outcomes()
 library(magrittr)
 library(dplyr)
 
+load("../data/outcomes.RData")
 load("~/repo/godmc-database/neo4j/data/trait_id_master.rdata")
 load("../results/gwas_enrichment.rdata")
 b <- subset(ao, access != "developer" & id %in% subset(master, !is.na(id_06))$id_mrb)
@@ -31,6 +32,19 @@ remove <- c(
 remove
 b01$mr_exposure[remove] <- FALSE
 dim(b01)
-write.csv(b01, "../results/trait_list.csv")
 
+b01$subcategory[b01$subcategory=="Hemodynamic"] <- "Haematological"
+b01$subcategory[b01$subcategory=="Haemotological"] <- "Haematological"
+b01$subcategory[b01$subcategory=="Immune system"] <- "Autoimmune / inflammatory"
+b01$subcategory[b01$subcategory=="Diabetes"] <- "Glycemic"
+b01$subcategory[b01$subcategory=="Biomarker"] <- "Other"
+b01$subcategory[b01$subcategory=="Protein"] <- "Other"
+b01$subcategory[b01$subcategory=="Hormone"] <- "Other"
+b01$subcategory[b01$subcategory=="Reproductive aging"] <- "Aging"
+b01$subcategory[b01$subcategory=="Lung disease"] <- "Other"
+b01$subcategory[b01$subcategory=="Autoimmune / inflammatory"] <- "Immune"
+b01$subcategory[b01$subcategory=="Psychiatric / neurological"] <- "Neurological"
+b01$subcategory[is.na(b01$subcategory)] <- "Kidney"
+
+write.csv(b01, "../results/trait_list.csv")
 
