@@ -1,0 +1,152 @@
+---
+title: Following up colocalisation signals with secondary mQTLs (analysis)
+author: Gibran Hemani
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(dplyr)
+	library(TwoSampleMR)
+	library(ggplot2)
+	library(ggthemes)
+	library(magrittr)
+	library(ggrepel)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+threshold1 <- 0.05 / (300000 * 698)
+threshold2 <- 0.05 / (300000)
+load("../results/mr_disc_repl.rdata")
+load("../../05_cis-trans-networks/data/outcomes.rdata")
+ao <- ao %>% filter(access != "developer")
+```
+
+```{r}
+ggplot(mr_disc_repl %>% filter(!is.na(z.repl)), aes(y=z.repl, x=z.disc)) +
+geom_point(aes(colour=fdr < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm") +
+ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\nFDR < 0.05")
+```
+
+```{r}
+sub <- subset(mr_disc_repl, abs(b.repl) > 1.5 & abs(b.repl) < 20 | (abs(b.disc) > 10 & b.repl < 0) & b.repl > -50 ) %>% 
+	tidyr::separate(outcome.disc, sep=" \\|", into=c("label", "other"))
+ggplot(mr_disc_repl %>% filter(!is.na(z.repl), b.repl > -50), aes(y=b.repl, x=b.disc)) +
+geom_point(aes(colour=fdr < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm") +
+geom_text_repel(data=sub, aes(label=label)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\nFDR < 0.05")
+```
+
+
+```{r}
+summary(lm(b.repl ~ b.disc,  mr_disc_repl))
+summary(lm(b.repl ~ b.disc,  mr_disc_repl %>% filter(b.repl > -50)))
+```
+
+Are there more small p-values than expected?
+
+```{r}
+binom.test(x=sum(mr_disc_repl$pval.repl < 0.05, na.rm=T), n=nrow(mr_disc_repl), p=0.05)
+```
+
+What about direction of effect?
+
+```{r}
+binom.test(x=sum(sign(mr_disc_repl$b.disc) == sign(mr_disc_repl$b.repl)), n=nrow(mr_disc_repl), p=0.5)
+```
+
+What about direction of effect for just significant assocs?
+
+```{r}
+subset(mr_disc_repl, pval.repl < 0.05) %$% binom.test(x=sum(sign(b.disc) == sign(b.repl)), n=length(pval.repl), p=0.5)
+```
+
+Is small p-values in repl related to trait type
+
+```{r}
+inner_join(mr_disc_repl, subset(ao, select=c(id, subcategory)), by=c("id.outcome"="id")) %$% summary(lm(z.repl ~ subcategory))
+```
+
+```{r}
+inner_join(mr_disc_repl, subset(ao, select=c(id, subcategory)), by=c("id.outcome"="id")) %>% mutate(sig=pval.repl < 0.05) %$% summary(glm(sig ~ subcategory))
+```
+
+```{r}
+inner_join(mr_disc_repl, subset(ao, select=c(id, subcategory)), by=c("id.outcome"="id")) %>% mutate(sig=pval.repl < 0.05, blood = subcategory %in% c("Haemotological", "Metal", "Protein")) %$% summary(glm(sig ~ blood))
+```
+
+Which associations appear to be working?
+
+```{r}
+
+mr_disc_repl$fdr <- p.adjust(mr_disc_repl$pval.repl, "fdr")
+mr_disc_repl$concordant <- sign(mr_disc_repl$b.repl) == sign(mr_disc_repl$b.disc)
+subset(mr_disc_repl, fdr < 0.05 & concordant)
+subset(mr_disc_repl, fdr < 0.05 & !concordant)
+
+
+```
+
+Schizophrenia has some consistent results but looking at all of them together is less convincing
+
+```{r}
+ggplot(mr_disc_repl %>% filter(id.outcome == 22), aes(y=z.repl, x=z.disc)) +
+geom_point(aes(colour=pval.repl < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm") +
+ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+
+```
+
+LDL cholesterol
+
+```{r}
+
+ggplot(mr_disc_repl %>% filter(id.outcome == 300), aes(y=b.repl, x=b.disc)) +
+geom_point(aes(colour=pval.repl < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm")
+# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+```
+
+Systemic lupus erythematosus
+
+```{r}
+ggplot(mr_disc_repl %>% filter(id.outcome == 288), aes(y=b.repl, x=b.disc)) +
+geom_point(aes(colour=pval.repl < 0.05)) +
+geom_abline(slope=1, linetype="dotted") +
+geom_smooth(method="lm")
+# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+
+```
+
+Create table
+
+```{r}
+out <- mr_disc_repl %$% data_frame(
+	cpg = exposure,
+	outcome = outcome.disc,
+	beta.primary = b.disc,
+	se.primary = se.disc,
+	pval.primary = pval.disc,
+	beta.secondary = b.repl,
+	se.secondary = se.repl,
+	pval.secondary = pval.repl
+)
+
+write.csv(out, file="../results/mr_primary_secondary.csv")
+
+```
+	
+
