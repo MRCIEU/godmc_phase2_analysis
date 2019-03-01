@@ -142,16 +142,16 @@ cat(length(which(hla$r2 > hla$r2_cc))/nrow(hla),"\n")
 hla<-df2[which(df2$snpchr=="chr6"&df2$snppos>24570005&df2$snppos<38377657),]
 cat(length(which(hla$r2 > hla$r2_cc))/nrow(hla),"\n")
 
-cis<-cis[which(df==TRUE),]
-trans<-cis[which(df==FALSE),]
+cis<-df[which(df$cis=="TRUE"),]
+trans<-df[which(df$cis=="FALSE"),]
 
-cis1<-cis1[which(df1==TRUE),]
-trans1<-trans1[which(df1==FALSE),]
+cis1<-df1[which(df1$cis=="TRUE"),]
+trans1<-df1[which(df1$cis=="FALSE"),]
 
-cis2<-cis2[which(df2==TRUE),]
-trans2<-trans2[which(df2==TRUE),]
+cis2<-df2[which(df2$cis=="TRUE"),]
+trans2<-df2[which(df2$cis=="FALSE"),]
 
-df3<-data.frame(id=id,no_assoc=nrow(df),r2_godmc_larger_than_cc=length(which(df$r2 > df$r2_cc))/nrow(df),r2_godmc_larger_than_cc=length(which(df1$r2 > df1$r2_cc))/nrow(df1),r2_godmc_larger_than_cc=length(which(df2$r2 > df2$r2_cc))/nrow(df2),No_cc_assoc_0.05=nrow(df1),r2_godmc_larger_than_cc_cis=length(which(cis1$r2 > cis1$r2_cc))/nrow(cis1),r2_godmc_larger_than_cc_cis_0.05=length(which(cis2$r2 > cis2$r2_cc))/nrow(cis2),r2_godmc_larger_than_cc_trans=length(which(trans1$r2 > trans1$r2_cc))/nrow(trans1),r2_godmc_larger_than_cc_trans_0.05=length(which(trans2$r2 > trans2$r2_cc))/nrow(trans2),No_cc_assoc_0.05_ntested=nrow(df2),r2_godmc_larger_than_cc_0.05_ntested=length(which(df2$r2 > df2$r2_cc))/nrow(df2),No_cc_assoc_0.05_ntested_hla=nrow(hla),r2_godmc_larger_than_cc_0.05_ntested_hla=length(which(hla$r2 > hla$r2_cc))/nrow(hla),)
+df3<-data.frame(id=id,no_assoc=nrow(df),r2_godmc_larger_than_cc=length(which(df$r2 > df$r2_cc))/nrow(df),r2_godmc_larger_than_cc=length(which(df1$r2 > df1$r2_cc))/nrow(df1),r2_godmc_larger_than_cc=length(which(df2$r2 > df2$r2_cc))/nrow(df2),No_cc_assoc_0.05=nrow(df1),r2_godmc_larger_than_cc_cis=length(which(cis1$r2 > cis1$r2_cc))/nrow(cis1),r2_godmc_larger_than_cc_cis_0.05=length(which(cis2$r2 > cis2$r2_cc))/nrow(cis2),r2_godmc_larger_than_cc_trans=length(which(trans1$r2 > trans1$r2_cc))/nrow(trans1),r2_godmc_larger_than_cc_trans_0.05=length(which(trans2$r2 > trans2$r2_cc))/nrow(trans2),No_cc_assoc_0.05_ntested=nrow(df2),r2_godmc_larger_than_cc_0.05_ntested=length(which(df2$r2 > df2$r2_cc))/nrow(df2),No_cc_assoc_0.05_ntested_hla=nrow(hla),r2_godmc_larger_than_cc_0.05_ntested_hla=length(which(hla$r2 > hla$r2_cc))/nrow(hla))
 write.table(df3,paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".txt"),sep="\t",quote=F,row.names=F,col.names=T)
 #save(df,file=paste0("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/09_garfield/cellcounts/",id,".Robj"))
 
