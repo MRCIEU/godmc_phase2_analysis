@@ -41,6 +41,7 @@ table(counts$overlap)
 counts$effect_abs <- abs(counts$Effect)
 
 # ttest between groups
+print("t-test of abs effect size between overlapping and non-ovelapping interchrom trans mQTLs")
 with(counts, t.test(effect_abs~overlap))
 
 #Welch Two Sample t-test
@@ -92,6 +93,7 @@ x2 <- (dat2[1,4]+dat2[2,4])/2
 x3 <- x2[1,1]
 
 #ttest
+print("t-test of abs effect size between overlapping trans only mQTLs and trans+cis mQTLs")
 with(dat1, t.test(effect_abs~cpg_cis))
 
 #Welch Two Sample t-test
@@ -105,27 +107,46 @@ with(dat1, t.test(effect_abs~cpg_cis))
 #  mean in group ambivalent      mean in group FALSE
 #0.2084973                0.2770036
 
-
-
 # TRUE = cis, FALSE = trans, ambivalent = both cis and trans
 
 pdf("Rao_effect_overlaps_vs_cis_cat.pdf")
-ggplot(dat1, aes(x = effect_abs, color = cpg_cis)) +
-  geom_density() + 
-  #geom_vline(aes(xintercept = dat2[1,4]), color = "#F8766D") +
-  #geom_vline(aes(xintercept = dat2[2,4]), color = "#00BFC4") +
+ggplot() +
+  geom_density(data = dat1, aes(x = effect_abs, color = cpg_cis)) + 
   labs(x = "Absolute mQTL effect size", y = "Density") +
-  scale_color_discrete(name ="DNAm site annotation", labels="cis and trans", "trans only") +
+  scale_color_discrete(name ="DNAm site annotation", labels=c("cis and trans", "trans only")) +
   theme(legend.position = "bottom")
-  #annotate(geom = "text", x = x3, y = 5, label="Max abs effect") +
-  #annotate("segment", x = x3, xend = dat2$effect_max, y = 5-0.2, yend = 4.5, colour = "black", size = 0.5, arrow = arrow(type = "closed", length = unit(0.20,"cm")))
+
+dev.off()
+
+#0=trans only, 1=cis/trans, 2=non-overlaps
+#counts$cat[counts$cpg_cis=="FALSE"] <- "trans only" #260
+#counts$cat[counts$cpg_cis=="ambivalent"] <- "cis and trans" #377
+#counts$cat[counts$overlap=="no"] <- "non-overlapping trans mQTLs" #17947
+
+counts$cat[counts$cpg_cis=="FALSE"] <- "0" #260
+counts$cat[counts$cpg_cis=="ambivalent"] <- "1" #377
+counts$cat[counts$overlap=="no"] <- "2" #17947
+
+counts$cat2[counts$cpg_cis=="FALSE"] <- "trans-overlaps"
+counts$cat2[counts$overlap=="no"] <- "no-overlap"
+
+# ttest between groups
+print("t-test of abs effect size between overlapping trans only mQTLs and non-ovelapping interchrom trans mQTLs")
+with(counts, t.test(effect_abs~cat2))
+
+#counts$cat2 <- factor(counts$cat)
+
+# Plot to show the density of trans only overlaps, cis/trans overlaps and all interchrom mQTLs that do not overlap
+pdf("Rao_effect_overlaps_vs_cis_cat2.pdf")
+ggplot() +
+  geom_density(data = counts, aes(x = effect_abs, color = cat)) +
+  labs(x = "Absolute mQTL effect size", y = "Density") +
+  scale_color_discrete(name ="DNAm site annotation", labels=c("trans only", "cis and trans", "non-overlapping trans mQTLs")) +
+  theme(legend.position = "bottom")
 
 dev.off()
 
 #F8766D
 #00BFC4
 #scale_color_manual(values=c("#CC6666", "#9999CC"))
-  sink()
-
-
-
+sink()
