@@ -68,7 +68,7 @@ replication2 <- group_by(replication, cpg) %>%
 	summarise(r2=sum(r2))
 replication2$what <- "hsqtot"
 
-load("../07_enrichments/mean_allcpgs.Robj")
+load("~/repo/godmc_phase2_analysis/07_enrichments/mean_allcpgs.Robj")
 m<-match(replication2$cpg,df.all$cpg)
 replication_mean_sd<-data.frame(replication2,df.all[m,c("meancpg","sdcpg")])
 
@@ -187,10 +187,12 @@ vd$ord <- rank(vd$h2_twinAE)
 vd %>% filter(h2_twinAE != 0) %>%
 	group_by()
 
+w0<-which(vd$h2_twinAE == 0)
+
 ```
 The mean h2 is `r mean(vd$h2_twinAE,na.rm=T)` across `r nrow(vd)` sites. 
-Correlation between variance explained in GoDMC and h2_twin: `r cor(vd$r2, vd$h2_twinAE)`
-
+Correlation between variance explained in GoDMC and h2_twin incl h2==0: `r cor(vd$r2, vd$h2_twinAE)`
+Correlation between variance explained in GoDMC and h2_twin incl h2!=0: `r cor(vd$r2[-w0], vd$h2_twinAE[-w0])`
 ```{r, echo=FALSE}
 
 vd %>% lm(r2 ~ h2_twinAE, data=.) %>% summary %>% coefficients
@@ -201,7 +203,7 @@ theme(axis.text.x=element_text(angle=90, size=3)) +
 labs(x="Twin heritability estimate", y="Variance explained in GS replication")
 ```
 
-What proportion of h2 is explained? To summarise this set probes with h2==0 to h2==1e-10 because this gives division errors.
+What proportion of h2 is explained? To summarise this set probes with h2==0 to h2==1e-10 because this gives division errors. r2 for probes with h2==0 are set to 0.
 
 * There are `r length(which(vd$h2_twinAE == 0))` CpGs with h2==0.
 
@@ -213,9 +215,10 @@ vd2$prop <- (vd2$r2 / vd2$h2_twinAE)
 w<-which(vd2$prop>1)
 vd2$prop[w]<-1
 
-w0<-which(vd$h2_twinAE == 0)
+
 vd$h2_twinAE[w0]<-1e-10
 vd$prop <- (vd$r2 / vd$h2_twinAE)
+vd$prop[w0]<-0
 
 ggplot(vd, aes(x = prop)) +  
 geom_histogram()
@@ -279,6 +282,9 @@ What proportion of the h2 is explained by mQTLs?
 mc <- inner_join(replication2, mcrae, by=c("cpg"="cpg"))
 mc$ord <- rank(mc$h2_cc)
 mc$h2_cc_r <- round(mc$h2_cc, 2)
+
+w0<-which(mc$h2_cc == 0)
+
 ```
 
 ```{r, echo=FALSE}
@@ -292,6 +298,7 @@ mc%>% lm(r2 ~ h2_cc, data=.) %>% summary %>% coefficients
 
 The mean h2 is `r mean(mc$h2_cc,na.rm=T)` across `r nrow(mc)` sites. 
 Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2, mc$h2_cc)`
+Correlation between variance explained in GoDMC and h2_pedigree: `r cor(mc$r2[-w0], mc$h2_cc[-w0])`
 
 What proportion of h2 is explained? To summarise this probes with h2==0 are replaced with h2==1e-10 to avoid division errors.
 
@@ -305,9 +312,10 @@ mc2$prop <-(mc2$r2 / mc2$h2_cc)
 w<-which(mc2$prop>1)
 mc2$prop[w]<-1
 
-w0<-which(mc$h2_cc == 0)
 mc$h2_cc[w0]<-1e-10
 mc$prop <- (mc$r2 / mc$h2_cc)
+mc$prop[w0]<-0
+
 ```
 There are `r length(which(mc$prop>1))` proportions above 1. These will be set to 1.
 
@@ -390,28 +398,42 @@ tab1 <- with(replication, data_frame(
 tab2a <- with(mcrae, data_frame(
 	cpg=cpg, h2_mcrae=h2_cc
 ))
+nrow(tab2a)
 
 tab2b <- with(vandongen, data_frame(
 	cpg=cgid, h2_vandongen=h2_twinAE
 ))
+nrow(tab2b)
 
 #tab2 <- inner_join(tab2a, tab2b, by="cpg")
 tab2 <- full_join(tab2a, tab2b, by="cpg")
+nrow(tab2)
+
 tab2 <- merge(tab2, subset(replication2, select=-c(what)), by="cpg", all.x=TRUE)
 tab2<-tab2[which(tab2$cpg%in%df.all$cpg),]
+nrow(tab2)
+
 gs <- read.csv("sites_to_exclude_5200_samples.csv")
 tab2<-tab2[which(tab2$cpg%in%gs$x==F),]
+nrow(tab2)
+length(which(is.na(tab2$r2))) #277428
+
 tab2$r2[is.na(tab2$r2)] <- 0
 
 tab2l <- tidyr::gather(tab2, key="key", value="value", h2_mcrae, h2_vandongen)
 tab2l$key[tab2l$key=="h2_mcrae"] <- "Family"
 tab2l$key[tab2l$key=="h2_vandongen"] <- "Twin"
 
+w<-which(tab2l$value==0)
+length(w)
+tab2l$r2[w]<-0
+
 ggplot(tab2l, aes(x=as.factor(round(value*2, 1)/2), y=r2)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90, size=3)) +
 labs(x="Heritability estimate", y="Variance explained in GS replication", fill="Heritability\nstudy design")
 ggsave(file="images/h2_vs_r2.png", width=9, height=4)
+ggsave(file="images/h2_vs_r2.pdf", width=9, height=4)
 
 load("../results/16/16_clumped.rdata")
 mqtlcount <- group_by(clumped, cpg) %>% summarise(mqtls=n())
@@ -441,13 +463,14 @@ tab2l %>% group_by(key) %>% summarise(cor=cor(mqtls, value,use="complete.obs"))
 regression of r2~h2_twin using `r nrow(tab2l[tab2l$key=="Twin",])` probes, missing r2 are set to 0
 
 ```{r}
-tab2l %>% filter(key == "Twin") %>% lm(r2 ~ value, data=.) %>% summary %>% coefficients
+tab2l %>% filter(key == "Twin") %>% lm(value ~ r2, data=.) %>% summary %>% coefficients
 ```
 
-regression of r2~h2_McRae using `r nrow(tab2l[tab2l$key=="Family",])` probes, missing r2 are set to 0
+regression of h2_McRae~r2 using `r nrow(tab2l[tab2l$key=="Family",])` probes, missing r2 are set to 0
+regression of h2_McRae~r2 using `r nrow(tab2l[tab2l$key=="Family",])` probes, missing r2 are set to 0
 
 ```{r}
-tab2l %>% filter(key == "Family") %>% lm(r2 ~ value, data=.) %>% summary %>% coefficients
+tab2l %>% filter(key == "Family") %>% lm(value ~ r2, data=.) %>% summary %>% coefficients
 
 
 ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
@@ -459,15 +482,17 @@ ggsave(file="images/r2_vs_h2.pdf", width=9, height=4)
 
 write.csv(tab1, file="results/replication.csv")
 
-tab3<-tab2[which(tab2$cpg %in% replication2$cpg),]
+#tab3<-tab2[which(tab2$cpg %in% replication2$cpg),]
+tab3<-left_join(replication2[,1],tab2,by="cpg")
+
 tab3$genetic_r2_mcrae<-tab3$r2/tab3$h2_mcrae
 
 tab3$genetic_r2_vandongen<-tab3$r2/tab3$h2_vandongen
 
-w1<-which(tab3$genetic_r2_mcrae=="Inf")
-w2<-which(tab3$genetic_r2_vandongen=="Inf")
-tab3$genetic_r2_vandongen[w2]<-NA
-tab3$genetic_r2_mcrae[w1]<-NA
+w1<-which(tab3$h2_mcrae==0)
+tab3$genetic_r2_mcrae[w1]<-0
+w2<-which(tab3$h2_vandongen==0)
+tab3$genetic_r2_vandongen[w2]<-0
 
 write.csv(tab3, file="results/variance_explained.csv")
 
