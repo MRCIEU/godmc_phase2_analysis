@@ -206,9 +206,34 @@ l %>% group_by(type2, perm == 0) %>% summarise(n=n(), m=mean(sddif), s=sd(sddif)
 
 ### Counts
 
+sig_cpg_anno <- unique(b$Var2)
+sig_snp_anno <- unique(b$Var1)
+sig_snp 
+
 load("../data/trans_clumped.rdata")
-clumped <- merge(clumped, snpres, by="snp")
-clumped <- merge(clumped, cpgres, by="cpg")
+temp <- subset(clumped, snp %in% subset(snpres, anno %in% sig_snp_anno)$snp & cpg %in% subset(cpgres, anno %in% sig_cpg_anno)$cpg, select=c(snp, cpg))
+temp <- merge(temp, snpres[snpres$anno %in% sig_snp_anno,], by="snp")
+temp <- merge(temp, cpgres[cpgres$anno %in% sig_cpg_anno,], by="cpg")
+
+temp$code <- paste(temp$anno.x, temp$anno.y)
+target_code <- paste(b$Var1, b$Var2)
+temp2 <- subset(temp, code %in% target_code)
+
+enriched_mqtls <- subset(temp2, !duplicated(paste(cpg, snp)))
+
+
+clumped$enriched <- paste(clumped$cpg, clumped$snp) %in% paste(enriched_mqtls$cpg, enriched_mqtls$snp)
+save(enriched_mqtls, file="../data/enriched_mqtls.rdata")
+
+summary(glm(as.numeric(enriched) ~ nproxies, clumped, family="binomial"))
+summary(glm(as.numeric(enriched) ~ Effect, clumped, family="binomial"))
+summary(glm(as.numeric(enriched) ~ Effect + nproxies, clumped, family="binomial"))
+summary(glm(as.numeric(enriched) ~ TotalSampleSize + Effect + nproxies, clumped, family="binomial"))
+with(clumped, tapply(TotalSampleSize, enriched, mean))
+
+# clumped <- as.data.frame(clumped, stringsAsFactors=FALSE)
+# clumped <- merge(clumped, snpres, by="snp")
+# clumped <- merge(clumped, cpgres, by="cpg")
 
 temp <- subset(snpres, anno %in% blood2$index)
 

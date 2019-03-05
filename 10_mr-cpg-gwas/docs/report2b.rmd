@@ -95,40 +95,65 @@ subset(mr_disc_repl, fdr < 0.05 & !concordant)
 
 ```
 
-Schizophrenia has some consistent results but looking at all of them together is less convincing
+
+Get the comparisons for all traits for which there is at least one replication with FDR < 0.05
 
 ```{r}
-ggplot(mr_disc_repl %>% filter(id.outcome == 22), aes(y=z.repl, x=z.disc)) +
-geom_point(aes(colour=pval.repl < 0.05)) +
-geom_abline(slope=1, linetype="dotted") +
-geom_smooth(method="lm") +
-ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
-labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+
+trait_list <- unique(subset(mr_disc_repl, pval.repl < 0.05)$id.outcome)
+subset(mr_disc_repl, id.outcome %in% trait_list) %>% group_by(outcome.disc) %>% summarise(n=n()) %>% kable
+```
+
+Plot them
+
+```{r}
+for(i in 1:length(trait_list))
+{
+
+	temp <- mr_disc_repl %>% filter(id.outcome == trait_list[i])
+	temp$hla_disc <- FALSE
+	temp$hla_repl <- FALSE
+	for(j in 1:nrow(temp))
+	{
+		temp2 <- subset(discovery, id.outcome == trait_list[i] & exposure == temp$exposure[j])
+		temp3 <- strsplit(temp2$SNP, split=":")[[1]]
+		temp$hla_disc[j] <- temp3[1] == "chr6" & as.numeric(temp3[2]) > 24570005 & as.numeric(temp3[2]) < 38377657
+
+		temp2 <- subset(replication, id.outcome == trait_list[i] & exposure == temp$exposure[j])
+		temp3 <- strsplit(temp2$SNP, split=":")[[1]]
+		temp$hla_repl[j] <- temp3[1] == "chr6" & as.numeric(temp3[2]) > 24570005 & as.numeric(temp3[2]) < 38377657
+	}
+	p1 <- ggplot(temp, aes(y=b.repl, x=b.disc)) +
+	geom_point(aes(colour=pval.repl < 0.05, size=hla_disc, shape=hla_repl)) +
+	geom_abline(slope=1, linetype="dotted") +
+	geom_errorbar(width=0, color="grey", aes(ymin=b.repl-1.96*se.repl, ymax=b.repl+1.96*se.repl)) +
+	geom_errorbarh(height=0, color="grey", aes(xmin=b.disc-1.96*se.disc, xmax=b.disc+1.96*se.disc)) +
+	geom_smooth(method="lm") +
+	labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05", title = unique(subset(mr_disc_repl, id.outcome == trait_list[i])$outcome.disc))
+	print(p1)
+}
 
 ```
 
-LDL cholesterol
+What are the variants for LDL chol
 
 ```{r}
-
-ggplot(mr_disc_repl %>% filter(id.outcome == 300), aes(y=b.repl, x=b.disc)) +
-geom_point(aes(colour=pval.repl < 0.05)) +
-geom_abline(slope=1, linetype="dotted") +
-geom_smooth(method="lm")
-# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
-labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
+subset(discovery, id.outcome == 300 & exposure == subset(mr_disc_repl, id.outcome == 300 & pval.repl < 0.05)$exposure)$SNP
+subset(replication, id.outcome == 300 & exposure == subset(mr_disc_repl, id.outcome == 300 & pval.repl < 0.05)$exposure)$SNP
 ```
 
-Systemic lupus erythematosus
+Find examples where the replication is somewhat convincing and the primary and secondary loci are on different chromosomes
 
 ```{r}
-ggplot(mr_disc_repl %>% filter(id.outcome == 288), aes(y=b.repl, x=b.disc)) +
-geom_point(aes(colour=pval.repl < 0.05)) +
-geom_abline(slope=1, linetype="dotted") +
-geom_smooth(method="lm")
-# ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
-labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\np-value < 0.05")
-
+discchr <- subset(discovery, select=c(SNP, id.outcome, exposure))
+replchr <- subset(replication, select=c(SNP, id.outcome, exposure))
+temp <- merge(mr_disc_repl, discchr, by=c("id.outcome", "exposure"))
+temp <- merge(temp, replchr, by=c("id.outcome", "exposure"))
+str(temp)
+temp <- tidyr::separate(temp, SNP.x, split=":", into=c("disc.chr", "disc.pos", "disc.type"))
+temp <- tidyr::separate(temp, SNP.y, split=":", into=c("repl.chr", "repl.pos", "repl.type"))
+table(temp$disc.chr == temp$repl.chr)
+subset(temp, pval.repl < 0.05 & temp$disc.chr != temp$repl.chr & sign(b.repl) == sign(b.disc))
 ```
 
 Create table
