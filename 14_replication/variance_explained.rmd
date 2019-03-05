@@ -486,13 +486,17 @@ write.csv(tab1, file="results/replication.csv")
 tab3<-left_join(replication2[,1],tab2,by="cpg")
 
 tab3$genetic_r2_mcrae<-tab3$r2/tab3$h2_mcrae
-
 tab3$genetic_r2_vandongen<-tab3$r2/tab3$h2_vandongen
 
 w1<-which(tab3$h2_mcrae==0)
 tab3$genetic_r2_mcrae[w1]<-0
 w2<-which(tab3$h2_vandongen==0)
 tab3$genetic_r2_vandongen[w2]<-0
+
+w1<-which(tab3$genetic_r2_mcrae>1)
+tab3$genetic_r2_mcrae[w1]<-1
+w2<-which(tab3$h2_vandongen>1)
+tab3$genetic_r2_vandongen[w2]<-1
 
 write.csv(tab3, file="results/variance_explained.csv")
 
