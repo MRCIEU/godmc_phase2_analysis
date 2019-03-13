@@ -23,9 +23,10 @@ res2 <- subset(res2, p < threshold2)
 
 load("../../results/16/16_clumped.rdata")
 load("../results/mr_disc_repl.rdata")
-temp8$code <- paste(temp8$outcome.x, temp8$exposure)
-res2$code <- paste(res2$trait, res2$exposure)
-res2$conc <- res2$code %in% subset(temp8, same_sign & sig2a)$code
+mr_disc_repl$sig <- sign(mr_disc_repl$b.disc) == sign(mr_disc_repl$b.repl) & mr_disc_repl$fdr < 0.05
+table(mr_disc_repl$sig)
+res2$code <- paste(res2$outcome, res2$exposure)
+res2$conc <- res2$code %in% subset(mr_disc_repl, sig)$code
 
 
 ##
@@ -92,7 +93,8 @@ temp$pval <- -log10(temp$p)
 temp$chrcol <- temp$chr %% 2 == 0
 
 library(TwoSampleMR)
-ao <- available_outcomes()
+load("../../05_cis-trans-networks/data/outcomes.rdata")
+
 
 sigtraits <- subset(temp, sig)$trait %>% unique %>% as.character
 cats <- subset(ao, trait %in% sigtraits, select=c(trait, subcategory))
