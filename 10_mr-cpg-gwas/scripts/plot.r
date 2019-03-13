@@ -22,7 +22,7 @@ res2$p[res2$p < 1e-100] <- 1e-100
 res2 <- subset(res2, p < threshold2)
 
 load("../../results/16/16_clumped.rdata")
-load("../results/mr_concordance.rdata")
+load("../results/mr_disc_repl.rdata")
 temp8$code <- paste(temp8$outcome.x, temp8$exposure)
 res2$code <- paste(res2$trait, res2$exposure)
 res2$conc <- res2$code %in% subset(temp8, same_sign & sig2a)$code

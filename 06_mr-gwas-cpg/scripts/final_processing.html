@@ -383,16 +383,16 @@ $(document).ready(function () {
 }))
 opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)</code></pre>
 <p>Systematically filter out results that look unreliable. Codes are as follows:</p>
-<pre><code>(1) Non-significant wald ratio
-(2) Significant wald ratio
-(3) ivw not sig
-(4) 2-9 inst, no heterogeneity
-(5) heterogeneity
-(6) 10-49 inst, no het or high sign
-(7) high het/ low sign and median is not sig
-(8) high het/ low sign and median is sig
-(9) 50+ inst, low sign or high het
-(10) 50+ inst, high sign or low het</code></pre>
+<pre><code>(1) Fail: Non-significant wald ratio
+(2) Pass: Significant wald ratio
+(3) Fail: ivw not sig
+(4) Pass: 2-9 inst, no heterogeneity
+(5) Fail: heterogeneity
+(6) Pass: 10-49 inst, no het or high sign
+(7) Fail: high het/ low sign and median is not sig
+(8) Pass: high het/ low sign and median is sig
+(9) Fail: 50+ inst, low sign or high het
+(10) Pass: 50+ inst, high sign or low het</code></pre>
 <pre class="r"><code>threshold &lt;- 1.4e-7
 
 load(&quot;../data/snps_gwas.rdata&quot;)
@@ -400,19 +400,22 @@ load(&quot;../data/snps_gwas.rdata&quot;)
 gkeep &lt;- filter(a, grepl(&quot;mr&quot;, data_source.exposure))
 gkeeps &lt;- gkeep %&gt;% group_by(id.exposure, trait, exposure) %&gt;% summarise(n=n()) %&gt;% arrange(desc(n)) %&gt;% ungroup %&gt;% filter(!duplicated(trait))
 rm(a)
-ao &lt;- available_outcomes()
+load(&quot;../../05_cis-trans-networks/data/outcomes.rdata&quot;)
+ao &lt;- subset(ao, access %in% c(&quot;public&quot;, &quot;Public&quot;, &quot;immunobase_users&quot;))
 table(gkeeps$trait %in% ao$trait)</code></pre>
 <pre><code>## 
 ## FALSE  TRUE 
-##     2   116</code></pre>
+##     4   114</code></pre>
 <pre class="r"><code>subset(gkeeps, !trait %in% ao$trait)</code></pre>
-<pre><code>## # A tibble: 2 x 4
-##   id.exposure trait             exposure                                  n
-##   &lt;chr&gt;       &lt;chr&gt;             &lt;chr&gt;                                 &lt;int&gt;
-## 1 VHMiz0      Mother’s age at … Mother’s age at death || UK Biobank …     1
-## 2 VRQIyf      Father’s age at … Father’s age at death || UK Biobank …     1</code></pre>
+<pre><code>## # A tibble: 4 x 4
+##   id.exposure trait               exposure                                n
+##   &lt;chr&gt;       &lt;chr&gt;               &lt;chr&gt;                               &lt;int&gt;
+## 1 Oh661R      Telomere length     Telomere length || NA || 2012 || k…     6
+## 2 YtKZkn      Small cell lung ca… Small cell lung carcinoma || TRICL…     2
+## 3 VHMiz0      Mother’s age at de… Mother’s age at death || UK Bioban…     1
+## 4 VRQIyf      Father’s age at de… Father’s age at death || UK Bioban…     1</code></pre>
 <pre class="r"><code>category &lt;- subset(ao, trait %in% gkeeps$trait) %&gt;% filter(!is.na(category)) %&gt;% filter(!duplicated(trait)) %&gt;% dplyr::select(trait, category, subcategory)
-gkeeps &lt;- merge(gkeeps, category, by=&quot;trait&quot;, all.x=TRUE)
+gkeeps &lt;- merge(gkeeps, category, by=&quot;trait&quot;)
 remove &lt;- c(
     grep(&quot;Father&quot;, gkeeps$trait),
     grep(&quot;Mother&quot;, gkeeps$trait),
@@ -423,10 +426,11 @@ remove &lt;- c(
     grep(&quot;Melanoma&quot;, gkeeps$trait)
 )
 remove</code></pre>
-<pre><code>## [1]  37  69 104  28  29 100  66</code></pre>
+<pre><code>## [1] 100  28  29  97  65</code></pre>
 <pre class="r"><code>gkeeps &lt;- gkeeps[-remove,]
-
-save(gkeeps, file=&quot;../data/gkeeps.rdata&quot;)
+dim(gkeeps)</code></pre>
+<pre><code>## [1] 109   6</code></pre>
+<pre class="r"><code>save(gkeeps, file=&quot;../data/gkeeps.rdata&quot;)
 kable(head(gkeeps))</code></pre>
 <table>
 <thead>
@@ -492,12 +496,12 @@ kable(head(gkeeps))</code></pre>
 </table>
 <p>How many traits?</p>
 <pre class="r"><code>nrow(gkeeps)</code></pre>
-<pre><code>## [1] 111</code></pre>
+<pre><code>## [1] 109</code></pre>
 <p>How many disease traits?</p>
 <pre class="r"><code>table(gkeeps$category)</code></pre>
 <pre><code>## 
 ##     Disease Risk factor 
-##          36          75</code></pre>
+##          35          74</code></pre>
 <p>Read in tophits and set code to 0. By the end all 0 codes should be removed.</p>
 <pre class="r"><code>load(&quot;../results/mrbase_tophits_full.rdata&quot;)
 res &lt;- subset(res, id.exposure %in% gkeeps$id.exposure)
@@ -512,36 +516,36 @@ codes &lt;- data_frame(code=unique(res$code), decision = 0)
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0 
-## 4820</code></pre>
-<div id="non-significant-wald-ratio" class="section level3">
-<h3>(1) Non-significant wald ratio</h3>
+## 4785</code></pre>
+<div id="fail-non-significant-wald-ratio" class="section level3">
+<h3>(1) Fail: Non-significant wald ratio</h3>
 <pre class="r"><code>temp &lt;- subset(res, nsnp == 1 &amp; pval &gt; threshold)$code
 codes$decision[codes$code %in% temp] &lt;- 1
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1 
-## 3845  975</code></pre>
+## 3810  975</code></pre>
 </div>
-<div id="significant-wald-ratio" class="section level3">
-<h3>(2) Significant wald ratio</h3>
+<div id="pass-significant-wald-ratio" class="section level3">
+<h3>(2) Pass: Significant wald ratio</h3>
 <pre class="r"><code>temp &lt;- subset(res, nsnp == 1 &amp; pval &lt;= threshold)$code
 codes$decision[codes$code %in% temp] &lt;- 2
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2 
-##  471  975 3374</code></pre>
+##  436  975 3374</code></pre>
 </div>
-<div id="ivw-not-sig" class="section level3">
-<h3>(3) ivw not sig</h3>
+<div id="fail-ivw-not-sig" class="section level3">
+<h3>(3) Fail: ivw not sig</h3>
 <pre class="r"><code>temp &lt;- subset(res, method == &quot;Inverse variance weighted&quot; &amp; pval &gt; threshold)$code
 codes$decision[codes$code %in% temp] &lt;- 3
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3 
-##  222  975 3374  249</code></pre>
+##  194  975 3374  242</code></pre>
 </div>
-<div id="inst-no-heterogeneity" class="section level3">
-<h3>(4) 2-9 inst, no heterogeneity</h3>
+<div id="pass-2-9-inst-no-heterogeneity" class="section level3">
+<h3>(4) Pass: 2-9 inst, no heterogeneity</h3>
 <pre class="r"><code>ivw_followup &lt;- subset(res, method == &quot;Inverse variance weighted&quot; &amp; pval &lt;= threshold &amp; nsnp &gt;= 2 &amp; nsnp &lt; 10)$code
 het_followup &lt;- subset(het, code %in% ivw_followup)
 temp &lt;- subset(het_followup, Q_pval &gt; 0.05/nrow(het_followup))$code
@@ -549,19 +553,19 @@ codes$decision[codes$code %in% temp] &lt;- 4
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3    4 
-##  130  975 3374  249   92</code></pre>
+##  122  975 3374  242   72</code></pre>
 </div>
-<div id="heterogeneity" class="section level3">
-<h3>(5) heterogeneity</h3>
+<div id="fail-heterogeneity" class="section level3">
+<h3>(5) Fail: heterogeneity</h3>
 <pre class="r"><code>temp &lt;- subset(het_followup, Q_pval &lt;= 0.05/nrow(het_followup))$code
 codes$decision[codes$code %in% temp] &lt;- 5
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3    4    5 
-##  121  975 3374  249   92    9</code></pre>
+##  121  975 3374  242   72    1</code></pre>
 </div>
-<div id="inst-no-het-or-high-sign" class="section level3">
-<h3>(6) 10-49 inst, no het or high sign</h3>
+<div id="pass-10-49-inst-no-het-or-high-sign" class="section level3">
+<h3>(6) Pass: 10-49 inst, no het or high sign</h3>
 <pre class="r"><code>ivw_followup &lt;- subset(res, method == &quot;Inverse variance weighted&quot; &amp; pval &lt;= threshold &amp; nsnp &gt;= 10 &amp; nsnp &lt; 50)
 het_followup &lt;- subset(het, code %in% ivw_followup$code)
 temp1 &lt;- subset(het_followup, Q_pval &gt; 0.05/nrow(het_followup))$code
@@ -573,10 +577,10 @@ codes$decision[codes$code %in% temp3] &lt;- 6
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3    4    5    6 
-##  115  975 3374  249   92    9    6</code></pre>
+##  115  975 3374  242   72    1    6</code></pre>
 </div>
-<div id="high-het-low-sign-and-median-is-not-sig" class="section level3">
-<h3>(7) high het/ low sign and median is not sig</h3>
+<div id="fail-high-het-low-sign-and-median-is-not-sig" class="section level3">
+<h3>(7) Fail: high het/ low sign and median is not sig</h3>
 <pre class="r"><code>temp4 &lt;- subset(ivw_followup, ! code %in% c(temp1, temp2))
 temp5 &lt;- subset(res, code %in% temp4$code &amp; method == &quot;Simple median&quot;)
 temp6 &lt;- subset(temp5, pval &gt; 0.05/nrow(temp5))$code
@@ -584,19 +588,19 @@ codes$decision[codes$code %in% temp6] &lt;- 7
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3    4    5    6    7 
-##   34  975 3374  249   92    9    6   81</code></pre>
+##   34  975 3374  242   72    1    6   81</code></pre>
 </div>
-<div id="high-het-low-sign-and-median-is-sig" class="section level3">
-<h3>(8) high het/ low sign and median is sig</h3>
+<div id="pass-high-het-low-sign-and-median-is-sig" class="section level3">
+<h3>(8) Pass: high het/ low sign and median is sig</h3>
 <pre class="r"><code>temp7 &lt;- subset(temp5, pval &lt;= 0.05/nrow(temp5))$code
 codes$decision[codes$code %in% temp7] &lt;- 8
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3    4    5    6    7 
-##   34  975 3374  249   92    9    6   81</code></pre>
+##   34  975 3374  242   72    1    6   81</code></pre>
 </div>
-<div id="inst-low-sign-or-high-het" class="section level3">
-<h3>(9) 50+ inst, low sign or high het</h3>
+<div id="fail-50-inst-low-sign-or-high-het" class="section level3">
+<h3>(9) Fail: 50+ inst, low sign or high het</h3>
 <pre class="r"><code>ivw_followup &lt;- subset(res, method == &quot;Inverse variance weighted&quot; &amp; pval &lt;= threshold &amp; nsnp &gt;= 50)
 
 temp &lt;- subset(res, code %in% ivw_followup$code &amp; method == &quot;Sign concordance test&quot;)
@@ -610,16 +614,16 @@ codes$decision[codes$code %in% temp5] &lt;- 9
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    0    1    2    3    4    5    6    7    9 
-##    7  975 3374  249   92    9    6   81   27</code></pre>
+##    7  975 3374  242   72    1    6   81   27</code></pre>
 </div>
-<div id="inst-high-sign-or-low-het" class="section level3">
-<h3>(10) 50+ inst, high sign or low het</h3>
+<div id="pass-50-inst-high-sign-or-low-het" class="section level3">
+<h3>(10) Pass: 50+ inst, high sign or low het</h3>
 <pre class="r"><code>temp6 &lt;- subset(ivw_followup, code %in% c(temp3, temp4))$code
 codes$decision[codes$code %in% temp6] &lt;- 10
 table(codes$decision)</code></pre>
 <pre><code>## 
 ##    1    2    3    4    5    6    7    9   10 
-##  975 3374  249   92    9    6   81   27    7</code></pre>
+##  975 3374  242   72    1    6   81   27    7</code></pre>
 <p>Summarise</p>
 <pre class="r"><code>codes$sig &lt;- codes$decision %in% c(2,4,6,8,10)
 codes$msig &lt;- codes$decision %in% c(4,6,8,10)</code></pre>
@@ -627,12 +631,12 @@ codes$msig &lt;- codes$decision %in% c(4,6,8,10)</code></pre>
 <pre class="r"><code>table(codes$sig)</code></pre>
 <pre><code>## 
 ## FALSE  TRUE 
-##  1341  3479</code></pre>
+##  1326  3459</code></pre>
 <p>How many are significant that involve more than one instrument</p>
 <pre class="r"><code>table(codes$msig)</code></pre>
 <pre><code>## 
 ## FALSE  TRUE 
-##  4715   105</code></pre>
+##  4700    85</code></pre>
 <p>Save:</p>
 <pre class="r"><code>save(codes, file=&quot;../results/mrbase_sig_codes.rdata&quot;)</code></pre>
 <hr />
@@ -663,7 +667,7 @@ ressig1 %&gt;% filter(grepl(&quot;smok&quot;, exposure, ignore.case=TRUE))</code
 ## #   code &lt;chr&gt;, decision &lt;dbl&gt;, sig &lt;lgl&gt;, msig &lt;lgl&gt;, trait &lt;chr&gt;</code></pre>
 <pre class="r"><code>ressigm &lt;- subset(res, msig)
 ressigm %&gt;% group_by(trait) %&gt;% summarise(n=n())</code></pre>
-<pre><code>## # A tibble: 14 x 2
+<pre><code>## # A tibble: 13 x 2
 ##    trait                             n
 ##    &lt;chr&gt;                         &lt;int&gt;
 ##  1 Age at menarche                   1
@@ -676,25 +680,24 @@ ressigm %&gt;% group_by(trait) %&gt;% summarise(n=n())</code></pre>
 ##  8 Multiple sclerosis                2
 ##  9 Rheumatoid arthritis              3
 ## 10 Serum cystatin C (eGFRcys)        2
-## 11 Small cell lung carcinoma        20
-## 12 Transferrin Saturation            4
-## 13 Triglycerides                     5
-## 14 Zinc                              1</code></pre>
+## 11 Transferrin Saturation            4
+## 12 Triglycerides                     5
+## 13 Zinc                              1</code></pre>
 <pre class="r"><code>ressigm %&gt;% group_by(outcome) %&gt;% summarise(n=n())</code></pre>
-<pre><code>## # A tibble: 103 x 2
+<pre><code>## # A tibble: 84 x 2
 ##    outcome        n
 ##    &lt;chr&gt;      &lt;int&gt;
-##  1 cg00513316     1
-##  2 cg00574958     1
-##  3 cg00869530     1
-##  4 cg01016122     1
-##  5 cg01082498     1
-##  6 cg02205391     1
-##  7 cg02260363     1
-##  8 cg02276974     1
-##  9 cg02333792     1
-## 10 cg02346730     1
-## # … with 93 more rows</code></pre>
+##  1 cg00574958     1
+##  2 cg00869530     1
+##  3 cg01016122     1
+##  4 cg01082498     1
+##  5 cg02205391     1
+##  6 cg02346730     1
+##  7 cg02609733     1
+##  8 cg02639080     1
+##  9 cg02995061     1
+## 10 cg03280235     1
+## # … with 74 more rows</code></pre>
 <p>Which single instrument traits are coming up?</p>
 <pre class="r"><code>subset(res, decision == 2) %&gt;% group_by(trait) %&gt;% summarise(n=n()) %&gt;% arrange(desc(n)) %&gt;% kable</code></pre>
 <table>
@@ -798,54 +801,50 @@ ressigm %&gt;% group_by(trait) %&gt;% summarise(n=n())</code></pre>
 <td align="right">62</td>
 </tr>
 <tr class="even">
-<td align="left">Small cell lung carcinoma</td>
-<td align="right">20</td>
-</tr>
-<tr class="odd">
 <td align="left">Triglycerides</td>
 <td align="right">5</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Transferrin Saturation</td>
 <td align="right">4</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Rheumatoid arthritis</td>
 <td align="right">3</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Multiple sclerosis</td>
 <td align="right">2</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Serum cystatin C (eGFRcys)</td>
 <td align="right">2</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Age at menarche</td>
 <td align="right">1</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Birth weight</td>
 <td align="right">1</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Bulimia nervosa</td>
 <td align="right">1</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Copper</td>
 <td align="right">1</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Fasting insulin</td>
 <td align="right">1</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td align="left">Iron</td>
 <td align="right">1</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td align="left">Zinc</td>
 <td align="right">1</td>
 </tr>
@@ -853,20 +852,20 @@ ressigm %&gt;% group_by(trait) %&gt;% summarise(n=n())</code></pre>
 </table>
 <p>How many traits have at least one effect?</p>
 <pre class="r"><code>subset(res, sig) %&gt;% filter(!duplicated(trait)) %&gt;% nrow</code></pre>
-<pre><code>## [1] 32</code></pre>
+<pre><code>## [1] 31</code></pre>
 <p>How many putative associations (before filtering) but with more than one instrument?</p>
 <pre class="r"><code>sum(res$nsnp &gt; 1 &amp; res$pval &lt; threshold)</code></pre>
-<pre><code>## [1] 222</code></pre>
+<pre><code>## [1] 194</code></pre>
 <p>How many traits?</p>
 <pre class="r"><code>subset(res, nsnp &gt; 1 &amp; pval &lt; threshold) %&gt;% 
 filter(!duplicated(trait)) %&gt;% nrow</code></pre>
-<pre><code>## [1] 15</code></pre>
+<pre><code>## [1] 14</code></pre>
 <p>How many traits have at least one effect and more than one instrument, after filtering?</p>
 <pre class="r"><code>subset(res, msig) %&gt;% filter(!duplicated(trait)) %&gt;% nrow</code></pre>
-<pre><code>## [1] 14</code></pre>
+<pre><code>## [1] 13</code></pre>
 <p>How many associations?</p>
 <pre class="r"><code>subset(res, msig) %&gt;% nrow</code></pre>
-<pre><code>## [1] 105</code></pre>
+<pre><code>## [1] 85</code></pre>
 <p>Problem is that sometimes a trait is instrumented by more than one variant but the SNP isn’t always available in the analysed CpGs? So some traits appear as having 2 and 1 instruments</p>
 <pre class="r"><code>mtr &lt;- subset(res, nsnp &gt; 1 &amp; pval &lt; threshold) %&gt;% 
 filter(!duplicated(trait)) %&gt;% .$trait
@@ -880,7 +879,7 @@ mtr[mtr %in% str]</code></pre>
 <pre><code>## [1] 17</code></pre>
 <p>How many CpGs involved in the multiple instrument traits?</p>
 <pre class="r"><code>subset(res, msig) %&gt;% filter(!duplicated(outcome)) %&gt;% nrow</code></pre>
-<pre><code>## [1] 103</code></pre>
+<pre><code>## [1] 84</code></pre>
 <pre class="r"><code>a &lt;- subset(res, nsnp &gt; 1, select=-c(id.exposure, id.outcome, method, chunk, code, sig, exposure))
 
 a &lt;- subset(res, nsnp &gt; 1, select=c(trait, outcome, nsnp, b, se, pval, decision, msig)) %&gt;%

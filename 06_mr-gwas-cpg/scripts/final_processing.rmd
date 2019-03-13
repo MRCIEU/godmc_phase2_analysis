@@ -16,16 +16,16 @@ opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
 Systematically filter out results that look unreliable. Codes are as follows:
 
 ```
-(1) Non-significant wald ratio
-(2) Significant wald ratio
-(3) ivw not sig
-(4) 2-9 inst, no heterogeneity
-(5) heterogeneity
-(6) 10-49 inst, no het or high sign
-(7) high het/ low sign and median is not sig
-(8) high het/ low sign and median is sig
-(9) 50+ inst, low sign or high het
-(10) 50+ inst, high sign or low het
+(1) Fail: Non-significant wald ratio
+(2) Pass: Significant wald ratio
+(3) Fail: ivw not sig
+(4) Pass: 2-9 inst, no heterogeneity
+(5) Fail: heterogeneity
+(6) Pass: 10-49 inst, no het or high sign
+(7) Fail: high het/ low sign and median is not sig
+(8) Pass: high het/ low sign and median is sig
+(9) Fail: 50+ inst, low sign or high het
+(10) Pass: 50+ inst, high sign or low het
 ```
 
 ```{r}
@@ -37,11 +37,12 @@ load("../data/snps_gwas.rdata")
 gkeep <- filter(a, grepl("mr", data_source.exposure))
 gkeeps <- gkeep %>% group_by(id.exposure, trait, exposure) %>% summarise(n=n()) %>% arrange(desc(n)) %>% ungroup %>% filter(!duplicated(trait))
 rm(a)
-ao <- available_outcomes()
+load("../../05_cis-trans-networks/data/outcomes.rdata")
+ao <- subset(ao, access %in% c("public", "Public", "immunobase_users"))
 table(gkeeps$trait %in% ao$trait)
 subset(gkeeps, !trait %in% ao$trait)
 category <- subset(ao, trait %in% gkeeps$trait) %>% filter(!is.na(category)) %>% filter(!duplicated(trait)) %>% dplyr::select(trait, category, subcategory)
-gkeeps <- merge(gkeeps, category, by="trait", all.x=TRUE)
+gkeeps <- merge(gkeeps, category, by="trait")
 remove <- c(
 	grep("Father", gkeeps$trait),
 	grep("Mother", gkeeps$trait),
@@ -53,7 +54,7 @@ remove <- c(
 )
 remove
 gkeeps <- gkeeps[-remove,]
-
+dim(gkeeps)
 save(gkeeps, file="../data/gkeeps.rdata")
 kable(head(gkeeps))
 ```
@@ -86,7 +87,7 @@ codes <- data_frame(code=unique(res$code), decision = 0)
 table(codes$decision)
 ```
 
-### (1) Non-significant wald ratio
+### (1) Fail: Non-significant wald ratio
 
 ```{r}
 temp <- subset(res, nsnp == 1 & pval > threshold)$code
@@ -94,7 +95,7 @@ codes$decision[codes$code %in% temp] <- 1
 table(codes$decision)
 ```
 
-### (2) Significant wald ratio
+### (2) Pass: Significant wald ratio
 
 ```{r}
 temp <- subset(res, nsnp == 1 & pval <= threshold)$code
@@ -102,7 +103,7 @@ codes$decision[codes$code %in% temp] <- 2
 table(codes$decision)
 ```
 
-### (3) ivw not sig
+### (3) Fail: ivw not sig
 
 ```{r}
 temp <- subset(res, method == "Inverse variance weighted" & pval > threshold)$code
@@ -110,7 +111,7 @@ codes$decision[codes$code %in% temp] <- 3
 table(codes$decision)
 ```
 
-### (4) 2-9 inst, no heterogeneity
+### (4) Pass: 2-9 inst, no heterogeneity
 
 
 ```{r}
@@ -121,7 +122,7 @@ codes$decision[codes$code %in% temp] <- 4
 table(codes$decision)
 ```
 
-### (5) heterogeneity
+### (5) Fail: heterogeneity
 
 ```{r}
 temp <- subset(het_followup, Q_pval <= 0.05/nrow(het_followup))$code
@@ -129,7 +130,7 @@ codes$decision[codes$code %in% temp] <- 5
 table(codes$decision)
 ```
 
-### (6) 10-49 inst, no het or high sign
+### (6) Pass: 10-49 inst, no het or high sign
 
 ```{r}
 ivw_followup <- subset(res, method == "Inverse variance weighted" & pval <= threshold & nsnp >= 10 & nsnp < 50)
@@ -143,7 +144,7 @@ codes$decision[codes$code %in% temp3] <- 6
 table(codes$decision)
 ```
 
-### (7) high het/ low sign and median is not sig
+### (7) Fail: high het/ low sign and median is not sig
 
 ```{r}
 temp4 <- subset(ivw_followup, ! code %in% c(temp1, temp2))
@@ -153,7 +154,7 @@ codes$decision[codes$code %in% temp6] <- 7
 table(codes$decision)
 ```
 
-### (8) high het/ low sign and median is sig
+### (8) Pass: high het/ low sign and median is sig
 
 ```{r}
 temp7 <- subset(temp5, pval <= 0.05/nrow(temp5))$code
@@ -161,7 +162,7 @@ codes$decision[codes$code %in% temp7] <- 8
 table(codes$decision)
 ```
 
-### (9) 50+ inst, low sign or high het
+### (9) Fail: 50+ inst, low sign or high het
 
 ```{r}
 ivw_followup <- subset(res, method == "Inverse variance weighted" & pval <= threshold & nsnp >= 50)
@@ -177,7 +178,7 @@ codes$decision[codes$code %in% temp5] <- 9
 table(codes$decision)
 ```
 
-### (10) 50+ inst, high sign or low het
+### (10) Pass: 50+ inst, high sign or low het
 
 ```{r}
 temp6 <- subset(ivw_followup, code %in% c(temp3, temp4))$code
