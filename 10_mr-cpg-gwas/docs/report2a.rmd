@@ -1,0 +1,136 @@
+---
+title: Following up colocalisation signals with secondary mQTLs (organising data)
+author: Gibran Hemani
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+---
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(dplyr)
+	library(TwoSampleMR)
+	library(ggplot2)
+	library(ggthemes)
+	library(magrittr)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+```{r}
+threshold1 <- 0.05 / (300000 * 698)
+threshold2 <- 0.05 / (300000)
+
+fn <- read.csv("../../data/gwas/00info.csv")
+load("../results/to_extractt.rdata")
+load("../results/to_extractc.rdata")
+load("../results/cpg_trait_coloc.rdata")
+load("../../data/misc/cpg_pos.rdata")
+load("../results/trans_extract.rdata")
+load("../results/cis_extract.rdata")
+load("../../results/16/16_clumped.rdata")
+load("../data/snp_1kg.rdata")
+load("../../05_cis-trans-networks/data/labelids.rdata")
+res <- as.data.frame(res, stringsAsFactors=FALSE)
+# snp_1kg <- with(snp_1kg, data_frame(snpchr=V1, snppos=V4, snp2=snp, snp=V2))
+
+ao <- available_outcomes() %>% filter(id %in% res$outcome, id %in% labelids$id, access != "developer")
+sig <- res[res$H4 > 0.8 & res$p < threshold1,]
+sig <- subset(sig, !duplicated(paste(exposure, outcome)))
+sig <- merge(sig, subset(ao, select=c(id, trait, category, subcategory)), by.x="outcome", by.y="id")
+sig <- inner_join(sig, cpgpos, by=c("exposure"="cpg"))
+sig$cpgchrn <- as.numeric(gsub("chr", "", sig$cpgchr))
+
+sig <- inner_join(sig, snp_1kg, by=c("snp"))
+dim(sig)
+sum(sig$H4 > 0.8 & sig$p < threshold1 & sig$nsnp >= 10)
+
+table(sig$snpchr == sig$cpgchrn, sig$nsnp < 10)
+
+```
+
+We have a number of putative CpG-trait associations based on colocalisation. Some of these CpGs also have secondary effects. We can use the secondary effects to replicate the result
+
+```{r}
+
+temp1 <- select(to_extractt, transsnp, outcome, snp, exposure, b, se, p, n)
+trans_extract$code <- paste(trans_extract$id.outcome, trans_extract$transsnp)
+temp1$code <- paste(temp1$outcome, temp1$transsnp)
+table(temp1$code %in% trans_extract$code)
+
+exposure <- format_data(
+	a <- subset(clumped, snp %in% trans_extract$transsnp),
+	snp_col="snp",
+	phenotype_col="cpg",
+	effect_allele_col = "Allele1",
+	other_allele_col = "Allele2",
+	eaf_col = "Freq1",
+	beta_col = "Effect",
+	se_col = "StdErr",
+	pval_col = "pval",
+	samplesize_col = "TotalSampleSize"
+)
+
+trans_extract$rsid <- trans_extract$SNP
+trans_extract$SNP <- tolower(trans_extract$transsnp)
+dat <- harmonise_data(exposure, trans_extract %>% filter(id.outcome %in% ao$id))
+dat$code <- paste(dat$exposure, dat$id.outcome)
+
+to_extractt$code <- paste(to_extractt$exposure, to_extractt$outcome)
+
+exposure <- format_data(
+	a <- subset(clumped, snp %in% cis_extract$transsnp),
+	snp_col="snp",
+	phenotype_col="cpg",
+	effect_allele_col = "Allele1",
+	other_allele_col = "Allele2",
+	eaf_col = "Freq1",
+	beta_col = "Effect",
+	se_col = "StdErr",
+	pval_col = "pval",
+	samplesize_col = "TotalSampleSize"
+)
+
+cis_extract$rsid <- cis_extract$SNP
+cis_extract$SNP <- tolower(cis_extract$transsnp)
+dat_cis <- harmonise_data(exposure, cis_extract %>% filter(id.outcome %in% ao$id))
+dat_cis$code <- paste(dat_cis$exposure, dat_cis$id.outcome)
+
+to_extractc$code <- paste(to_extractc$exposure, to_extractc$outcome)
+res$code2 <- paste(res$snp, res$exposure, res$outcome)
+dat_cis$code2 <- paste(dat_cis$rsid, dat_cis$code)
+table(res$code2 %in% dat_cis$code2)
+
+discovery <- bind_rows(
+	subset(dat_cis, paste(dat_cis$rsid, dat_cis$code) %in% res$code2) %>% mutate(cistrans="cis"),
+	subset(dat, paste(dat$rsid, dat$code) %in% res$code2) %>% mutate(cistrans="trans")
+)
+
+mr_discovery <- mr(discovery, method_list=c("mr_wald_ratio", "mr_ivw"))
+
+replication <- bind_rows(
+	subset(dat_cis, ! paste(dat_cis$rsid, dat_cis$code) %in% res$code2) %>% mutate(cistrans="cis"),
+	subset(dat, ! paste(dat$rsid, dat$code) %in% res$code2) %>% mutate(cistrans="trans")
+)
+
+mr_replication <- mr(replication, method_list=c("mr_wald_ratio", "mr_ivw"))
+```
+
+Combine discovery and replication
+
+```{r}
+mr_disc_repl <- inner_join(mr_discovery, mr_replication, by=c("exposure", "id.outcome"), suffix=c(".disc", ".repl"))
+mr_disc_repl$z.disc <- mr_disc_repl$b.disc / mr_disc_repl$se.disc
+mr_disc_repl$z.repl <- mr_disc_repl$b.repl / mr_disc_repl$se.repl
+mr_disc_repl$code <- paste(mr_disc_repl$id.outcome, mr_disc_repl$exposure)
+mr_disc_repl <- subset(mr_disc_repl, abs(mr_disc_repl$z.disc) > qnorm(threshold1, low=FALSE))
+mr_disc_repl <- subset(mr_disc_repl, !duplicated(code))
+i <- sign(mr_disc_repl$z.disc) == -1
+mr_disc_repl$z.disc2 <- abs(mr_disc_repl$z.disc)
+mr_disc_repl$z.repl2 <- mr_disc_repl$z.repl
+mr_disc_repl$z.repl2[i] <- mr_disc_repl$z.repl2[i] * -1
+mr_disc_repl$fdr <- p.adjust(mr_disc_repl$pval.repl, "fdr")
+save(mr_discovery, mr_replication, mr_disc_repl, discovery, replication, file="../results/mr_disc_repl.rdata")
+```
+
+There are `r nrow(mr_disc_repl)` initial colocalisation findings that have secondary mQTLs available (`r {nrow(mr_disc_repl) / nrow(sig) * 100} %>% round(., 1)`%). 
+

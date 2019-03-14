@@ -5,13 +5,16 @@ date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
 ```{r}
-library(knitr)
-library(TwoSampleMR)
-ao <- available_outcomes()
-library(dplyr)
-library(ggplot2)
-library(ggthemes)
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(TwoSampleMR)
+	library(dplyr)
+	library(ggplot2)
+	library(ggthemes)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
 
+ao <- available_outcomes()
 threshold1 <- 0.05 / (190000 * 122)
 threshold2 <- 0.05 / (190000)
 
@@ -19,7 +22,7 @@ fn <- read.csv("../../data/gwas/00info.csv")
 
 load("../results/cpg_trait_coloc.rdata")
 load("../../data/misc/cpg_pos.rdata")
-
+res <- as.data.frame(res, stringsAsFactors=FALSE)
 ao <- ao %>% filter(id %in% res$outcome)
 sig <- res[res$H4 > 0.8 & res$p < threshold1 & res$nsnp >= 10,]
 sig <- subset(sig, !duplicated(paste(exposure, outcome)))
@@ -40,35 +43,6 @@ gkeep <- am %>% group_by(id.exposure, trait) %>% summarise(n=n()) %>% arrange(de
 table(gkeep$n == 1)
 
 ```
-
-40 traits with at least one association at p < 1.4e-7
-
-```{r}
-load("../results/mrbase_sig.rdata")
-filter(sig, pval < 1.4e-7 & id.exposure %in% gkeep$id.exposure) %>% filter(!duplicated(exposure)) %>% summarise(n=n())
-```
-
-
-How many sig due to wald ratio
-
-```{r}
-wr <- subset(sig, method == "Wald ratio" & pval < 1.4e-7 & id.exposure %in% gkeep$id.exposure)
-nrow(wr)
-length(unique(wr$id.exposure))
-length(unique(wr$id.outcome))
-```
-
-How many sig due to IVW
-
-```{r}
-iv <- subset(sig, method == "Inverse variance weighted" & pval < 1.4e-7 & id.exposure %in% gkeep$id.exposure)
-nrow(iv)
-length(unique(iv$id.exposure))
-length(unique(iv$id.outcome))
-```
-
-
-
 
 We can define `CPG->trait` associations to be significant if the colocalisation score `> 0.8` and the p-value adjusted for 300000 CpGs tested in 698 traits (p < `r threshold1`). How many significant associations?
 
@@ -137,6 +111,7 @@ summarise(cat=first(subcategory), n=n()) %>%
 arrange(desc(n)) %>% kable
 
 sig6 <- filter(sig, category != "Metabolites" & !(snpchr == 6 & snppos > 28000000 & snppos < 33000000))
+sig6$cis <- sig6$cpgchrn == sig6$snpchr & abs(sig6$snppos - sig6$cpgpos) < 1e6
 
 library(magrittr)
 sig6csv <- sig6 %$% data_frame(
@@ -160,126 +135,27 @@ write.csv(sig6csv, "../results/cpg-trait-tophits.csv")
 ```
 
 
-
 How many of the colocalised SNPs also appear in CpG networks
 
 ```{r}
-load("../../05_cis-trans-networks/results/communities.rdata")
+load("../../05_cis-trans-networks/results/graph.rdata")
 coloc_snps <- unique(sig6$snpid)
 tab <- matrix(c(
-	sum(coloc_snps %in% communities$snp), sum(coloc_snps %in% clumped$snp), 
-	length(coloc_snps) - sum(coloc_snps %in% communities$snp), length(unique(clumped$snp)) - sum(coloc_snps %in% clumped$snp)
+	sum(coloc_snps %in% dat$snp), sum(coloc_snps %in% clumped$snp), 
+	length(coloc_snps) - sum(coloc_snps %in% dat$snp), length(unique(clumped$snp)) - sum(coloc_snps %in% clumped$snp)
 ), 2, 2)
 fisher.test(tab)
 chisq.test(tab)
 
 coloc_cpgs <- unique(sig6$exposure)
+comcpg <- c(dat$creg, dat$tcpg)
 tabc <- matrix(c(
-	sum(coloc_cpgs %in% communities$cpg), sum(coloc_cpgs %in% clumped$cpg), 
-	length(coloc_cpgs) - sum(coloc_cpgs %in% communities$cpg), length(unique(clumped$cpg)) - sum(coloc_cpgs %in% clumped$cpg)
+	sum(coloc_cpgs %in% comcpg), sum(coloc_cpgs %in% clumped$cpg), 
+	length(coloc_cpgs) - sum(coloc_cpgs %in% comcpg), length(unique(clumped$cpg)) - sum(coloc_cpgs %in% clumped$cpg)
 ), 2, 2)
 fisher.test(tabc)
 chisq.test(tabc)
 
 ```
-
-
-How many of the `r length(unique(sig$exposure))` CpGs that have a causal effect also have a trans association?
-
-
-```{r}
-sig6$cis <- with(sig6, cpgchrn == snpchr & abs(cpgpos - snppos) < 1000000)
-table(sig6$cis)
-```
-
-```{r}
-temp <- subset(clumped, cpg %in% sig6$exposure)
-
-code1 <- paste(temp$snp, temp$cpg)
-code2 <- paste(sig6$snpid, sig6$exposure)
-
-table(code2 %in% code1)
-table(code1 %in% code2)
-
-
-# Which CpGs have a second SNP
-temp2 <- subset(temp, ! code1 %in% code2)
-temp3 <- subset(snp_1kg, snp %in% temp2$snp, select=c(V2, snp))
-names(temp3) <- c("rsid", "snp")
-temp3 <- merge(temp2, temp3, by="snp")
-
-# Which CpGs match with which traits
-temp4 <- subset(sig6, select=c(exposure, outcome))
-temp4 <- merge(temp4, temp3, by.x="exposure", by.y="cpg")
-
-# Extract
-
-out <- unique(temp4$outcome)
-l <- list()
-for(i in 1:length(out))
-{
-	message(i)
-	x <- subset(temp4, outcome == out[i])	
-	l[[i]] <- extract_outcome_data(x$rsid, unique(x$outcome))
-}
-
-outcome <- bind_rows(l)
-exposure <- format_data(
-	temp4,
-	snp_col="rsid",
-	phenotype_col="exposure",
-	effect_allele_col = "Allele1",
-	other_allele_col = "Allele2",
-	eaf_col = "Freq1",
-	beta_col = "Effect",
-	se_col = "StdErr",
-	pval_col = "pval",
-	samplesize_col = "TotalSampleSize"
-)
-
-dat <- harmonise_data(exposure, outcome)
-dattemp <- subset(dat, !duplicated(paste(id.exposure, id.outcome)))
-dattemp <- merge(dattemp, temp3, by.x="SNP", by.y="rsid")
-mr_new <- mr(dat, method_list = c("mr_wald_ratio", "mr_ivw"))
-mr_new <- merge(mr_new, subset(dattemp, select=c(id.exposure, id.outcome, snp)), by=c("id.exposure", "id.outcome"))
-temp6 <- with(sig, data_frame(exposure = exposure, id.outcome=outcome, outcome=trait, b1=b, se1=se, p1=p, snp1=snpid))
-temp7 <- with(mr_new, data_frame(exposure=exposure, id.outcome=id.outcome, outcome=outcome, b2=b, se2=se, p2=pval, snp2=snp))
-temp8 <- inner_join(temp6, temp7, by=c("id.outcome", "exposure"))
-
-temp8$same_sign <- sign(temp8$b1) == sign(temp8$b2)
-temp8$fdr2 <- p.adjust(temp8$p2, "fdr")
-temp8$sig2a <- temp8$p2 < 0.05
-temp8$sig2b <- temp8$fdr2 < 0.05
-save(dat, mr_new, temp8, file="../results/mr_concordance.rdata")
-
-outcsv <- data_frame(
-	cpg = temp8$exposure, 
-	trait = temp8$outcome.x, 
-	b_cis = temp8$b1,
-	se_cis = temp8$se1,
-	pval_cis = temp8$p1,
-	b_trans = temp8$b2,
-	se_trans = temp8$se2,
-	pval_trans = temp8$p2,
-	same_sign = temp8$same_sign
-)
-write.csv(outcsv, file="../results/cis-trans-concordance.csv")
-```
-
-
-```{r}
-load("../results/mr_concordance.rdata")
-table(temp8$same_sign)
-table(temp8$sig2a)
-table(temp8$sig2b)
-table(temp8$sig2a, temp8$same_sign)
-table(temp8$sig2a, temp8$same_sign) %>% chisq.test
-
-
-subset(temp8, sig2a & same_sign) %>% arrange(outcome.x) %>% as.data.frame %>% dplyr::select(snp1, snp2, outcome.y, exposure)
-
-```
-
-
 
 

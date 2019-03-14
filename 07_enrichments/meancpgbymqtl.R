@@ -139,6 +139,9 @@ df.all %>%
 #2   cis only 0.01344013 0.4715994
 #3  cis+trans 0.01081446 0.4411792
 #4 trans only 0.01036164 0.3452771
+df3 %>%
+  group_by(cpg_cis) %>%
+  dplyr::summarize(SD = median(sdcpg, na.rm=TRUE),mean = mean(meancpg, na.rm=TRUE),median=median(meancpg,na.rm=TRUE))
 
 
 data$MAF<-data$Freq1
@@ -369,8 +372,9 @@ ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, heig
 
 p1<-ggplot(df.all,aes(x=meancpg,fill=relation.to.island)) + 
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
-facet_wrap(~facet,scales="free_y",nr=1) +
-labs(y="Proportion CpGs",x="Weighted mean by cpg",fill = "CpG annotation") +
+#facet_wrap(~facet,scales="free_y",nr=1) +
+facet_wrap(~facet,nr=1) +
+labs(y="Proportion DNAm sites",x="Weighted mean by mQTL site",fill = "DNAm site annotation") +
 theme(axis.text.x = element_text(size=14),axis.text.y = element_text(size=14),axis.title.x = element_text(size = 18),axis.title.y = element_text(size = 18), strip.text = element_text(size = 20)) +
 theme(legend.text=element_text(size=20),legend.title=element_text(size=20)) +
 scale_fill_brewer(type="qual")
@@ -463,20 +467,26 @@ labs(x="Category", y="max I2")
 ggsave(plot=p1, file="./images/maxi2_cpg_ciscategory.pdf", width=7, height=7)
 
 df3$cpg_cis<-gsub("All","all",df3$cpg_cis)
-p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=abs(max_abs_Effect))) +
-geom_boxplot() +
-theme(axis.title.y=element_text(size=10),axis.text.x=element_text(size=10),axis.text.y=element_text(size=8)) +
-labs(x="mQTL category", y="Maximum absolute effect size")
+p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=abs(max_abs_Effect),fill=as.factor(cpg_cis))) +
+#geom_boxplot() +
+geom_violin() +
+geom_boxplot(width=0.1,fill="white") +
+theme(axis.title.y=element_text(size=20),axis.title.x=element_text(size=20),axis.text.x=element_text(angle = 90, hjust = 1,size=16),axis.text.y=element_text(size=16)) +
+labs(x="mQTL category", y="Maximum absolute mQTL effect size") +
+theme(legend.position="none")
 ggsave(plot=p1, file="./images/effectsizescpg_ciscategory.pdf", width=7, height=7)
 
 
 df.all$cpg_cis<-gsub("No mqtl","no mQTL",df.all$cpg_cis)
+df.all$cpg_cis<-gsub("cis+trans      ","cis+trans",df.all$cpg_cis)
 df.all$cpg_cis = factor(df.all$cpg_cis, levels = c("no mQTL", "cis only", "cis+trans", "trans only"))
 
-p2 <- ggplot(df.all, aes(x=as.factor(cpg_cis), y=sdcpg)) +
-  geom_boxplot() +
-  theme(axis.title.y=element_text(size=10),axis.text.x=element_text(size=10),axis.text.y=element_text(size=8)) +
-  labs(x="mQTL category", y="Weighted SD methylation")
+p2 <- ggplot(df.all, aes(x=as.factor(cpg_cis), y=sdcpg,fill=as.factor(cpg_cis))) +
+geom_violin() +
+geom_boxplot(width=0.1,fill="white") +
+theme(axis.title.y=element_text(size=20),axis.title.x=element_text(size=20),axis.text.x=element_text(angle = 90, hjust = 0,size=16),axis.text.y=element_text(size=16)) +
+labs(x="mQTL category", y="Weighted SD methylation") +
+theme(legend.position="none")
 ggsave(plot=p2, file="./images/sdcpg_ciscategory.pdf", width=7, height=7)
 
 pdf("FigSX_effectsize_SD.pdf",height=10,width=18)
@@ -604,11 +614,36 @@ summary(lm(abs(df2$max_abs_Effect)~df2$cpg_cis))
 #df2$cpg_ciscis+trans   0.0872540  0.0021282  40.998  < 2e-16 ***
 #df2$cpg_cistrans only -0.0255835  0.0027017  -9.469  < 2e-16 ***
 
-cis<-df2[which(df2$cpg_cis%in%c("cis only","cis+trans")),]
-summary(lm(abs(cis$cis_max_abs_Effect)~cis$cpg_cis))
 
-trans<-df2[which(df2$cpg_cis%in%c("trans only","cis+trans")),]
-summary(lm(abs(trans$trans_max_abs_Effect)~trans$cpg_cis))
+cis<-df2[which(df2$cpg_cis%in%c("cis only","cis+trans")),]
+summary(lm(abs(cis$max_abs_Effect)~cis$cpg_cis))
+
+#Coefficients:
+#                      Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)          0.2850567  0.0005465  521.58   <2e-16 ***
+#cis$cpg_ciscis+trans 0.0922482  0.0021423   43.06   <2e-16 ***
+
+w<-which(df2$cpg_cis%in%c("cis only","trans only"))
+summary(lm(abs(df2$max_abs_Effect[w])~df2$cpg_cis[w]))
+#Coefficients:
+#                           Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)               0.2850567  0.0005418 526.145  < 2e-16 ***
+#df2$cpg_cis[w]trans only -0.0205893  0.0026927  -7.646 2.08e-14 ***
+
+cis<-df3[which(df3$cpg_cis%in%c("cis only","cis+trans_cis")),]
+summary(lm(abs(cis$max_abs_Effect)~cis$cpg_cis))
+#Coefficients:
+#                          Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)              0.2850567  0.0005475  520.63   <2e-16 ***
+#cis$cpg_ciscis+trans_cis 0.0520097  0.0021463   24.23   <2e-16 ***
+
+trans<-df3[which(df3$cpg_cis%in%c("trans only","cis+trans_trans")),]
+summary(lm(abs(trans$max_abs_Effect)~trans$cpg_cis))
+
+#Coefficients:
+#                        Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)             0.209010   0.001443  144.85   <2e-16 ***
+#trans$cpg_cistrans only 0.055457   0.002349   23.61   <2e-16 ***
 
 
 

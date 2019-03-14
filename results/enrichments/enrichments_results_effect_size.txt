@@ -37,6 +37,7 @@ Formal class 'DataFrame' [package "S4Vectors"] with 6 slots
 
    no   yes 
 17947   637 
+[1] "t-test of abs effect size between overlapping and non-ovelapping interchrom trans mQTLs"
 
 	Welch Two Sample t-test
 
@@ -56,6 +57,7 @@ null device
        <chr>         <dbl>       <dbl>      <dbl>
 1 ambivalent     0.1675704   0.2084973   1.083028
 2      FALSE     0.2116495   0.2770036   1.278415
+[1] "t-test of abs effect size between overlapping trans only mQTLs and trans+cis mQTLs"
 
 	Welch Two Sample t-test
 
@@ -67,6 +69,21 @@ alternative hypothesis: true difference in means is not equal to 0
 sample estimates:
 mean in group ambivalent      mean in group FALSE 
                0.2084973                0.2770036 
+
+null device 
+          1 
+[1] "t-test of abs effect size between overlapping trans only mQTLs and non-ovelapping interchrom trans mQTLs"
+
+	Welch Two Sample t-test
+
+data:  effect_abs by cat2
+t = -4.201, df = 263.3, p-value = 3.641e-05
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -0.07751377 -0.02804023
+sample estimates:
+    mean in group no-overlap mean in group trans-overlaps 
+                   0.2242266                    0.2770036 
 
 null device 
           1 

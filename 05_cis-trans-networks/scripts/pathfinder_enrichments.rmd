@@ -1,0 +1,42 @@
+---
+title: Pathfinder community enrichments 
+author: Gibran Hemani
+data: 25/02/2019
+---
+
+To being, need to have annotations for CpGs and SNPs. Run:
+
+```
+Rscript entrez_genes.r
+```
+
+Perform enrichments:
+
+```{r, eval=FALSE}
+# SNPs point to CpGs
+# CpGs that are directly linked to the same 
+
+
+library(pathfindR)
+
+load("../results/graph.rdata")
+load("../data/entrez_genes.rdata")
+table(mem$cpg %in% anno$ind)
+
+out <- list()
+for(j in 2:10)
+{
+	i <- memcount$cluster[j]
+	message(i)
+	dir.create(paste0("../results/pathfindR/", i), recursive=TRUE)
+	setwd(paste0("../results/pathfindR/", i))
+
+	temp1 <- subset(anno, ind %in% subset(mem, cluster == i)$cpg) %>%
+		filter(!duplicated(values), values != "")
+	temp1$ind <- 5
+	temp1$pval <- 1e-8
+	out[[j]] <- run_pathfindR(temp1, n_processes=1)
+	out$cluster <- i
+	setwd("../../../../../scripts")
+}
+```

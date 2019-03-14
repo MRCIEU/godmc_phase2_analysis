@@ -1,0 +1,35 @@
+
+Overlap Results
+
+Collection(s):	TFT
+# overlaps shown:	10
+# genesets in collections:	615
+# genes in comparison (n):	10
+# genes in universe (N):	45956
+
+Gene Set Name	# Genes in Gene Set (K)	Description	# Genes in Overlap (k)	k/K	p-value	FDR q-value
+GATTGGY_NFY_Q6_01	1160	Genes having at least one occurence of the highly conserved motif M5 GATTGGY sites. The motif matches transcription factor binding site V$NFY_Q6_01 (v7.4 TRANSFAC).	5	0.0043	2.3E-6	8.62E-4
+TTTNNANAGCYR_UNKNOWN	133	Genes having at least one occurence of the highly conserved motif M169 TTTNNANAGCYR in the region spanning up to 4 kb around their transcription start sites. The motif does not match any known transcription factor binding site (v7.4 TRANSFAC).	3	0.0226	2.8E-6	8.62E-4
+KRCTCNNNNMANAGC_UNKNOWN	66	Genes having at least one occurence of the highly conserved motif M120 KRCTCNNNNMANAGC in the region spanning up to 4 kb around their transcription start sites. The motif does not match any known transcription factor binding site (v7.4 TRANSFAC).	2	0.0303	9.07E-5	1.77E-2
+TATAAA_TATA_01	1296	Genes having at least one occurence of the highly conserved motif M51 TATAAA sites. The motif matches transcription factor binding site V$TATA_01 (v7.4 TRANSFAC).	4	0.0031	1.15E-4	1.77E-2
+GTGACGY_E4F1_Q6	658	Genes having at least one occurence of the highly conserved motif M20 GTGACGY sites. The motif matches transcription factor binding site V$E4F1_Q6 (v7.4 TRANSFAC).	3	0.0046	3.25E-4	2.92E-2
+STAT3_02	147	Genes having at least one occurence of the transcription factor binding site V$STAT3_02 (v7.4 TRANSFAC) in the regions spanning up to 4 kb around their transcription starting sites.	2	0.0136	4.5E-4	2.92E-2
+SGCGSSAAA_E2F1DP2_01	168	Genes having at least one occurence of the highly conserved motif M69 SGCGSSAAA sites. The motif matches transcription factor binding site V$E2F1DP2_01 (v7.4 TRANSFAC).	2	0.0119	5.86E-4	2.92E-2
+RTAAACA_FREAC2_01	919	Genes having at least one occurence of the highly conserved motif M36 RTAAACA sites. The motif matches transcription factor binding site V$FREAC2_01 (v7.4 TRANSFAC).	3	0.0033	8.61E-4	2.92E-2
+LBP1_Q6	224	Genes having at least one occurence of the transcription factor binding site V$LBP1_Q6 (v7.4 TRANSFAC) in the regions spanning up to 4 kb around their transcription starting sites.	2	0.0089	1.04E-3	2.92E-2
+LEF1_Q2	226	Genes having at least one occurence of the transcription factor binding site V$LEF1_Q2 (v7.4 TRANSFAC) in the regions spanning up to 4 kb around their transcription starting sites.	2	0.0088	1.06E-3	2.92E-2
+
+
+Gene/Gene Set Overlap Matrix
+
+Entrez Gene Id	Gene Symbol	Gene Description	GATTGGY_NFY_Q6_01	TTTNNANAGCYR_UNKNOWN	KRCTCNNNNMANAGC_UNKNOWN	TATAAA_TATA_01	GTGACGY_E4F1_Q6	STAT3_02	SGCGSSAAA_E2F1DP2_01	RTAAACA_FREAC2_01	LBP1_Q6	LEF1_Q2
+8350	HIST1H3A	histone cluster 1, H3a	GATTGGY_NFY_Q6_01	TTTNNANAGCYR_UNKNOWN	KRCTCNNNNMANAGC_UNKNOWN	TATAAA_TATA_01	GTGACGY_E4F1_Q6		SGCGSSAAA_E2F1DP2_01			
+8359	HIST1H4A	histone cluster 1, H4a	GATTGGY_NFY_Q6_01	TTTNNANAGCYR_UNKNOWN	KRCTCNNNNMANAGC_UNKNOWN	TATAAA_TATA_01	GTGACGY_E4F1_Q6		SGCGSSAAA_E2F1DP2_01			
+26136	TES	testis derived transcript (3 LIM domains)	GATTGGY_NFY_Q6_01			TATAAA_TATA_01						
+3145	HMBS	hydroxymethylbilane synthase	GATTGGY_NFY_Q6_01				GTGACGY_E4F1_Q6					
+89797	NAV2	neuron navigator 2	GATTGGY_NFY_Q6_01					STAT3_02				LEF1_Q2
+2869	GRK5	G protein-coupled receptor kinase 5		TTTNNANAGCYR_UNKNOWN						RTAAACA_FREAC2_01	LBP1_Q6	LEF1_Q2
+3782	KCNN3	potassium intermediate/small conductance calcium-activated channel, subfamily N, member 3				TATAAA_TATA_01		STAT3_02		RTAAACA_FREAC2_01	LBP1_Q6	
+79071	ELOVL6	ELOVL fatty acid elongase 6								RTAAACA_FREAC2_01		
+55163	PNPO	pyridoxamine 5'-phosphate oxidase										
+25983	NGDN	neuroguidin, EIF4E binding protein										

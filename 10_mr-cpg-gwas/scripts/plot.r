@@ -22,10 +22,11 @@ res2$p[res2$p < 1e-100] <- 1e-100
 res2 <- subset(res2, p < threshold2)
 
 load("../../results/16/16_clumped.rdata")
-load("../results/mr_concordance.rdata")
-temp8$code <- paste(temp8$outcome.x, temp8$exposure)
-res2$code <- paste(res2$trait, res2$exposure)
-res2$conc <- res2$code %in% subset(temp8, same_sign & sig2a)$code
+load("../results/mr_disc_repl.rdata")
+mr_disc_repl$sig <- sign(mr_disc_repl$b.disc) == sign(mr_disc_repl$b.repl) & mr_disc_repl$fdr < 0.05
+table(mr_disc_repl$sig)
+res2$code <- paste(res2$outcome, res2$exposure)
+res2$conc <- res2$code %in% subset(mr_disc_repl, sig)$code
 
 
 ##
@@ -92,7 +93,8 @@ temp$pval <- -log10(temp$p)
 temp$chrcol <- temp$chr %% 2 == 0
 
 library(TwoSampleMR)
-ao <- available_outcomes()
+load("../../05_cis-trans-networks/data/outcomes.rdata")
+
 
 sigtraits <- subset(temp, sig)$trait %>% unique %>% as.character
 cats <- subset(ao, trait %in% sigtraits, select=c(trait, subcategory))
@@ -100,9 +102,15 @@ cats$subcategory[cats$subcategory == "NA"] <- "Anthropometric"
 cats$subcategory[cats$subcategory == "Other"] <- "Metabolite"
 cats$subcategory[cats$subcategory == "Nucleotide"] <- "Metabolite"
 cats$subcategory[cats$subcategory == "Lipid"] <- "Metabolite"
-cats$subcategory[cats$subcategory == "Metal"] <- "Haemotological"
+cats$subcategory[cats$subcategory == "Metal"] <- "Haematological"
+cats$subcategory[cats$subcategory == "Haemotological"] <- "Haematological"
 
 cats <- subset(cats, !duplicated(paste(trait, subcategory))) %>% arrange(trait)
+cats$subcategory[cats$trait == "Iron"] <- "Haematological"
+cats$subcategory[cats$trait == "Birth weight"] <- "Anthropometric"
+cats$subcategory[cats$trait == "Height"] <- "Anthropometric"
+cats <- subset(cats, !duplicated(trait))
+
 temp <- merge(temp, cats, by=c("trait"), all.x=TRUE)
 
 ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval)) +
@@ -113,6 +121,7 @@ geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
 facet_grid(what ~ chr, scale="free", space="free") +
 # scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
 # theme_tufte() +
+scale_colour_brewer(palette="PuOr") +
 scale_y_continuous(breaks=seq(0, 100, 20)) +
 labs(x="CpG position", y="-log10 p", colour="") +
 ylim(0, 60) +
@@ -134,15 +143,31 @@ ggsave(file="../images/bidirectional_manhattan2.png", width=10, height=6)
 temp$pval2 <- temp$pval
 temp$pval2[temp$what=="trait to cpg"] <- temp$pval[temp$what=="trait to cpg"] * -1
 temp$chrcol[temp$what=="trait to cpg"] <- !temp$chrcol[temp$what=="trait to cpg"]
-ggplot(temp %>% filter(!sig), aes(x=cpgpos, y=pval2)) +
+temp <- temp %>% arrange(chr, cpgpos)
+temp <- subset(temp, is.finite(pval2))
+
+temp$newpos <- temp$cpgpos
+for(i in 2:23)
+{
+	temp$newpos[temp$chr == i] <- temp$newpos[temp$chr == i] + max(temp$newpos[temp$chr == i-1]) + 10000000 - min(temp$newpos[temp$chr == i])
+}
+
+temp13 <- subset(temp, chr == 13)
+
+ggplot(temp, aes(y=newpos,x=1:nrow(temp))) +
+geom_line(aes(colour=as.factor(chr)))
+
+ggplot(temp %>% filter(!sig), aes(x=newpos, y=pval2)) +	
 geom_point(data=temp %>% filter(chrcol), size=0.2, colour="#bbbbbb") +
-geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#888888") +
+geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#dddddd") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
-# geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
-facet_grid(. ~ chr, scale="free", space="free") +
+geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
+# facet_grid(. ~ chr, scale="free", space="free") +
 # scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#fdb462", "#b3de69", "#fccde5", "#d9d9d9", "#bc80bd")) +
+scale_colour_manual(values=c("#8dd3c7", "#ffffb3", "#bebada", "#fb8072", "#80b1d3", "#000000", "#b3de69", "#ffffff", "#d9d9d9", "#bc80bd")) +
+# scale_colour_brewer(palette="BrBg") +
 scale_y_continuous(breaks=seq(-100, 100, 20)) +
-labs(x="CpG position", y="", colour="") +
+labs(x="DNAm site position", y="MR -log10 p-value", colour="") +
 ylim(-60, 60) +
 geom_hline(yintercept=-log10(threshold2), linetype="dotted") +
 geom_hline(yintercept=log10(threshold2), linetype="dotted") +
@@ -150,8 +175,8 @@ geom_hline(yintercept=0, linetype="solid") +
 guides(colour=guide_legend(ncol=5)) +
 theme(
 	legend.position="top",
-	axis.text=element_blank(),
-	axis.ticks=element_blank(),
+	axis.text.x=element_blank(),
+	axis.ticks.x=element_blank(),
 	panel.grid=element_blank(),
 	panel.background=element_rect(fill="white", linetype="blank"),
 	panel.spacing=unit(0, "lines"),

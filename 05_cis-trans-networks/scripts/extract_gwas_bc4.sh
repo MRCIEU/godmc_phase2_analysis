@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #SBATCH --job-name=ml
-#SBATCH --array=0-300
+#SBATCH --array=0-135
 #SBATCH --nodes=1 --cpus-per-task=1 --time=0-00:30:00
 #SBATCH --partition=mrcieu
 #SBATCH --output=job_reports/slurm-%A_%a.out
-#SBATCH --mem=8G
+#SBATCH --mem=40G
 
 echo "Running on ${HOSTNAME}"
 module add languages/r/3.4.4
@@ -19,7 +19,7 @@ i=${SLURM_ARRAY_TASK_ID}
 # i=$((i + 1000))
 
 # cd ${HOME}/mr-eve/gwas-instrument-subsets/scripts
-ids=($(cat not_done.txt))
+ids=($(cat ../data/mrbids.txt))
 
 echo ${#ids[@]}
 id=`echo ${ids[$i]}`

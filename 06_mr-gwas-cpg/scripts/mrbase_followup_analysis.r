@@ -1,6 +1,13 @@
-# How many have the same sign and good p-value after excluding mhc
-# How many have heterogeneity problems
-# How many are not just in MHC
+---
+title: MR of traits on DNAm sites
+author: Gibran Hemani
+date: 27/02/2019
+---
+
+
+- How many have the same sign and good p-value after excluding mhc
+- How many have heterogeneity problems
+- How many are not just in MHC
 
 
 # Criteria
