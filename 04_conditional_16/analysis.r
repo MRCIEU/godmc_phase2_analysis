@@ -48,6 +48,7 @@ clump_counts[which(clump_counts$numbersnps>75),]
 #2 cg16664915 TRUE          82 godmc #in hrc: 50
 
 
+
 p1 <- ggplot(clump_counts, aes(x=numbersnps)) +
 geom_bar(position="dodge", aes(fill=cis)) +
 labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTL per DNA methylation site")
@@ -89,6 +90,16 @@ df<-rbind(df[w,],data.frame(Var1=">25",Freq=s,data="GoDMC 1000G (n=27,750)"))
 sum(df$Freq)
 #[1] 181467
 df$perc<-df$Freq/sum(df$Freq)
+
+
+clump_counts_trans<-clump_counts[clump_counts$cis=="FALSE",]
+df_trans<-data.frame(table(clump_counts_trans$numbersnps),data="GoDMC 1000G (n=27,750)")
+w<-which(as.numeric(as.character(df_trans$Var1))<26)
+s<-sum(df_trans[-w,"Freq"])
+df_trans<-rbind(df_trans[w,],data.frame(Var1=">25",Freq=s,data="GoDMC 1000G (n=27,750)"))
+sum(df_trans$Freq)
+#[1] 181467
+df_trans$perc<-df_trans$Freq/sum(df_trans$Freq)
 
 #ARIES
 y<-meffil.get.features("450k")
@@ -140,6 +151,9 @@ load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_cis.rdata") #on
 max(conditional.cis$n) #47140.9
 sig_hrc<-conditional.cis[which(conditional.cis$pJ<1e-8),] #723524
 
+clump_counts_hrc <- dplyr::group_by(sig_hrc, cpg) %>%
+	dplyr::summarise(numbersnps=n(),data="godmc_hrc")
+
 load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata") #only cis
 max(conditional.trans$n)
 sig_hrc_trans<-conditional.trans[which(conditional.trans$pJ<1e-14),] #34606
@@ -183,6 +197,7 @@ df_hrc$perc<-df_hrc$Freq/sum(df_hrc$Freq)
 ##
 
 df_comb<-rbind(df,df7,bonder,df_sub,df_hrc)
+
 df_comb$data<-factor(df_comb$data, levels = c("GoDMC 1000G (n=27,750)","GoDMC HRC (n=27,750)","GoDMC HRC (n=3,984)","Bonder et al. GoNL (n=3,841)","ARIES childhood 1000G (n=834)"))
 
 pdf("./images/conditional_counts_cpg_cis_godmc_vs_aries_bonder_subset_barplot.pdf", width=10, height=7)
@@ -194,6 +209,37 @@ labs(x="Number of SNPs per DNA methylation site",y="Proportion of DNA methylatio
 #ggsave(p1, file="./images/conditional_counts_cpg_cis_godmc_vs_aries_bonder_barplot.pdf", device="pdf",width=7, height=7)
 print(p1)
 dev.off()
+
+
+## Number of hits per SNP
+
+
+sig <- subset(conditional, (cis & p < 1e-8) | (!cis & p < 1e-14))
+clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
+	dplyr::summarise(numbersnps=n(),samplesize=mean(n))
+
+p1 <- ggplot(clump_counts, aes(x=numbersnps)) +
+geom_bar(position="dodge", aes(fill=cis)) +
+labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs per CpG")
+ggsave(p1, file="./images/conditional_counts_cpg.pdf", width=7, height=7)
+
+clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
+	dplyr::summarise(n=n()) %>%
+	dplyr::group_by(n, cis) %>%
+	dplyr::summarise(count=n())
+
+p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
+geom_bar(position="dodge", aes(fill=cis), stat="identity") +
+labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs per SNP")
+ggsave(p2, file="./images/conditional_counts_snp.pdf", width=7, height=7)
+
+
+
+cl_counts <- dplyr::group_by(clumped2, cpg, cis) %>%
+	dplyr::summarise(n=n())
+
+#In the conditional analysis there is one probe with 113 cis associations (cg13601595) and 160 probes with more than 50 cisassociations. 
+#In clumped there are no probes with more than 50 associations and only 29 probes with more than 4 associations.
 
 ###
 #comparison hrc and 1000G
@@ -283,8 +329,8 @@ sum(df_trans$Freq)
 df_trans$perc<-df_trans$Freq/sum(df_trans$Freq)
 
 
-load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata") #only cis
-sig_hrc<-conditional.trans[which(conditional.trans$pJ<1e-14),] #723524
+load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata")
+sig_hrc<-conditional.trans[which(conditional.trans$pJ<1e-14),] 
 
 clump_counts_hrc <- dplyr::group_by(sig_hrc, cpg) %>%
 	dplyr::summarise(numbersnps=n(),data="godmc_hrc",samplesize=mean(n))
@@ -313,15 +359,12 @@ dev.off()
 #TOTAL
 load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_cis.rdata") #only cis
 cis<-data.frame(cis=TRUE,conditional.cis)
-load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata") #only cis
+load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata")
 trans<-data.frame(cis=FALSE,conditional.trans)
 conditional<-rbind(cis,trans)
-sig<-conditional[which(conditional$cis==TRUE & conditional$pJ<1e-8 | conditional$cis==FALSE & conditional$pJ<1e-14),] #1058292
+sig<-conditional[which(conditional$cis==TRUE & conditional$pJ<1e-8 | conditional$cis==FALSE & conditional$pJ<1e-14),]
 table(sig$cis)
-# FALSE   TRUE 
-#461162 723524 
 nrow(sig)
-#1184686
 
 
 
