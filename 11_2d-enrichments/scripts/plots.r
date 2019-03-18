@@ -9,13 +9,58 @@ load("../results/difres/difres0.rdata")
 load("../data/annotations.rdata")
 load("../data/blood.rdata")
 
+r<-read.table("~/repo/godmc_phase2_analysis/11_2d-enrichments/data/CellTypes.tsv",he=T,sep="\t")
+r<-r[which(r$collection%in%c("encode_tfbs")),]
+
 anno$code <- paste0(anno$antibody3, " : ", anno$cellType, ", ", anno$tissue, " : ", anno$treatment )
 blood$code <- paste0(blood$antibody3, " : ", blood$cellType, ", ", blood$tissue, " : ", blood$treatment )
 encode_tfbs <- subset(anno, !duplicated(code) & collection == "encode_tfbs")$index
 blood_tfbs <- subset(blood, !duplicated(code) & collection == "encode_tfbs")$index
 
-temp <- subset(anno, select=c(index, code))[encode_tfbs,] %>% filter(!duplicated(code))
-temp2 <- subset(blood, index %in% blood_tfbs, select=c(index, code)) %>% filter(!duplicated(code))
+temp <- subset(anno, select=c(index, antibody3, treatment, code))[encode_tfbs,] %>% filter(!duplicated(code))
+#615
+temp2 <- subset(blood, index %in% blood_tfbs, select=c(index, antibody3, treatment, code)) %>% filter(!duplicated(code))
+#259
+spl<-strsplit(temp$code,split=" : ")
+spl<-do.call("rbind",spl)
+spl2<-strsplit(spl[,2],split=", ")
+spl2<-do.call("rbind",spl2)
+m<-match(spl2[,1],r$cellType)
+celltype<-data.frame(tissue="all",temp,spl[,1],spl2,r[m,])
+celltype$code2<-paste0(celltype$antibody3, " : ", celltype$cellType_corr, ", ", celltype$tissue, " : ", celltype$treatment )
+length(unique(celltype$code)) #615
+length(unique(celltype$code2)) #508
+
+spl<-strsplit(temp2$code,split=" : ")
+spl<-do.call("rbind",spl)
+spl2<-strsplit(spl[,2],split=", ")
+spl2<-do.call("rbind",spl2)
+m<-match(spl2[,1],r$cellType)
+celltype2<-data.frame(tissue="blood",temp2,spl[,1],spl2,r[m,])
+celltype2$code2<-paste0(celltype2$antibody3, " : ", celltype2$cellType_corr, ", ", celltype2$tissue, " : ", celltype2$treatment )
+length(unique(celltype2$code)) #615
+length(unique(celltype2$code2)) #508
+
+df<-rbind(celltype,celltype2)
+
+data.frame(table(df$tissue,df$Lineage))
+#    Var1                Var2 Freq
+#1    all                 ESC   51
+#2  blood                 ESC    0
+#3    all Early hematopoietic    0
+#4  blood Early hematopoietic    0
+#5    all          Ectodermal  132
+#6  blood          Ectodermal    0
+#7    all Embryonic carcinoma    3
+#8  blood Embryonic carcinoma    0
+#9    all          Endodermal  118
+#10 blood          Endodermal    0
+#11   all            Lymphoid  124
+#12 blood            Lymphoid  124
+#13   all          Mesodermal   51
+#14 blood          Mesodermal    0
+#15   all             Myeloid  136
+#16 blood             Myeloid  135
 
 stab <- subset(difres, Var1 %in% encode_tfbs & Var2 %in% encode_tfbs & sddif >= 10)
 
