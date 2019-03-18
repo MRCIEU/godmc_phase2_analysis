@@ -261,6 +261,9 @@ Higher for trans because the significance threshold is lower. Overall replicatio
 
 ## Effect size concordance
 
+```{r}
+replication %>% lm(beta1 ~ Effect, data=.) %>% summary %>% coefficients
+```
 
 ```{r, dev="png"}
 ggplot(subset(replication), aes(x=Effect, y=beta1)) +
