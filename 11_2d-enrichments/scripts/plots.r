@@ -30,6 +30,9 @@ celltype<-data.frame(tissue="all",temp,spl[,1],spl2,r[m,])
 celltype$code2<-paste0(celltype$antibody3, " : ", celltype$cellType_corr, ", ", celltype$tissue, " : ", celltype$treatment )
 length(unique(celltype$code)) #615
 length(unique(celltype$code2)) #508
+length(unique(celltype$Tissue)) #25
+length(unique(celltype$cellType_corr)) #20
+length(unique(celltype$treatment))
 
 spl<-strsplit(temp2$code,split=" : ")
 spl<-do.call("rbind",spl)
@@ -38,8 +41,8 @@ spl2<-do.call("rbind",spl2)
 m<-match(spl2[,1],r$cellType)
 celltype2<-data.frame(tissue="blood",temp2,spl[,1],spl2,r[m,])
 celltype2$code2<-paste0(celltype2$antibody3, " : ", celltype2$cellType_corr, ", ", celltype2$tissue, " : ", celltype2$treatment )
-length(unique(celltype2$code)) #615
-length(unique(celltype2$code2)) #508
+length(unique(celltype2$code)) #259
+length(unique(celltype2$code2)) #216
 
 df<-rbind(celltype,celltype2)
 
