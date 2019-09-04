@@ -41,6 +41,31 @@ table(clumped2$cis)
 length(unique(clumped2$cpg))
 #190102
 
+clumped2$cis2<-clumped2$cis
+w1<-which(clumped2$cis==FALSE & clumped2$snpchr==clumped2$cpgchr)
+clumped2$cis2[w1]<-"trans_intra"
+w2<-which(clumped2$cis==FALSE & clumped2$snpchr!=clumped2$cpgchr)
+clumped2$cis2[w2]<-"trans_inter"
+
+table(clumped2$cis2)
+#trans_inter trans_intra        TRUE 
+#      18601        4516      248607 
+
+
+clumped2$dist[-w2] <- abs(clumped2$snppos[-w2] - clumped2$cpgpos[-w2])
+
+length(which(clumped2$cis2=="trans_intra"&clumped2$dist<5000000)) #2998
+#2998/4516
+length(which(clumped2$cis2=="trans_intra"&clumped2$dist<10000000)) #3291
+
+table(clumped2$cis2)[1]/table(clumped2$cis)[1]
+#trans_inter 
+#  0.8046459
+
+table(clumped2$cis2)[2]/table(clumped2$cis)[1]
+#trans_intra 
+#  0.1953541
+
 data=as.data.table(clumped2)
 data[,cpgchr:=gsub("23","X",cpgchr),]
 data[,cpgchr:=gsub("24","Y",cpgchr),]
@@ -758,10 +783,36 @@ p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
 ## QC figure
 
 temp1 <- subset(clumped2, cpgchr == snpchr)
-temp1$posdif <- temp1$snppos - temp1$cpgpos 
+temp1$posdif <- temp1$snppos - temp1$cpgpos
+length(which(abs(temp1$posdif)>1e6)) #4516
+length(which(abs(temp1$posdif)>5e6)) #1518
+temp1$log10pval<--log10(temp1$pval)
+
 cisdist<-temp1[which(temp1$cis=="TRUE"),]
 mediandist<-round(median(abs(cisdist$posdif))/1000,0)
-temp1$log10pval<--log10(temp1$pval)
+
+transdist<-temp1[which(temp1$cis2=="trans_intra"),]
+mediandist<-round(median(abs(transdist$posdif))/1000,0)
+
+p0 <- ggplot(subset(temp1, abs(posdif) > 1000000), aes(x=posdif,y=log10pval)) +
+  #stat_density_2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
+  stat_bin2d(bins=100, aes(fill = ..density..)) +
+  #stat_bin2d(bins=1000, alpha=0.1) +
+  #geom_bin2d(bins=3000) +
+  #geom_point(size=0.1) +
+  #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
+  labs(x="Distance of SNP from DNAm site",y="-log10 (mQTL Pvalue)")
+  scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+#scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
+#annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
+ggsave(plot=p0, file="./images/trans_distance.png", width=7, height=7)
+
+p0 <- ggplot(subset(temp1, abs(posdif) > 1000000), aes(x=posdif)) +
+geom_histogram(binwidth=5e6) +
+labs(x="Distance of SNP from DNAm site",y="number of intrachromosomal mQTL")
+ggsave(plot=p0, file="./images/trans_distance_hist.png", width=7, height=7)
+
+
 #p1 <- ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
 #	geom_density() +
 #	labs(x="Distance of SNP from CpG") +
@@ -769,15 +820,16 @@ temp1$log10pval<--log10(temp1$pval)
 
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
   #stat_density_2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
-  # stat_bin2d(bins=1000, aes(fill = ..density..)) +
-  stat_bin2d(bins=1000, alpha=0.1) +
+  stat_bin2d(bins=1000, aes(fill = ..density..)) +
+  #stat_bin2d(bins=1000, alpha=0.1) +
   #geom_bin2d(bins=3000) +
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance of SNP from methylation site",y="-log10 (mQTL Pvalue)")
-  #scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+  labs(x="Distance of SNP from DNAm site",y="-log10 (mQTL Pvalue)")
+  scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
 #scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
+ggsave(plot=p1, file="./images/cis_distance.png", width=7, height=7)
 
 
 ## Directions
