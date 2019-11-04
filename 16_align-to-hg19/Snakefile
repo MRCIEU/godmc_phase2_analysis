@@ -1,0 +1,43 @@
+ref = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/data/ref/eur"
+dbsnp = "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.vcf.gz"
+resdir = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16"
+
+chunks = list(range(1, 963))
+
+rule all:
+	input:
+		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
+		expand("{ref}.vcf.gz", ref=ref),
+		expand("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata", resdir=resdir, chunk=chunks)
+
+rule extract_dbsnp:
+	input:
+	output:
+		"{ref}.vcf.gz",
+		"{ref}.vcf.gz.tbi"
+	shell:
+		"""
+		cat {ref}.bim | cut -d " " -f 2 | cut -d ":" -f 1-2 | uniq | sed 's/chr//g' | tr ':' '\t' > {ref}.chrpos
+		bcftools view -T {ref}.chrpos -Oz {dbsnp} > {ref}.vcf.gz
+		bcftools index -t {ref}.vcf.gz
+		bcftools index -n {ref}.vcf.gz
+		"""
+
+rule align:
+	input:
+		expand("{ref}.vcf.gz", ref=ref),
+		expand("{ref}.vcf.gz.tbi", ref=ref),
+		infile = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}.txt.gz"
+	output:
+		"/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata"
+	shell:
+		"Rscript align.r {input.infile} {ref}.vcf.gz {output}"
+
+
+rule coloc:
+	input:
+		"/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata"
+	output:
+		"results/scratch/coloc{chunk}.rdata"
+	shell:
+		"Rscript coloc.r {input} {output} 6"
