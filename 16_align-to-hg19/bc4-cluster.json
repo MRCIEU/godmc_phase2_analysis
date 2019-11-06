@@ -21,7 +21,31 @@
 	{
 		"mem": "10G",
 		"time": "5:00:00"
-	}
+	},
 
+	"mr" :
+	{
+		"name": "{rule}.{wildcards.cellcount}",
+		"output": "job_reports/{rule}.{wildcards.cellcount}.out",
+		"time": "5:00:00"
+	},
+
+	"mr_aggregate" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"coloc_aggregate" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"align_clumped" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	}
 }
 

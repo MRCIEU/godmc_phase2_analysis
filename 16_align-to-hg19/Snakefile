@@ -3,12 +3,17 @@ dbsnp = "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsn
 resdir = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16"
 
 chunks = list(range(1, 963))
+cellcounts = list(range(1, 36))
 
 rule all:
 	input:
 		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
 		expand("{ref}.vcf.gz", ref=ref),
-		expand("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata", resdir=resdir, chunk=chunks)
+		expand("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata", resdir=resdir, chunk=chunks),
+		"results/cellcount_coloc.rdata",
+		"../results/16/16_clumped_aligned.rdata",
+		expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts),
+		"results/cellcount_mr.rdata"
 
 rule extract_dbsnp:
 	input:
@@ -40,4 +45,38 @@ rule coloc:
 	output:
 		"results/scratch/coloc{chunk}.rdata"
 	shell:
-		"Rscript coloc.r {input} {output} 6"
+		"echo $HOSTNAME; Rscript coloc.r {input} {output}"
+
+
+rule coloc_aggregate:
+	input:
+		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks)
+	output:
+		"results/cellcount_coloc.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript aggregate.r"
+
+rule align_clumped:
+	input:
+		expand("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata", chunk=chunks)
+	output:
+		"../results/16/16_clumped_aligned.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript align_clumped.r"
+
+rule mr:
+	input:
+		"../results/16/16_clumped_aligned.rdata",
+	output:
+		"results/scratch/mr{cellcount}.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript mr.r {wildcards.cellcount}"
+
+rule mr_aggregate:
+	input:
+		expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts)
+	output:
+		"results/cellcount_mr.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript aggregate_mr.r"
+

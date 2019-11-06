@@ -10,7 +10,6 @@ set_bcftools()
 args <- commandArgs(T)
 infile <- args[1]
 outfile <- args[2]
-cores <- as.numeric(args[3])
 
 # load("../results/16/16_801_aligned.rdata")
 load(infile)
@@ -42,12 +41,12 @@ for(i in 1:nrow(gwas))
 	message(gwas$id[i])
 	out <- query_gwas(gwas$fn[i], chrompos)
 	out <- sort(out[!duplicated(out)])
-	l[[gwas$id[i]]] <- mclapply(1:length(chrompos), function(j)
+	l[[gwas$id[i]]] <- lapply(1:length(chrompos), function(j)
 	{
 		message(j)
 		g <- vcflist_overlaps(list(cpg[[values(chrompos)$cpg[[j]]]], out), chrompos[j])
 		try(perform_coloc(g[[1]], g[[2]])$summary)
-	}, mc.cores=cores)
+	})
 }
 save(l, chrompos, b, file=outfile)
 
