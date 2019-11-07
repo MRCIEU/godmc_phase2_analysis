@@ -1,7 +1,7 @@
 library(dplyr)
 
 resdir <- "results"
-fn <- list.files(file.path(resdir, "scratch"))
+fn <- list.files(file.path(resdir, "scratch")) %>% grep("mr", ., value=TRUE)
 
 lmrivw <- list()
 lhet <- list()
@@ -15,8 +15,8 @@ for(i in 1:length(fn))
 	lwr[[i]] <- wr
 }
 
-mrivw <- bind_rows(lmrivw)
-het <- bind_rows(lhet)
-wr <- bind_rows(lwr)
+mrivw <- bind_rows(lmrivw) %>% as_tibble()
+het <- bind_rows(lhet) %>% as_tibble()
+wr <- bind_rows(lwr) %>% as_tibble()
 
 save(mrivw, het, wr, file="results/cellcount_mr.rdata")

@@ -1,6 +1,6 @@
-ref = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/data/ref/eur"
+ref = "../data/ref/eur"
 dbsnp = "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.vcf.gz"
-resdir = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16"
+resdir = "../results/16"
 
 chunks = list(range(1, 963))
 cellcounts = list(range(1, 36))
@@ -9,7 +9,7 @@ rule all:
 	input:
 		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
 		expand("{ref}.vcf.gz", ref=ref),
-		expand("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata", resdir=resdir, chunk=chunks),
+		expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks),
 		"results/cellcount_coloc.rdata",
 		"../results/16/16_clumped_aligned.rdata",
 		expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts),
@@ -32,16 +32,16 @@ rule align:
 	input:
 		expand("{ref}.vcf.gz", ref=ref),
 		expand("{ref}.vcf.gz.tbi", ref=ref),
-		infile = "/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}.txt.gz"
+		infile = "../results/16/16_{chunk}.txt.gz"
 	output:
-		"/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata"
+		"../results/16/16_{chunk}_aligned.rdata"
 	shell:
 		"Rscript align.r {input.infile} {ref}.vcf.gz {output}"
 
 
 rule coloc:
 	input:
-		"/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata"
+		"../results/16/16_{chunk}_aligned.rdata"
 	output:
 		"results/scratch/coloc{chunk}.rdata"
 	shell:
@@ -58,7 +58,7 @@ rule coloc_aggregate:
 
 rule align_clumped:
 	input:
-		expand("/mnt/storage/private/mrcieu/research/GODMC_Analysis/godmc_phase2_analysis/results/16/16_{chunk}_aligned.rdata", chunk=chunks)
+		expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks)
 	output:
 		"../results/16/16_clumped_aligned.rdata"
 	shell:
