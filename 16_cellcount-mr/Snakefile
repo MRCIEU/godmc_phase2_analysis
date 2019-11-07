@@ -1,0 +1,82 @@
+ref = "../data/ref/eur"
+dbsnp = "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.vcf.gz"
+resdir = "../results/16"
+
+chunks = list(range(1, 963))
+cellcounts = list(range(1, 36))
+
+rule all:
+	input:
+		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
+		expand("{ref}.vcf.gz", ref=ref),
+		expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks),
+		"results/cellcount_coloc.rdata",
+		"../results/16/16_clumped_aligned.rdata",
+		expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts),
+		"results/cellcount_mr.rdata"
+
+rule extract_dbsnp:
+	input:
+	output:
+		"{ref}.vcf.gz",
+		"{ref}.vcf.gz.tbi"
+	shell:
+		"""
+		cat {ref}.bim | cut -d " " -f 2 | cut -d ":" -f 1-2 | uniq | sed 's/chr//g' | tr ':' '\t' > {ref}.chrpos
+		bcftools view -T {ref}.chrpos -Oz {dbsnp} > {ref}.vcf.gz
+		bcftools index -t {ref}.vcf.gz
+		bcftools index -n {ref}.vcf.gz
+		"""
+
+rule align:
+	input:
+		expand("{ref}.vcf.gz", ref=ref),
+		expand("{ref}.vcf.gz.tbi", ref=ref),
+		infile = "../results/16/16_{chunk}.txt.gz"
+	output:
+		"../results/16/16_{chunk}_aligned.rdata"
+	shell:
+		"Rscript align.r {input.infile} {ref}.vcf.gz {output}"
+
+
+rule coloc:
+	input:
+		"../results/16/16_{chunk}_aligned.rdata"
+	output:
+		"results/scratch/coloc{chunk}.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript coloc.r {input} {output}"
+
+
+rule coloc_aggregate:
+	input:
+		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks)
+	output:
+		"results/cellcount_coloc.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript aggregate.r"
+
+rule align_clumped:
+	input:
+		expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks)
+	output:
+		"../results/16/16_clumped_aligned.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript align_clumped.r"
+
+rule mr:
+	input:
+		"../results/16/16_clumped_aligned.rdata",
+	output:
+		"results/scratch/mr{cellcount}.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript mr.r {wildcards.cellcount}"
+
+rule mr_aggregate:
+	input:
+		expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts)
+	output:
+		"results/cellcount_mr.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript aggregate_mr.r"
+

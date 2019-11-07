@@ -1,0 +1,30 @@
+---
+title: MR and colocalisation of DNAm on tissue counts
+author: Gibran Hemani
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(dplyr)
+	library(magrittr)
+	library(data.table)
+	library(ggplot2)
+	library(tidyr)
+	library(knitr)
+}))
+opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
+```
+
+Read in data
+
+```{r}
+load("results/cellcount_coloc.rdata")
+load("results/cellcount_mr.rdata")
+```
+
+
+
