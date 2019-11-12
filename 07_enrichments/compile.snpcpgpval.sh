@@ -46,8 +46,8 @@ i=${PBS_ARRAYID}
 
 dir="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/07_enrichments"
 cd $dir
-R CMD BATCH --no-save --no-restore '--args '$i'' compile.snpcpgpval_addcistrans.R compile.snpcpgpval_addcistrans2.$i.Rout
+R CMD BATCH --no-save --no-restore '--args '$i'' compile.snpcpgpval_addcistrans.R compile.snpcpgpval_addcistrans3.$i.Rout
 
 dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16"
 cd $dir
-gzip snpcpgpval.chr$i.cistrans2.txt
+gzip snpcpgpval.chr$i.cistrans3.txt

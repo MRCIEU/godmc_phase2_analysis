@@ -19,10 +19,18 @@ cisall$Type<-gsub("cismqtls","cis any",cisall$Type)
 transall<-read.table(paste0(path,"selection_trans_no_lct_mhc_all.txt"),he=T)
 transall$Type<-gsub("transmqtls","trans any",transall$Type)
 
+
 df<-rbind(r,cis,trans,amb,cisall,transall)
 df$logOddsRatio<-log(df$OR)
 df2<-df[df$PThresh=="1e-14",]
 df2$Type<-as.character(df2$Type)
+
+df2$Annotation2<-df2$Annotation
+df2$Annotation2<-gsub("ihs","iHS",df2$Annotation2)
+df2$Annotation2<-gsub("sds","SDS",df2$Annotation2)
+df2$Annotation2<-gsub("fst","Fst",df2$Annotation2)
+df2$Annotation2<-gsub("xpehhchb","XP-EHH(CHB)",df2$Annotation2)
+df2$Annotation2<-gsub("xpehhyri","XP-EHH(YRI)",df2$Annotation2)
 
 #w<-which(df2$Type=="mqtls")
 #df2$Type[w]<-"All"
@@ -66,7 +74,17 @@ pl3<-ggplot(df2,aes(x=Annotation,y=OR,size=-log10(Pvalue),fill=Type))+
   ggsave(pl3,file="./images/selection2_OR_no_mhc_lct.pdf",height=6,width=8)
 
   df$logOddsRatio<-log(df$OR)
-  
+
+p4<-ggplot(df2, aes(color=Type, y=Beta, x=Annotation2)) +
+ scale_fill_brewer(type="qual") +
+    geom_point(position=position_dodge(.9)) +
+    geom_errorbar(aes(x=Annotation2,ymin=CI95_lower, ymax=CI95_upper), width=.2,position=position_dodge(.9)) +
+    labs(x="Selection metric",y="log OR") +
+    scale_y_continuous(limits=c(-2,2)) +
+    geom_hline(aes(yintercept = 0)) +
+    theme(legend.title=element_blank())
+ggsave(p4,file="./images/selection2_OR_no_mhc_lct_forpaper.pdf",height=6,width=8)
+
 #df3<-df2[which(df2$Pvalue<pval_lim),c("Annotation","OR","Pvalue","Beta","SE","CI95_lower","CI95_upper","NAnnotThesh","NAnnot","NThresh","N","Type")]
 df3<-df2[,c("Annotation","OR","Pvalue","Beta","SE","CI95_lower","CI95_upper","NAnnotThesh","NAnnot","NThresh","N","Type")]
 names(df3)<-gsub("NAnnotThesh","NAnnotThresh",names(df3))
@@ -82,7 +100,7 @@ w<-which(df3$Annotation=="All")
 write.table(df3,"selection_results_nomhc_lct.txt",sep="\t",quote=F,row.names=F,col.names=T)
 
 
-load("../results/enrichments/snpcontrolsets_selection.rdata")
+load("../results/enrichments/snpcontrolsets_selection_se.rdata")
 w<-which(is.na(f.all$snp_cis))
 f.all$Category<-as.character(f.all$snp_cis)
 f.all$Category[w]<-"no_mqtl"
@@ -108,6 +126,7 @@ f.all<-f.all[-w,]
 
 w<-which(f.all$mqtl_clumped=="TRUE")
 f.all2<-f.all[w,]
+save(f.all2,file="/newshared/godmc/1kg_reference_ph3/mQTLSNP_selection_se.Robj")
 
 m<-max(-log10(df2$Pvalue))
 
@@ -395,11 +414,16 @@ w1<-which(f.all2$snp_cis=="TRUE") #155213
 w2<-which(f.all2$snp_cis=="FALSE") #789
 w3<-which(f.all2$snp_cis=="ambivalent") #58599
 
+f.all2$max_abs_Effect_maf<-(abs(f.all2$max_abs_Effect))*(f.all2$MAF*(1-f.all2$MAF))
 
 df.out<-data.frame()
 df.out2<-data.frame()
 df.out_nomaf<-data.frame()
 df.out2_nomaf<-data.frame()
+df.out_mafnorm<-data.frame()
+df.out2_mafnorm<-data.frame()
+
+
 outcomes<-c("sds_score","Fst_score","iHS_score","xpehhchb_score","xpehhyri_score")
 cis<-c("All","TRUE","ambivalent","FALSE")
 for (i in 1:length(outcomes)){
@@ -418,21 +442,38 @@ df_nomaf<-data.frame(outcome=names(f.all2)[w],cis=cis[j],lmfit2$coefficients)
 df.out_nomaf<-rbind(df.out_nomaf,df_nomaf)
 df.out2_nomaf<-rbind(df.out2_nomaf,df_nomaf[2,])
 
+lmfit3<-summary(lm(data=f.all2[w2,],max_abs_Effect_maf~f.all2[w2,w]+nproxies+tssdist+GC_freq+CpG_freq+MAF))
+df_mafnorm<-data.frame(outcome=names(f.all2)[w],cis=cis[j],lmfit3$coefficients)
+df.out_mafnorm<-rbind(df.out_mafnorm,df_mafnorm)
+df.out2_mafnorm<-rbind(df.out2_mafnorm,df_mafnorm[2,])
+
 }
 }
 
 df.out_maf<-data.frame()
 df.out2_maf<-data.frame()
+df.out_maf2<-data.frame()
+df.out2_maf2<-data.frame()
+
+
 for (j in 1:length(cis)){
 if(cis[j]!="All"){w2<-which(f.all2$snp_cis==cis[j])}
 if(cis[j]=="All"){w2<-1:nrow(f.all2)}
 
-lmfit3<-summary(lm(data=f.all2[w2,],abs(max_abs_Effect)~f.all2[w2,"MAF"]+nproxies+tssdist+GC_freq+CpG_freq))
-df_maf<-data.frame(cis=cis[j],lmfit3$coefficients)
+lmfit4<-summary(lm(data=f.all2[w2,],abs(max_abs_Effect)~f.all2[w2,"MAF"]+nproxies+tssdist+GC_freq+CpG_freq))
+df_maf<-data.frame(cis=cis[j],lmfit4$coefficients)
 df.out_maf<-rbind(df.out_maf,df_maf)
 df.out2_maf<-rbind(df.out2_maf,df_maf[2,])
+
+lmfit5<-summary(lm(data=f.all2[w2,],max_abs_Effect_maf~f.all2[w2,"MAF"]+nproxies+tssdist+GC_freq+CpG_freq))
+df_maf2<-data.frame(cis=cis[j],lmfit5$coefficients)
+df.out_maf2<-rbind(df.out_maf2,df_maf2)
+df.out2_maf2<-rbind(df.out2_maf2,df_maf2[2,])
+
+
 }
 df.out3_maf<-df.out2_maf[which(df.out2_maf$cis!="All"),] 
+df.out3_maf2<-df.out2_maf2[which(df.out2_maf2$cis!="All"),] 
 
 #
 w<-which(abs(f.all2$sds_score)>4)
@@ -499,6 +540,18 @@ df.out3_nomaf<-df.out2_nomaf[which(df.out2_nomaf$cis!="All"),]
 labs_nomaf<-signif(df.out3_nomaf[c(7:9,1:3,4:6,10:15),c("Pr...t.."),3],digits=3)
 len_nomaf <- length(unique(df.out3_nomaf$cis))
 dat_nomaf <- data.frame(x = c(2.5,2.5,2.5,0.8,0.8,0.8,2.5,2.5,2.5,2.5,2.5,2.5,4,4,4), y = rep(2.5, len_nomaf), Category=c("cisonly","cis+trans","transonly"),labs=labs_nomaf)
+
+#norm for MAF
+df.out2_mafnorm$cis<-gsub("TRUE","cisonly",df.out2_mafnorm$cis)
+df.out2_mafnorm$cis<-gsub("ambivalent","cis+trans",df.out2_mafnorm$cis)
+df.out2_mafnorm$cis<-gsub("FALSE","transonly",df.out2_mafnorm$cis)
+o<-order(paste(df.out2_mafnorm$outcome,df.out2_mafnorm$cis))
+df.out2_mafnorm<-df.out2_mafnorm[o,]
+df.out3_mafnorm<-df.out2_mafnorm[which(df.out2_mafnorm$cis!="All"),] 
+
+labs_mafnorm<-signif(df.out3_mafnorm[c(7:9,1:3,4:6,10:15),c("Pr...t.."),3],digits=3)
+len_mafnorm <- length(unique(df.out3_mafnorm$cis))
+dat_mafnorm <- data.frame(x = c(2.5,2.5,2.5,0.8,0.8,0.8,2.5,2.5,2.5,2.5,2.5,2.5,4,4,4), y = rep(0.5, len_mafnorm), Category=c("cisonly","cis+trans","transonly"),labs=labs_mafnorm)
 
 
 
@@ -776,6 +829,11 @@ print(p6, vp = vplayout(5, 1:2))
 print(p7, vp = vplayout(6, 1:2))
 dev.off()
 
+###
+
+
+
+
 #outliers
 mean(abs(f.all2$tssdist))
 #[1] 45797.88
@@ -937,4 +995,175 @@ print(p5, vp = vplayout(4, 1:2))
 print(p6, vp = vplayout(5, 1:2))
 print(p7, vp = vplayout(6, 1:2))
 dev.off()
+
+#MAF norm
+s<-which(!is.na(f.all2$sds_score))
+p2<-ggplot(f.all2[s,], aes(sds_score, max_abs_Effect_maf,colour=Category)) +
+geom_point(alpha=0.2) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+#geom_smooth(method="lm", formula=sds_score ~ MAF) +
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+geom_text(aes(x, y, label=paste("p =", labs), group=NULL),data=dat_mafnorm[1:3,],size=8,color = "black") +
+scale_y_continuous(limits = c(0, 0.5))+
+
+labs(x="SDS_score", y="max Effect size*f(1-f)")
+
+s<-which(!is.na(f.all2$Fst_score))
+p3<-ggplot(f.all2[s,], aes(Fst_score, max_abs_Effect_maf,colour=Category)) +
+geom_point(alpha=0.2) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+#geom_smooth(method="lm", formula=Fst_score ~ MAF) +
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+geom_text(aes(x, y, label=paste("p =", labs), group=NULL),data=dat_mafnorm[4:6,],size=8,color = "black") +
+scale_y_continuous(limits = c(0, 0.5))+
+scale_x_continuous(limits = c(-0.25, 1))+
+
+labs(x="Fst_score", y="max Effect size*f(1-f)")
+
+ihs<-which(f.all2$iHS_score<5)
+p4<-ggplot(f.all2[ihs,], aes(iHS_score, max_abs_Effect_maf,colour=Category)) +
+geom_point(alpha=0.1) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+#geom_smooth(data=f.all2,method="lm", formula=iHS_score ~ MAF) +
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+geom_text(aes(x, y, label=paste("p =", labs), group=NULL),data=dat_mafnorm[7:9,],size=8,color = "black") +
+scale_y_continuous(limits = c(0, 0.5))+
+
+labs(x="iHS_score", y="max Effect size*f(1-f)")
+
+s<-which(!is.na(f.all2$xpehhchb_score))
+p5<-ggplot(f.all2[s,], aes(xpehhchb_score, max_abs_Effect_maf,colour=Category)) +
+geom_point(alpha=0.1) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+geom_text(aes(x, y, label=paste("p =", labs), group=NULL),data=dat_mafnorm[10:12,],size=8,color = "black") +
+scale_y_continuous(limits = c(0, 0.5))+
+
+labs(x="XP_EHH(CHB)_score", y="max Effect size*f(1-f)")
+
+s<-which(!is.na(f.all2$xpehhyri_score))
+p6<-ggplot(f.all2[s,], aes(xpehhyri_score, max_abs_Effect_maf,colour=Category)) +
+geom_point(alpha=0.1) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+geom_text(aes(x, y, label=paste("p =", labs), group=NULL),data=dat_mafnorm[13:15,],size=8,color = "black") +
+scale_y_continuous(limits = c(0, 0.5))+
+
+labs(x="XP_EHH(YRI)_score", y="max Effect size*f(1-f)")
+
+s<-which(!is.na(f.all2$Fst_score))
+p7<-ggplot(f.all2[s,], aes(MAF, abs(max_abs_Effect),colour=Category)) +
+geom_point(alpha=0.1) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+geom_text(aes(x, y, label=paste("p =", signif(df.out3_maf[,5],digits=3)), group=NULL),data=data.frame(x=0.35,y=2.5),size=8,color = "black") +
+labs(x="MAF", y="max Effect size")
+ggsave(p7, file="./images/test.pdf", width=10, height=10)
+
+#png("./images/selection_noMAF.png",height=30,width=18, units="in", res=300)
+#create layout, assign it to viewport, push viewport to plotting device
+#pdf("./images/selection_noMAF.pdf",height=10,width=8)
+png("./images/selection_MAFnorm.png",height=30,width=18, units="in", res=300)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(6, 2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+#print(p1, vp = vplayout(1, 1:2))
+print(p2, vp = vplayout(1, 1:2))
+print(p3, vp = vplayout(2, 1:2))
+print(p4, vp = vplayout(3, 1:2))
+print(p5, vp = vplayout(4, 1:2))
+print(p6, vp = vplayout(5, 1:2))
+print(p7, vp = vplayout(6, 1:2))
+dev.off()
+
+p7<-ggplot(f.all2[s,], aes(Fst_score, nproxies,colour=Category)) +
+geom_point(alpha=0.1) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+#geom_text(aes(x, y, label=paste("p =", signif(df.out3_maf2[,5],digits=3)), group=NULL),data=data.frame(x=0.35,y=2.0),size=8,color = "black") +
+labs(x="Fst", y="nproxies")
+ggsave(p7, file="./images/nproxiesvsFst.pdf", width=10, height=10)
+
+
+p7<-ggplot(f.all2[s,], aes(Fst_score, nproxies<,colour=Category)) +
+geom_point(alpha=0.1) +
+facet_wrap(~ Category) +
+# stat_density_2d(aes(fill = ..level..), geom="polygon") +
+#geom_smooth(aes(colour=Category)) +
+geom_smooth(method="lm", aes(colour="black")) +
+geom_smooth(aes(colour="red")) +
+
+theme( axis.text = element_text( size = 14 ),
+           axis.text.x = element_text( size = 20 ),
+           axis.text.y = element_text( size = 20 ),
+           axis.title = element_text( size = 20, face = "bold" ),
+           legend.position="none",strip.text = element_text(size = 20)) +
+#geom_text(aes(x, y, label=paste("p =", signif(df.out3_maf2[,5],digits=3)), group=NULL),data=data.frame(x=0.35,y=2.0),size=8,color = "black") +
+labs(x="Fst", y="nproxies")
+ggsave(p7, file="./images/nproxiesvsFst.pdf", width=10, height=10)
+
+
 

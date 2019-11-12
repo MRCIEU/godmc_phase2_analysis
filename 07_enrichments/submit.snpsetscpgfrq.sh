@@ -23,10 +23,10 @@ fi
 
 i=${PBS_ARRAYID}
 
-cd ~/repo/godmc_phase2_analysis/07_enrichments
-#R CMD BATCH addcg_cpgfrq.R addcg_cpgfrq.Rout
+cd ~/repo/godmc_phase2_analysis/13_selection
+R CMD BATCH addcg_cpgfrq.R addcg_cpgfrq.Rout
 #R CMD BATCH ld_regions_makecontrols.R ld_regions_makecontrols.Rout
 
 #R CMD BATCH --no-save --no-restore '--args '$i'' ld_regions_makecontrols.R ld_regions_makecontrols.Rout 
-R CMD BATCH --no-save --no-restore '--args '$i'' addcg_cpgfrq.R addcg_cpgfrq$i.Rout 
+#R CMD BATCH --no-save --no-restore '--args '$i'' addcg_cpgfrq.R addcg_cpgfrq$i.Rout 
 #R CMD BATCH --no-save --no-restore preparegarfield_selection0.R preparegarfield_selection0.Rout

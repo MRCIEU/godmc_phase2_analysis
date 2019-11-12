@@ -16,6 +16,16 @@ r2<-r[r$msig==TRUE,]
 nrow(r2) #85
 length(unique(r2$trait)) #13
 
+risk<-r2[r2$trait%in%c("Triglycerides","Serum cystatin C (eGFRcys)","Copper","Transferrin Saturation","Birth weight","Zinc","Iron","Age at menarche","Fasting insulin"),]
+disease<-r2[r2$trait%in%c("Juvenile idiopathic arthritis","Multiple sclerosis","Rheumatoid arthritis","Bulimia nervosa"),]
+nrow(risk) #17
+length(unique(risk$outcome)) #16
+length(unique(risk$trait))
+
+nrow(disease) #68
+length(unique(disease$outcome)) #68
+length(unique(disease$trait))
+
 #y<-extract_instruments(outcomes=279)
 #y$SNP
 #[1] "rs3763350" "rs477515"  "rs6679677"

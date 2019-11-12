@@ -11,8 +11,8 @@ library(magrittr)
 
 load("../results/gwas_enrichment.rdata")
 load("../data/labelids.rdata")
-ao <- available_outcomes()
-#load("../data/outcomes.RData")
+#ao <- available_outcomes()
+load("../data/outcomes.RData")
 #dat <- merge(dat, ao, by.x="id.y", by.y="id")
 gwas_enrichment <- subset(gwas_enrichment, !is.na(cluster) & background == "clumped")
 dat <- merge(gwas_enrichment, ao, by="id")
@@ -56,9 +56,10 @@ median(qchisq(dat$p, 1,low=FALSE) / qchisq(0.5, 1))
 
 ## Write table
 
-datt <- dat %>% dplyr::select(community=cluster, trait, pmid, category=subcategory, mrbase_id=id, background, ncase=ncase.x, ncontrol=ncontrol.x, lor, se, z, pval=p) %>% arrange(pval)
+datt <- dat %>% dplyr::select(community=cluster, trait, pmid, category=subcategory, mrbase_id=id, background, ncase=ncase.x, ncontrol=ncontrol.x, lor, se, z, pval=p,fdr) %>% arrange(pval)
 datt$community <- as.character(datt$community)
 datt$community[is.na(datt$community)] <- "All"
+pa.d
 write.csv(datt, file="../results/gwas_enrichment.csv")
 
 

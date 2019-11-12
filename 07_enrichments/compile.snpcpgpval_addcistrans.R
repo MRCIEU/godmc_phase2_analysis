@@ -23,14 +23,14 @@ res.chr<-rbind(res.chr,res)}
 
 res.chr$id<-paste(res.chr$snp,res.chr$cpg,sep="_")
 
-res.chr<-res.chr[,c("cpg","snp","snpchr","snppos","snptype","id","Pvalue","chunk","cpgchr","cpgpos","cis","Effect")]
+res.chr<-res.chr[,c("cpg","snp","snpchr","snppos","snptype","id","Pvalue","chunk","cpgchr","cpgpos","cis","Effect","StdErr","TotalSampleSize","Freq1","HetISq")]
 #cpg	snp	snpchr	snppos	type	id	pval	chunk	cpgchr	cpgpos	cis	trans	snp_cis	min_pval
 
 #write.table(res.chr,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".txt",sep=""), sep=" ",col.names=F,row.names=F,quote=F)
 #df.out<-read.table(paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".txt.gz",sep=""),he=F)
 df.out<-res.chr
 df.out$cpgchr<-gsub("chrX","chr23",df.out$cpgchr)
-names(df.out)<-c("cpg","snp","snpchr","snppos","type","id","pval","chunk","cpgchr","cpgpos","cis","Effect")
+names(df.out)<-c("cpg","snp","snpchr","snppos","type","id","pval","chunk","cpgchr","cpgpos","cis","Effect","StdErr","TotalSampleSize","Freq1","HetISq")
 #spl<-strsplit(as.character(df.out$id),split="_")
 #spl<-do.call("rbind",spl)
 #df.out<-data.frame(cpg=spl[,2],snp=spl[,1],df.out)
@@ -116,37 +116,55 @@ df1<-data[,snp_cis:=ifelse(all(cis),"TRUE",ifelse(all(!cis),"FALSE","ambivalent"
 #3: ambivalent
 #4: ambivalent
 
+data[which(data$snp%in%c("chr22:29654004:SNP")),]
+
 df2<-data[ , (min_pval = min(pval)), by = snp]
 data<-inner_join(df1,df2)
 w<-which(names(data)%in%"V1")
 names(data)[w]<-"min_pval"
 
-data<-data.table(data)
-df3<-data[ , (min_Effect = min(Effect)), by = snp]
-df4<-data[ , (max_Effect = max(Effect)), by = snp]
-df<-data.table(rbind(df3,df4))
+#data<-data.table(data)
+#df3<-data[ , (min_Effect = min(Effect)), by = snp]
+#df4<-data[ , (max_Effect = max(Effect)), by = snp]
+#df<-data.table(rbind(df3,df4))
 
-maxAbsObs <- function(x) x[which.max(abs(x))]
-df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
-data<-inner_join(data,df2)
-w<-which(names(data)%in%"V1")
+data<-data %>% 
+  group_by(snp) %>% 
+  slice(which.max(abs(Effect)))
+
+w<-which(names(data)%in%"Effect")
 names(data)[w]<-"max_abs_Effect"
+
+w<-which(names(data)%in%"StdErr")
+names(data)[w]<-"max_abs_SE"
+
+#maxAbsObs <- function(x) x[which.max(abs(x))]
+#df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
+#data<-inner_join(data,df2)
+#w<-which(names(data)%in%"V1")
+#names(data)[w]<-"max_abs_Effect"
+
+write.table(data,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans3.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
+#
 ###
-data<-data.table(data)
-amb<-subset(data,snp_cis!="TRUE" & cis!="TRUE")
-df2<-amb[ , (min_transpval = min(pval)), by = snp]
-data<-full_join(data,df2)
-w<-which(names(data)%in%"V1")
-names(data)[w]<-"trans_min_pval"
+#data<-data.table(data)
+#amb<-subset(data,snp_cis!="TRUE" & cis!="TRUE")
+#df2<-amb[ , (min_transpval = min(pval)), by = snp]
+#data<-full_join(data,df2)
+#w<-which(names(data)%in%"V1")
+#names(data)[w]<-"trans_min_pval"
 
-df3<-amb[ , (min_Effect = min(Effect)), by = snp]
-df4<-amb[ , (max_Effect = max(Effect)), by = snp]
-df<-data.table(rbind(df3,df4))
+#df3<-amb[ , (min_Effect = min(Effect)), by = snp]
+#df4<-amb[ , (max_Effect = max(Effect)), by = snp]
+#df<-data.table(rbind(df3,df4))
 
-maxAbsObs <- function(x) x[which.max(abs(x))]
-df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
-data<-full_join(data,df2)
-w<-which(names(data)%in%"V1")
-names(data)[w]<-"trans_max_abs_Effect"
+#maxAbsObs <- function(x) x[which.max(abs(x))]
+#df2<-df[, lapply(.SD, maxAbsObs), by="snp"]
+#data<-full_join(data,df2)
+#w<-which(names(data)%in%"V1")
+#names(data)[w]<-"trans_max_abs_Effect"
+
 #chr22:50546868:SNP
-write.table(data,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans2.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
+
+#write.table(data,paste("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans2.txt",sep=""),sep="\t",quote=F,row.names=F,col.names=T)
+#cpg	snp	snpchr	snppos	type	id	pval	chunk	cpgchr	cpgpos	cis	Effect	snp_cis	min_pval	max_abs_Effect	trans_min_pval trans_max_abs_Effect

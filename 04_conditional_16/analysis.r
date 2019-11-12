@@ -22,7 +22,7 @@ nrow(sig_trans)
 ## Number of independent SNPs per cis and trans
 
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
-	dplyr::summarise(numbersnps=n(),samplesize=mean(n), max_samplesize=max(n),min_samplesize=min(n))
+  dplyr::summarise(numbersnps=n(),samplesize=mean(n), max_samplesize=max(n),min_samplesize=min(n))
 
 length(which(clump_counts$samplesize>27750))
 #5112
@@ -120,7 +120,7 @@ f7$cis <- FALSE
 f7$cis[f7$snpchr == f7$cpgchr & (abs(f7$snppos - f7$cpgpos) <= cis_radius)] <- TRUE
 sigf7 <- subset(f7, (cis & p.value < 1e-8))
 clump_countsf7 <- dplyr::group_by(sigf7, gene, cis) %>%
-	dplyr::summarise(numbersnps=n(),data="aries_f7")
+  dplyr::summarise(numbersnps=n(),data="aries_f7")
 
 df7<-data.frame(table(clump_countsf7$numbersnps),data="ARIES childhood 1000G (n=834)")
 df7$perc<-df7$Freq/sum(df7$Freq)
@@ -136,7 +136,7 @@ max(conditional$n) #132516
 sig_3<-conditional.cis[which(conditional.cis$pJ<1e-8),] #10769
 
 clump_counts_sub <- dplyr::group_by(sig_3, cpg) %>%
-	dplyr::summarise(numbersnps=n(),data="godmc_subset")
+  dplyr::summarise(numbersnps=n(),data="godmc_subset")
 
 df_sub<-data.frame(table(clump_counts_sub$numbersnps),data="GoDMC HRC (n=3,984)")
 w<-which(as.numeric(as.character(df_sub$Var1))<26)
@@ -152,7 +152,7 @@ max(conditional.cis$n) #47140.9
 sig_hrc<-conditional.cis[which(conditional.cis$pJ<1e-8),] #723524
 
 clump_counts_hrc <- dplyr::group_by(sig_hrc, cpg) %>%
-	dplyr::summarise(numbersnps=n(),data="godmc_hrc")
+  dplyr::summarise(numbersnps=n(),data="godmc_hrc")
 
 load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata") #only cis
 max(conditional.trans$n)
@@ -176,7 +176,7 @@ median(clump_counts_hrc_all$numbersnps) #2
 iqr(clump_counts_hrc_all$numbersnps) #4
 
 clump_counts_hrc <- dplyr::group_by(sig_hrc, cpg) %>%
-	dplyr::summarise(numbersnps=n(),data="godmc_hrc",samplesize=mean(n),freq=mean(freq),freq_geno=mean(freq_geno))
+  dplyr::summarise(numbersnps=n(),data="godmc_hrc",samplesize=mean(n),freq=mean(freq),freq_geno=mean(freq_geno))
 clump_counts_hrc[which(clump_counts_hrc$numbersnps>75),]
 # A tibble: 1 x 3
 #  cpg        numbersnps data     
@@ -216,7 +216,7 @@ dev.off()
 
 sig <- subset(conditional, (cis & p < 1e-8) | (!cis & p < 1e-14))
 clump_counts <- dplyr::group_by(sig, cpg, cis) %>%
-	dplyr::summarise(numbersnps=n(),samplesize=mean(n))
+  dplyr::summarise(numbersnps=n(),samplesize=mean(n))
 
 p1 <- ggplot(clump_counts, aes(x=numbersnps)) +
 geom_bar(position="dodge", aes(fill=cis)) +
@@ -224,9 +224,9 @@ labs(x="Independent hits from conditional analysis (p < 1e-8; 1e-14)", y="mQTLs 
 ggsave(p1, file="./images/conditional_counts_cpg.pdf", width=7, height=7)
 
 clump_counts_snp <- dplyr::group_by(sig, snp, cis) %>%
-	dplyr::summarise(n=n()) %>%
-	dplyr::group_by(n, cis) %>%
-	dplyr::summarise(count=n())
+  dplyr::summarise(n=n()) %>%
+  dplyr::group_by(n, cis) %>%
+  dplyr::summarise(count=n())
 
 p2 <- ggplot(filter(clump_counts_snp, n < 100 & n > 5), aes(x=as.factor(n), y=count)) +
 geom_bar(position="dodge", aes(fill=cis), stat="identity") +
@@ -236,7 +236,7 @@ ggsave(p2, file="./images/conditional_counts_snp.pdf", width=7, height=7)
 
 
 cl_counts <- dplyr::group_by(clumped2, cpg, cis) %>%
-	dplyr::summarise(n=n())
+  dplyr::summarise(n=n())
 
 #In the conditional analysis there is one probe with 113 cis associations (cg13601595) and 160 probes with more than 50 cisassociations. 
 #In clumped there are no probes with more than 50 associations and only 29 probes with more than 4 associations.
@@ -333,7 +333,7 @@ load("~/repo/godmc_phase2_analysis/results/16/16_conditional_hrc_trans.rdata")
 sig_hrc<-conditional.trans[which(conditional.trans$pJ<1e-14),] 
 
 clump_counts_hrc <- dplyr::group_by(sig_hrc, cpg) %>%
-	dplyr::summarise(numbersnps=n(),data="godmc_hrc",samplesize=mean(n))
+  dplyr::summarise(numbersnps=n(),data="godmc_hrc",samplesize=mean(n))
 
 
 df_hrc<-data.frame(table(clump_counts_hrc$numbersnps),data="GoDMC HRC (n=27,750)")
@@ -365,6 +365,49 @@ conditional<-rbind(cis,trans)
 sig<-conditional[which(conditional$cis==TRUE & conditional$pJ<1e-8 | conditional$cis==FALSE & conditional$pJ<1e-14),]
 table(sig$cis)
 nrow(sig)
+
+##
+df<-data.frame(clump_counts_hrc[which(clump_counts_hrc$numbersnps>25),])
+y<-meffil.get.features()
+y<-y[,c("name","chromosome","position")]
+m<-match(df$cpg,y$name)
+df<-data.frame(df,y[m,])
+hla<-which(df$chromosome=="chr6"&df$pos>24570005&df$pos<38377657)
+df$hla<-"FALSE"
+df$hla[hla]<-"TRUE"
+table(df$hla)
+df50<-df[which(df$numbersnps>50),]
+table(df50$hla)
+
+ld<-read.table("high_ld_regions.txt")
+df$chromosome<-gsub("chr","",df$chromosome)
+w.out<-NULL
+for (i in 1:nrow(ld)){
+w<-which(df$chromosome==ld$V1[i]&df$position>ld$V2[i]&df$position<ld$V3[i])
+w.out<-c(w.out,w)
+}
+
+df$ld_region<-"FALSE"
+df$ld_region[w.out]<-"TRUE"
+df50<-df[which(df$numbersnps>50),]
+table(df50$ld_region)
+#2 34
+table(df50$hla)
+#3 33
+
+df25<-df[which(df$numbersnps>25),]
+table(df25$ld_region)
+#FALSE TRUE
+#416 772
+
+table(df25$hla)
+#FALSE  TRUE 
+#444   744
+
+
+
+
+
 
 
 

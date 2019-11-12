@@ -13,7 +13,7 @@ table(f.all$mQTL)
 #9852470  232602 
 
  
-df.out<-read.table(paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans.txt.gz",sep=""),he=T)
+df.out<-read.table(paste("/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans3.txt.gz",sep=""),he=T)
 
 bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered.bim")
 
