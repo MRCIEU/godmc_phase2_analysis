@@ -4,7 +4,7 @@ library(tidyr)
 library(ggplot2)
 library(gridExtra)
 library(grid)
-
+library(stringr)
 
 library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 data("IlluminaHumanMethylation450kanno.ilmn12.hg19")
@@ -126,6 +126,13 @@ length(which(df$dist<1000))/nrow(df)
 length(which(df$dist<100))/nrow(df)
 #[1] 0.1152092
 
+#78% (n=321373) of non450k probes are within 10k of 450k probe
+#36% (n=148246) of non450 probes are within 1k of 450k probe
+#12% (n=47667) of non 450 probes are within 100bp of 450k probe
+#~12,000 regulatory features contain non450k probes that map to same regulatory feature as 450k probe 
+
+####################################################################################################
+
 #x-axis cpg density
 #y-axis number of mQTL
 load("~/repo/godmc_phase2_analysis/07_enrichments/mean_allcpgs.Robj")
@@ -138,10 +145,25 @@ m<-match(rm,r$probeID)
 r<-r[-m,]
 nrow(r) #420509
 
+
 which(is.na(r$genesUniq))
 
-r<-separate_rows(r,genesUniq,sep = ";")
-nrow(r) #541872
+r<-separate_rows(r,geneNames,transcriptTypes,sep = ";")
+nrow(r) #2068927
+
+r<-unique(r)
+nrow(r)
+#542090
+
+r.rm<-r[which(is.na(r$transcriptTypes)),]
+
+genes<-unlist(c("protein_coding",unique(r2[grep("_gene",as.character(r2$transcriptTypes),fixed=T),"transcriptTypes"])))
+r<-r[which(r$transcriptTypes%in%genes),]
+length(unique(r$geneNames)) #18993
+nrow(r) #386057
+length(unique(r$probeID)) #331884
+nrow(r) #386057
+
 
 r2<-fread("EPIC.hg38.manifest.gencode.v22.tsv.gz")
 nrow(r2) #865918
@@ -149,8 +171,20 @@ m<-match(rm,r2$probeID)
 r2<-r2[-na.omit(m),]
 nrow(r2) #805311
 
-r2<-separate_rows(r2,genesUniq,sep = ";")
-nrow(r2) #1007473
+r2<-separate_rows(r2,geneNames,transcriptTypes,sep = ";")
+nrow(r2) #3735330
+
+r2<-unique(r2)
+nrow(r2)
+#1007862
+
+r.rm2<-r2[which(is.na(r2$transcriptTypes)),]
+
+genes<-unlist(c("protein_coding",unique(r2[grep("_gene",as.character(r2$transcriptTypes),fixed=T),"transcriptTypes"])))
+r2<-r2[which(r2$transcriptTypes%in%genes),]
+length(unique(r2$geneNames)) #19543
+nrow(r2) #659907
+
 
 load("~/repo/godmc_phase2_analysis/results/16/16_clumped.rdata")
 clumped<-clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
@@ -165,20 +199,35 @@ r<-merge(r,mqtlcount,by.x="probeID",by.y="cpg",all=T)
 r<-merge(r,ciscount,by.x="probeID",by.y="cpg",all=T)
 r<-merge(r,transcount,by.x="probeID",by.y="cpg",all=T)
 
-probecount<-group_by(r, genesUniq) %>% summarise(nprobes=n(),nmqtls=sum(mqtls,na.rm=T),ncismqtls=sum(cismqtls,na.rm=T),ntransmqtls=sum(transmqtls,na.rm=T))
+r.rm<-merge(r.rm,mqtlcount,by.x="probeID",by.y="cpg",all.x=T)
+r.rm<-merge(r.rm,ciscount,by.x="probeID",by.y="cpg",all.x=T)
+r.rm<-merge(r.rm,transcount,by.x="probeID",by.y="cpg",all.x=T)
+
+
+probecount<-group_by(r, geneNames) %>% summarise(nprobes=n(),nmqtls=sum(mqtls,na.rm=T),ncismqtls=sum(cismqtls,na.rm=T),ntransmqtls=sum(transmqtls,na.rm=T))
 nrow(probecount)
-#33480
+#18994
 
-probecount2<-group_by(r2, genesUniq) %>% summarise(nprobesEPIC=n())
+probecount.rm<-group_by(r.rm, geneNames) %>% summarise(nprobes=n(),nmqtls=sum(mqtls,na.rm=T),ncismqtls=sum(cismqtls,na.rm=T),ntransmqtls=sum(transmqtls,na.rm=T))
+nrow(probecount.rm)
+# A tibble: 1 x 5
+#  geneNames nprobes nmqtls ncismqtls ntransmqtls
+#  <chr>       <int>  <int>     <int>       <int>
+#1 NA          58356  46654     43324        3330
+
+probecount2<-group_by(r2, geneNames) %>% summarise(nprobesEPIC=n())
 nrow(probecount2)
-#[1] 44633
+#[1] 19543
 
-p<-merge(probecount,probecount2,by.x="genesUniq",by.y="genesUniq",all=T)
+probecount.rm2<-group_by(r.rm2, geneNames) %>% summarise(nprobesEPIC=n())
+p.rm<-merge(probecount.rm,probecount.rm2,by.x="geneNames",by.y="geneNames",all=T)
+
+p<-merge(probecount,probecount2,by.x="geneNames",by.y="geneNames",all=T)
 nrow(p)
-#44709
+#19548
 p[p=="NA"] <- NA
-w<-which(is.na(p$nprobes)
-sum(p$nmqtls,na.rm=T) #340977
+w<-which(is.na(p$nprobes)) #554
+sum(p$nmqtls,na.rm=T) #300831
 #p[which(is.na(p$nmqtls)),"nmqtls"]<-0
 #p[which(is.na(p$ncismqtls)),"ncismqtls"]<-0
 #p[which(is.na(p$ntransmqtls)),"ntransmqtls"]<-0
@@ -233,13 +282,21 @@ p3b$what<-"nmqtl_trans"
 p3b$value<-p$ntransmqtls
 p3b$fill<-"trans"
 
-
 p<-rbind(p1,p2,p3a,p3b)
 
-w<-which(is.na(p$genesUniq))
+p0<-p[which(p$nprobes==0&p$what=="ratio"),]
+data.frame(table(p0$nprobesEPIC))
+
+p[which(p$what=="nmqtl"&is.na(p$geneNames)),]
+#      geneNames nprobes nmqtls ncismqtls ntransmqtls nprobesEPIC bins ratio
+#19548      <NA>   49319  71635     65873        5762           0 >200     0
+#       what value fill
+#19548 nmqtl 71635 450k
+
+w<-which(is.na(p$geneNames))
 pl1<-ggplot(p[-w,], aes(x=bins, y=value)) +
-geom_boxplot() +
-facet_wrap(~what,ncol=1,scales="free_y", strip.position = "left", labeller = as_labeller(c(nmqtl = "number of mQTL", ratio = "EPIC/450k ratio",n_genes="Number of genes") ) )  +
+geom_boxplot(outlier.shape= NA) +
+facet_wrap(~what,ncol=1,scales="free_y", strip.position = "left", labeller = as_labeller(c(nmqtl = "number of mQTL", ratio = "EPIC/450k ratio") ) )  +
 ylab(NULL)+
 theme(axis.text.x=element_text(angle=90, size=10)) +
 labs(x="Number of probes per gene")
@@ -247,7 +304,7 @@ ggsave(pl1,file="mqtlbygene.pdf",height=10,width=10)
 
 
 ######genecount 450k
-genecount<-r %>% select(genesUniq)%>%table%>%table
+genecount<-r %>% select(geneNames)%>%table%>%table
 nrow(genecount)
 genecount<-data.frame(genecount)
 names(genecount)<-c("nprobes","ngenes")
@@ -279,7 +336,7 @@ o<-order(as.numeric(unique(bins[,1])))
 g$bins <- factor(g$bins, levels = c(unique(g$bins)[o]))
 levels(g$bins)
 #####genecount EPIC
-genecount2<-r2 %>% select(genesUniq)%>%table%>%table
+genecount2<-r2 %>% select(geneNames)%>%table%>%table
 nrow(genecount2)
 
 genecount2<-data.frame(genecount2)
@@ -317,34 +374,33 @@ g<-rbind(g,g2)
 #g[which(g$bins%in%c("0","1-10",">200")),]
 
 ##combine probe count and gene count for plotting
+#g<-data.frame(genesUniq="NA",nprobes=g$nprobes,nmqtls=NA,ncismqtls=NA,ntransmqtls=NA,nprobesEPIC=NA,bins=g$bins,ratio=NA,what="ngenes",value=g$ngenes,fill=g$what)
 
-g<-data.frame(genesUniq="NA",nprobes=g$nprobes,nmqtls=NA,ncismqtls=NA,ntransmqtls=NA,nprobesEPIC=NA,bins=g$bins,ratio=NA,what="ngenes",value=g$ngenes,fill=g$what)
+#df<-rbind(g,p)
+#table(df$fill,df$what)
 
-df<-rbind(g,p)
-table(df$fill,df$what)
+#w<-which(df$what!="nmqtl")
+#df2<-df[w,]
 
-w<-which(df$what!="nmqtl")
-df2<-df[w,]
+#w<-which(is.na(df2$genesUniq))
+#df2<-df2[-w,]
 
-w<-which(is.na(df2$genesUniq))
-df2<-df2[-w,]
+#table(df2$fill,df2$what)
 
-table(df2$fill,df2$what)
-
-pl1<-ggplot(df2, aes(x=bins, y=value,fill=fill)) +
+pl1<-ggplot(g, aes(x=bins, y=ngenes,fill=what)) +
 geom_boxplot() +
-facet_wrap(~what,ncol=1,scales="free_y", strip.position = "left", labeller = as_labeller(c(nmqtl_cistrans = "number of mQTL", ratio = "EPIC/450k ratio",ngenes="Number of genes") ) )  +
+#facet_wrap(~what,ncol=1,scales="free_y")  +
 ylab(NULL)+
 theme(axis.text.x=element_text(angle=90, size=10)) +
 #scale_fill_discrete(name="array") +
 theme(legend.title = element_blank())+
 labs(x="Number of probes per gene")
-ggsave(pl1,file="mqtlbycoverage.pdf",height=10,width=10)
+ggsave(pl1,file="probespergene.pdf",height=6,width=10)
 
 summary(lm(p1$nmqtls~p1$nprobes))
 
-w<-which(df2$what%in%c("nmqtl_cis","nmqtl_trans"))
-pl1<-ggplot(df2[w,], aes(x=bins, y=value,fill=fill)) +
+w<-which(p$what%in%c("nmqtl_cis","nmqtl_trans")&!is.na(p$geneNames))
+pl1<-ggplot(p[w,], aes(x=bins, y=value,fill=fill)) +
 geom_boxplot(outlier.shape= NA) +
 facet_wrap(~what,ncol=1,scales="free_y", strip.position = "left", labeller = as_labeller(c(nmqtl_cis = "number of cis mQTL", nmqtl_trans = "number of trans mQTL" ) ))  +
 ylab(NULL)+
@@ -355,22 +411,29 @@ labs(x="Number of probes per gene")
 ggsave(pl1,file="mqtlbynumberofgenes.pdf",height=10,width=10)
 
 #####
-w<-which(df2$what%in%c("nmqtl_cis"))
-pl2<-ggplot(df2[w,], aes(x=nprobes)) +
+w<-which(p$what%in%c("nmqtl_cis")&!is.na(p$geneNames))
+pl2<-ggplot(p[w,], aes(x=nprobes)) +
 geom_histogram() +
 theme(axis.text.x=element_text(angle=90, size=10)) +
 labs(x="Number of probes per gene")
 ggsave(pl2,file="numberofprobespergene.pdf",height=6,width=10)
 
-w<-which(df2$what%in%c("nmqtl_cis"))
-pl2<-ggplot(df2[w,], aes(x=nmqtls)) +
+w<-which(p$what%in%c("nmqtl_cis")&!is.na(p$geneNames))
+pl2<-ggplot(p[w,], aes(x=nmqtls)) +
 geom_histogram() +
 theme(axis.text.x=element_text(angle=90, size=10)) +
 labs(x="Number of mqtl per gene")
 ggsave(pl2,file="numberofmqtlspergene.pdf",height=6,width=10)
 
-df3<-df2[w,]
-df2.plot <- df2 %>%
+table(p$what)
+
+#      nmqtl   nmqtl_cis nmqtl_trans       ratio 
+#      19548       19548       19548       19548 
+
+w<-which(p$what%in%c("nmqtl")&!is.na(p$geneNames)&p$bins!="0")
+
+df3<-p[w,]
+df2.plot <- df3 %>%
 group_by(bins) %>%
 summarize(median.bin = median(nprobes, na.rm=TRUE),median.cis.mqtl=median(ncismqtls, na.rm=TRUE),median.trans.mqtl=median(ntransmqtls, na.rm=TRUE))
 
@@ -378,79 +441,34 @@ summary(lm(df2.plot$median.cis.mqtl~df2.plot$median.bin))
 
 #Coefficients:
 #                    Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)         -7.45163    3.98004  -1.872   0.0766 .  
-#df2.plot$median.bin  0.75963    0.03127  24.296 9.03e-16 ***
+#(Intercept)         -7.06326    3.87338  -1.824    0.084 .  
+#df2.plot$median.bin  0.74133    0.03051  24.300    9e-16 ***
 
 summary(lm(df2.plot$median.trans.mqtl~df2.plot$median.bin))
 #Coefficients:
-#                     Estimate Std. Error t value Pr(>|t|)    
-#(Intercept)         -0.530955   1.027345  -0.517    0.611    
-#df2.plot$median.bin  0.046552   0.008071   5.768 1.47e-05 ***
+#                    Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)         -0.29548    0.28823  -1.025    0.318    
+#df2.plot$median.bin  0.03930    0.00227  17.310 4.32e-13 ***
 
 #number of mQTL from probes with NA genes.
 #calculate slope for nmQTL vs number of probes
 #mQTL~nprobes
 
-For each probe, you will find an increase of 0.75 mQTL.
+#For each probe, you will find an increase of 0.74 mQTL.
 
-summary(lm(p1$nmqtls~p1$nprobes))
-
-
-
-#Call:
-#lm(formula = p1$nmqtls ~ p1$nprobes)
-
-#Residuals:
-#     Min       1Q   Median       3Q      Max 
-#-120.814   -3.632    1.153    3.153  193.584 
-
-#Coefficients:
-#             Estimate Std. Error t value Pr(>|t|)    
-#(Intercept) -2.751652   0.047016  -58.53   <2e-16 ***
-#p1$nprobes   0.799270   0.000147 5437.73   <2e-16 ***
-
-summary(lm(p1$ncismqtls~p1$nprobes))
-
-#Call:
-#lm(formula = p1$ncismqtls ~ p1$nprobes)
-
-#Residuals:
-#     Min       1Q   Median       3Q      Max 
-#-148.883   -3.404    1.245    3.018  207.708 
-
-#Coefficients:
-#              Estimate Std. Error t value Pr(>|t|)    
-#(Intercept) -2.7292183  0.0425608  -64.12   <2e-16 ***
-#p1$nprobes   0.7422052  0.0001331 5578.07   <2e-16 ***
-#---
-#Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-#Residual standard error: 7.778 on 33478 degrees of freedom
-#  (11229 observations deleted due to missingness)
-#Multiple R-squared:  0.9989,  Adjusted R-squared:  0.9989 
-#F-statistic: 3.111e+07 on 1 and 33478 DF,  p-value: < 2.2e-16
-
-summary(lm(p1$ntransmqtls~p1$nprobes))
-
-#Call:
-#lm(formula = p1$ntransmqtls ~ p1$nprobes)
-
-#Residuals:
-#    Min      1Q  Median      3Q     Max 
-#-42.668  -0.662  -0.206  -0.005  75.859 
-
-#Coefficients:
-#              Estimate Std. Error  t value Pr(>|t|)    
-#(Intercept) -2.243e-02  1.189e-02   -1.887   0.0592 .  
-#p1$nprobes   5.707e-02  3.718e-05 1534.973   <2e-16 ***
-#---
-#Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
-
-#Residual standard error: 2.173 on 33478 degrees of freedom
-#  (11229 observations deleted due to missingness)
-#Multiple R-squared:  0.986, Adjusted R-squared:  0.986 
-#F-statistic: 2.356e+06 on 1 and 33478 DF,  p-value: < 2.2e-16
+head(p[is.na(p$geneNames),])
+#      geneNames nprobes nmqtls ncismqtls ntransmqtls nprobesEPIC bins ratio
+#19548      <NA>   49319  71635     65873        5762           0 >200     0
+#39096      <NA>   49319  71635     65873        5762           0 >200     0
+#58644      <NA>   49319  71635     65873        5762           0 >200     0
+#78192      <NA>   49319  71635     65873        5762           0 >200     0
+#             what value  fill
+#19548       nmqtl 71635  450k
+#39096       ratio     0  450k
+#58644   nmqtl_cis 65873   cis
+#78192 nmqtl_trans  5762 trans
 
 
-#one additional probe will increase the number of cismQTL with 0.74 (p<2e-16, se=0.0001331) and the number of trans mQTL with 0.057 (p<2e-16,se = 3.718e-05)
+
+
 
