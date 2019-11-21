@@ -1,5 +1,10 @@
-library(tidyverse)
+library(readr)
 library(dplyr)
+library(tidyr)
+library(purrr)
+library(tibble)
+library(stringr)
+library(forcats)
 library(meffil)
 library(data.table)
 library(ggplot2)
@@ -183,16 +188,23 @@ cat(i,"\n")
 cl_chr<-cl[which(cl$snpchr%in%paste0("chr",i)),]
 a <- read_tsv(paste0("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.filtered.",i,".ld.formatted.gz"))
 a<-data.frame(a)
- 
+w<-which(names(a)%in%"X11")
+if(length(w)>0){a<-a[,-w]}
+
+#a$BP_A<-as.character(a$BP_A)
+#a$BP_B<-as.character(a$BP_B)
+#a$CHR_A<-as.character(a$CHR_A)
+#a$CHR_B<-as.character(a$CHR_B)
+
 agg1<-a %>%  
 group_by(SNP_A) %>%  
-dplyr::summarize (bpa = first(BP_A),start_bp = min(BP_B),  
-              stop_bp = max(BP_B),nproxies = n(),chr=first(CHR_A))
+dplyr::summarise (bpa = dplyr::first(BP_A),start_bp = min(BP_B),  
+              stop_bp = max(BP_B),nproxies = n(),chr=dplyr::first(CHR_A))
  
 agg2<-a %>%  
    group_by(SNP_B) %>%  
-   dplyr::summarize (bpb = first(BP_B),start_bp = min(BP_A),  
-              stop_bp = max(BP_A),nproxies = n(),chr=first(CHR_B))
+   dplyr::summarize (bpb = dplyr::first(BP_B),start_bp = min(BP_A),  
+              stop_bp = max(BP_A),nproxies = n(),chr=dplyr::first(CHR_B))
  
 b <- full_join(agg1, agg2, c("SNP_A" = "SNP_B"))
 o<-order(as.numeric(b$bpa))
@@ -307,10 +319,10 @@ f<-data.frame(f,tssdist,closesttss=res$start,closestgene=genename)
 ###
 
 #add snp_cis 
-snp_cis<-read_tsv(paste0("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans.txt.gz"))
+snp_cis<-read_tsv(paste0("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/snpcpgpval.chr",i,".cistrans3.txt.gz"))
 
-snp_cis<-unique(snp_cis[,c("snp","snp_cis","min_pval","max_abs_Effect")])
-names(snp_cis)<-c("snp_tested","snp_cis","min_pval","max_abs_Effect")
+snp_cis<-unique(snp_cis[,c("snp","snp_cis","min_pval","max_abs_Effect","max_abs_SE","TotalSampleSize","Freq1","HetISq")])
+names(snp_cis)<-c("snp_tested","snp_cis","min_pval","max_abs_Effect","max_abs_SE","TotalSampleSize","Freq1","HetISq")
 
 m<-match(f$SNP,snp_cis$snp_tested)
 f<-data.frame(f,snp_cis[m,])
@@ -330,7 +342,7 @@ f.all$mqtl_clumped[w]<-"TRUE"
 
 print(table(f.all$mqtl_clumped))
 
-save(f.all,file="../results/enrichments/snpcontrolsets.rdata")
+save(f.all,file="../results/enrichments/snpcontrolsets_se.rdata")
 
 
 

@@ -40,6 +40,42 @@ table(clumped2$cis)
 # 23117 248607 
 length(unique(clumped2$cpg))
 #190102
+length(unique(clumped2[which(clumped2$cis==TRUE),"cpg"]))
+#182888
+length(unique(clumped2[which(clumped2$cis==TRUE),"cpg"]))/420509
+#BIOS/Bonder
+cis<-fread("/projects/MRC-IEU/research/projects/ieu2/p5/046/working/data/2015_09_02_cis_meQTLsFDR0.05-CpGLevel.txt",he=T)
+length(unique(cis$ProbeName))
+#[1] 142126
+max(cis$FDR)
+#0.05
+max(cis[,1])
+#[1] 0.0001323
+
+cis<-cis[which(cis$Round==1),]
+length(unique(cis$ProbeName))
+#139566 same as in Bonder paper
+max(cis$FDR)
+#[1] 0.04999318
+
+max(cis[,1])
+#[1] 0.0001323
+
+cis2<-cis[which(cis[,1]<1e-8),]
+length(unique(cis2$ProbeName))/405709
+#0.2403274
+
+length(unique(clumped2[which(clumped2$cis==TRUE),"cpg"]))/length(unique(cis2$ProbeName))
+#1.875717
+
+
+
+trans<-fread("/projects/MRC-IEU/research/projects/ieu2/p5/046/working/data/2015_09_02_trans_meQTLsFDR0.05-CpGLevel.txt",he=T)
+trans2<-trans[which(trans[,1]<1e-14),]
+length(unique(trans2$ProbeName))
+#2066
+
+
 
 clumped2$cis2<-clumped2$cis
 w1<-which(clumped2$cis==FALSE & clumped2$snpchr==clumped2$cpgchr)
@@ -50,7 +86,6 @@ clumped2$cis2[w2]<-"trans_inter"
 table(clumped2$cis2)
 #trans_inter trans_intra        TRUE 
 #      18601        4516      248607 
-
 
 clumped2$dist[-w2] <- abs(clumped2$snppos[-w2] - clumped2$cpgpos[-w2])
 

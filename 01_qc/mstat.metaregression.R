@@ -137,7 +137,12 @@ mean.p<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/des
 m<-match(dframe2$study_names_in,mean.p[,1])
 dframe2$mean.probe<-mean.p[m,-1]
 
-norm.method<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortnormalizationmethod.txt",sep="\t",he=T)
+norm.method<-read.table("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/data/descriptives/cohortnormalizationmethod.txt",sep="\t",he=F)
+w<-which(norm.method[,1]%in%c("LBC21","LBC36","BSGS"))
+norm.method[w,2]<-"FN"
+w<-which(norm.method[,1]%in%c("BAMSE","ALS_Batch1"))
+norm.method[w,2]<-"Dasen"
+
 m<-match(dframe2$study_names_in,norm.method[,1])
 dframe2$norm.method<-norm.method[m,-1]
 w<-which(dframe2$norm.method%in%c("BMIQ","CPACOR","Dasen","glm","methylumi","SWAN"))
@@ -169,13 +174,31 @@ dframe2$highbmi[w]<-1
 w<-which(dframe2$bmi<25)
 dframe2$highbmi[w]<-0
 
+dframe2$casecontrol<-0
+w<-which(dframe2$study_names_in%in%c("ALS_Batch1","ALS_Batch2","BASICMAR","EGC_asthma","EPIC_Norfolk","EPICOR","GSK","MARTHA","Phase1_SCZ1","Phase2_SCZ2","PRECISESADS"))
+dframe2$casecontrol[w]<-1
+
 dframe2$vi<-0
+
 #res<-rma(yi=M,vi=M_sd^2,mods=~age+nsnps+samplesize+relatedness+ancestry,data=dframe2)
 #res<-rma(yi=M,vi=vi,mods=~nsnps+chip+ncpg+samplesize+relatedness+maf+info+lambda16+lambda4+age+nmales+ccmethod+mean.probe+sd.probe+ancestry,data=dframe2)
 #yi: vector of length k with the observed effect sizes or outcomes. See ‘Details’.
 #vi: vector of length k with the corresponding sampling variances. See ‘Details’.
 #res2<-rma(yi=M,vi=vi,mods=~nsnps+chip+ncpg+samplesize+relatedness+maf+info+lambda16+lambda4+age+nmales+height+bmi+ccmethod+mean.probe+sd.probe,data=dframe2)
 #res3<-rma(yi=M,vi=vi,mods=~nsnps+chip+ncpg+samplesize+relatedness+maf+info+lambda16+lambda4+age+nmales+ccmethod+mean.probe+sd.probe,data=dframe2)
+
+form<-c("age","nmales","ancestry_ns","nsnps","chip","ncpg","samplesize","relatedness","maf","info","lambda4","lambda16","ccmethod","mean.probe","sd.probe","ancestry","height","bmi","norm.method","casecontrol")
+s.out<-data.frame()
+
+for (f in 1:length(form)) {
+cat(f,"\n")
+exposure<-which(names(dframe2)%in%form[f])
+s<-summary(rma(yi=M,vi=vi,mods=~dframe2[,exposure],data=dframe2))
+s<-data.frame(exposure=form[f],beta=s$beta,se=s$se,zval=s$zval,pval=s$pval,lower.ci=s$ci.lb,upper.ci=s$ci.ub)
+s.out<-rbind(s.out,s[2,])
+}
+
+write.table(s.out,"meta.regression.txt",sep="\t",col.names=T,row.names=F,quote=F)
 
 print(rma(yi=M,vi=vi,mods=~age,data=dframe2))
 print(rma(yi=M,vi=vi,mods=~nmales,data=dframe2))
@@ -199,6 +222,7 @@ print(rma(yi=M,vi=vi,mods=~norm.method,data=dframe2))
 print(rma(yi=M,vi=vi,mods=~sd_bmi,data=dframe2))#0.6102
 print(rma(yi=M,vi=vi,mods=~sd_height,data=dframe2))
 print(rma(yi=M,vi=vi,mods=~nsnps+bmi,data=dframe2))
+print(rma(yi=M,vi=vi,mods=~casecontrol,data=dframe2))
 
 #Model Results:
 

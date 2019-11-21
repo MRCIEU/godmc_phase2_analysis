@@ -210,10 +210,12 @@ Final list of assocs that attempted replication in GS:
 ```{r}
 n_tested <- nrow(rep_fail)+nrow(replication) 
 n_tested
-
 save(n_tested,file="ntested.Robj")
+total_tested <- bind_rows(replication, rep_fail)
+save(n_tested,file="total_tested.Robj")
 ```
 
+Final list of assocs that attempted replication in GS: `r length(unique(total_tested$cpg))`
 
 ## Expected significance
 
@@ -222,9 +224,7 @@ Given the discovery effect sizes, what do we expect the replication rate to be a
 What was the replication probability for the ones that failed replication
 Total tested
 
-```{r}
-total_tested <- bind_rows(replication, rep_fail)
-```
+
 
 "Significant" replication? Split by cis, trans, all
 
