@@ -24,7 +24,39 @@ Read in data
 ```{r}
 load("results/cellcount_coloc.rdata")
 load("results/cellcount_mr.rdata")
+
+mrivw$fdr <- p.adjust(mrivw$pval, "fdr")
+table(mrivw$fdr < 0.05)
+wr$fdr <- p.adjust(wr$pval, "fdr")
+table(wr$fdr < 0.05)
 ```
 
 
+Significant ivw
+
+```{r}
+mrivw_sig <- subset(mrivw, fdr < 0.05)
+table(mrivw_sig$method)
+table(mrivw_sig$nsnp)
+table(mrivw$nsnp)
+```
+
+
+Significant wr
+
+```{r}
+wr_sig <- subset(wr, fdr < 0.05 & nsnp == 1)
+table(wr_sig$method)
+table(wr_sig$nsnp)
+table(wr$nsnp)
+res$id.exposure <- paste(res$variant, res$cpg)
+table(res$id.exposure %in% wr$id.exposure)
+rescheck <- subset(res, paste(id.exposure, trait) %in% paste(wr_sig$id.exposure, wr_sig$id.outcome))
+dim(rescheck)
+dim(wr_sig)
+
+table(rescheck$nsnps > 10)
+table(rescheck$PP.H4.abf > 0.8 & rescheck$nsnps > 10)
+
+```
 
