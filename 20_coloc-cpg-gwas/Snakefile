@@ -1,0 +1,58 @@
+ref = "../data/ref/eur"
+dbsnp = "/mnt/storage/private/mrcieu/research/mr-eve/vcf-reference-datasets/dbsnp/dbsnp.v153.b37.vcf.gz"
+resdir = "../results/16"
+
+chunks = list(range(1, 963))
+gwas = list(range(1, 139))
+
+rule all:
+	input:
+		# expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
+		# expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks),
+		"results/gwas_coloc.rdata",
+		# expand("results/scratch/mr{gwas}.rdata", gwas=gwas),
+		"results/gwas_mr.rdata",
+		"analysis.html"
+
+rule coloc:
+	input:
+		"../results/16/16_{chunk}_aligned.rdata"
+	output:
+		"results/scratch/coloc{chunk}.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript coloc.r {input} {output}"
+
+
+rule coloc_aggregate:
+	input:
+		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks)
+	output:
+		"results/gwas_coloc.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript aggregate_coloc.r"
+
+rule mr:
+	input:
+		"../results/16/16_clumped_aligned.rdata",
+	output:
+		"results/scratch/mr{gwas}.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript mr.r {wildcards.gwas}"
+
+rule mr_aggregate:
+	input:
+		expand("results/scratch/mr{gwas}.rdata", gwas=gwas)
+	output:
+		"results/gwas_mr.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript aggregate_mr.r"
+
+rule report:
+	input:
+		"results/gwas_mr.rdata",
+		"results/gwas_coloc.rdata"
+	output:
+		"analysis.html"
+	shell:
+		"echo $HOSTNAME; Rscript -e \"rmarkdown::render('analysis.rmd', output_format='all')\""
+

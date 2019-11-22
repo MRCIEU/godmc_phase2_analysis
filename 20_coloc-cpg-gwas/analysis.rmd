@@ -1,0 +1,207 @@
+---
+title: MR and colocalisation of DNAm on tissue counts
+author: Gibran Hemani
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(dplyr)
+	library(magrittr)
+	library(data.table)
+	library(ggplot2)
+	library(tidyr)
+	library(knitr)
+	library(pander)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+Read in data
+
+```{r}
+load("results/gwas_coloc.rdata")
+load("results/gwas_mr.rdata")
+mrivw$fdr <- p.adjust(mrivw$pval, "fdr")
+wr$fdr <- p.adjust(wr$pval, "fdr")
+```
+
+Significant ivw
+
+```{r}
+mrivw_sig <- subset(mrivw, fdr < 0.05)
+nrow(mrivw_sig) / nrow(mrivw)
+```
+
+Significant hits more likely when number of instruments is larger
+
+```{r}
+summary(glm(I(fdr < 0.05) ~ nsnp, mrivw, family="binomial")) %>% pander::pander()
+```
+
+
+Significant wr
+
+```{r}
+wr_sig <- subset(wr, fdr < 0.05 & nsnp == 1)
+table(wr_sig$method) %>% pander::pander()
+table(wr_sig$nsnp) %>% pander::pander()
+table(wr$nsnp) %>% pander::pander()
+```
+
+
+Check that the WR and coloc analyses have the same data
+
+```{r}
+res$id.exposure <- paste(res$variant, res$cpg)
+rescheck <- subset(res, paste(id.exposure, trait) %in% paste(wr_sig$id.exposure, wr_sig$id.outcome))
+dim(rescheck) %>% pander::pander()
+dim(wr_sig) %>% pander::pander()
+```
+
+Coloc
+
+```{r}
+table(rescheck$nsnps > 10) %>% pander::pander()
+```
+
+```{r}
+table(rescheck$PP.H4.abf > 0.8 & rescheck$nsnps > 10) %>% pander::pander()
+```
+
+## Comparing colocalising associations against secondary mQTLs
+
+Find colocalising hits
+
+```{r}
+wr <- wr %>% tidyr::separate(exposure, sep=" ", into=c("variant", "cpg"), remove=FALSE)
+
+# Get significant wr
+wr_sig <- subset(wr, fdr < 0.05)
+
+# Which colocalise?
+wr_coloc <- inner_join(
+	wr_sig,
+	subset(res, PP.H4.abf > 0.8 & nsnps > 10),
+	by=c("id.exposure", "outcome"="trait")
+)
+```
+
+Which of these cpgs have a secondary mqtl?
+
+```{r}
+cpg_trait <- unique(paste(wr_coloc$cpg.x, wr_coloc$outcome))
+wr_cpg_trait <- subset(wr, paste(cpg, outcome) %in% cpg_trait)
+wr_cpg_trait$cpgtrait <- paste(wr_cpg_trait$cpg, wr_cpg_trait$outcome)
+table(table(wr_cpg_trait$cpgtrait)) %>% pander::pander()
+```
+
+Separate the primary and separate coloc signals
+
+```{r}
+wr_cpg_trait_primary <- subset(wr_cpg_trait, paste(id.exposure, outcome) %in% paste(wr_coloc$id.exposure, wr_coloc$id.outcome))
+
+wr_cpg_trait_secondary <- subset(wr_cpg_trait, !paste(id.exposure, outcome) %in% paste(wr_coloc$id.exposure, wr_coloc$id.outcome))
+```
+
+For every cpg-trait pair, meta analyse the results to get a single assoc. Essentially creating the IVW fixed effects estimate from the Wald ratios
+
+```{r}
+cpg_trait_list <- unique(paste(wr_cpg_trait$cpg, wr_cpg_trait$outcome))
+metafn <- function(x)
+{
+	m <- meta::metagen(x$b, x$se)
+	y <- tibble(
+		nsnp=nrow(x),
+		b=m$TE.fixed,
+		se=m$seTE.fixed,
+		pval=m$pval.fixed
+	)
+	y
+}
+out <- wr_cpg_trait_secondary %>% 
+	group_by(cpgtrait) %>%
+	do(metafn(.))
+
+```
+
+Combine primary and secondary results
+
+```{r}
+ps <- inner_join(wr_cpg_trait_primary, out, by="cpgtrait")
+ps$fdr.y <- p.adjust(ps$pval.y, "fdr")
+ps$fdr.x <- p.adjust(ps$pval.x, "fdr")
+```
+
+Check all primary associations have fdr < 0.05
+
+```{r}
+table(ps$fdr.x < 0.05) %>% pander::pander()
+```
+
+How many secondary associations have fdr < 0.05?
+
+```{r}
+table(ps$fdr.y < 0.05) %>% pander::pander()
+```
+
+We should remove chromosome 6 to be careful about MHC region
+
+```{r}
+table(ps$fdr.y[!grepl("6:", ps$variant)] < 0.05) %>% pander::pander()
+```
+
+Looks like a lot of this is from the MHC region.
+
+Are the primary and secondary effects correlated?
+
+```{r}
+summary(lm(I(b.y/se.y) ~ I(b.x/se.x), ps)) %>% pander::pander()
+```
+
+This effect improves slightly after removing MHC
+
+```{r}
+summary(lm(I(b.y/se.y) ~ I(b.x/se.x), ps %>% subset(., !grepl("6:", variant)))) %>% pander::pander()
+```
+
+Look at the plots
+
+```{r}
+ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x/se.x, y = b.y/se.y)) +
+geom_point(aes(colour=fdr.y < 0.05)) +
+geom_smooth(method="lm") +
+labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05")
+```
+
+A lot of significant results secondary effects, but not much of a relationship between primary and secondary hits.
+
+How does it compare by splitting by number of instruments used for secondary association?
+
+```{r}
+ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x/se.x, y = b.y/se.y)) +
+geom_point(aes(colour=fdr.y < 0.05)) +
+geom_smooth(method="lm") +
+facet_wrap(~ nsnp.y) +
+labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05")
+```
+
+What are the primary-secondary associations?
+
+```{r}
+assocfn <- function(x)
+{
+	mod <- summary(lm(I(b.y/se.y) ~ I(b.x/se.x), x))$coefficients
+	data.frame(nassoc=nrow(x), b=mod[2,1], se=mod[2,2], p=mod[2,4])	
+}
+
+ps %>% 
+	subset(., !grepl("6:", variant)) %>%
+	group_by(nsnp=nsnp.y) %>%
+	do(assocfn(.)) %>%
+	pander()
+```
+
