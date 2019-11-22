@@ -46,7 +46,8 @@ ggsave("images/varexp_hist.pdf")
 ggplot(replication, aes(x=r2,color=cist),alpha=0.3) +
 stat_ecdf() +
 scale_x_continuous(breaks=seq(0,1,0.05)) +
-labs(x="DNA methylation variance explained", y="Proportion of mQTLs",color="mQTL")
+labs(x="DNA methylation variance explained", y="Proportion of DNAm sites",color="mQTL")
+
 ggsave("images/varcumulative_exp.pdf")
 
 y <- cumsum(table(round(cis$r2,4))/nrow(cis))

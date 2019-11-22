@@ -7,13 +7,14 @@ cellcounts = list(range(1, 36))
 
 rule all:
 	input:
-		expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
-		expand("{ref}.vcf.gz", ref=ref),
-		expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks),
+		# expand("results/scratch/coloc{chunk}.rdata", chunk=chunks),
+		# expand("{ref}.vcf.gz", ref=ref),
+		# expand("../results/16/16_{chunk}_aligned.rdata", chunk=chunks),
 		"results/cellcount_coloc.rdata",
-		"../results/16/16_clumped_aligned.rdata",
-		expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts),
-		"results/cellcount_mr.rdata"
+		# "../results/16/16_clumped_aligned.rdata",
+		# expand("results/scratch/mr{cellcount}.rdata", cellcount=cellcounts),
+		"results/cellcount_mr.rdata",
+		"analysis.html"
 
 rule extract_dbsnp:
 	input:
@@ -79,4 +80,13 @@ rule mr_aggregate:
 		"results/cellcount_mr.rdata"
 	shell:
 		"echo $HOSTNAME; Rscript aggregate_mr.r"
+
+rule report:
+	input:
+		"results/cellcount_mr.rdata",
+		"results/cellcount_coloc.rdata"
+	output:
+		"analysis.html"
+	shell:
+		"echo $HOSTNAME; Rscript -e \"rmarkdown::render('analysis.rmd', output_format='all')\""
 
