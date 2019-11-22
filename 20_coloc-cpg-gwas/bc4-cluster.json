@@ -1,0 +1,58 @@
+{
+	"__default__" :
+	{
+		"name": "{rule}.{wildcards.chunk}",
+		"partition": "mrcieu",
+		"nodes": "1",
+		"ncpu": "1",
+		"ntask": "1",
+		"time": "1:00:00",
+		"mem": "32G",
+		"output": "job_reports/{rule}.{wildcards.chunk}.out"
+	},
+
+	"extract_dbsnp" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"coloc" :
+	{
+		"mem": "10G",
+		"time": "10:00:00"
+	},
+
+	"mr" :
+	{
+		"name": "{rule}.{wildcards.gwas}",
+		"output": "job_reports/{rule}.{wildcards.gwas}.out",
+		"time": "10:00:00"
+	},
+
+	"mr_aggregate" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"coloc_aggregate" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"align_clumped" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"report" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out",
+		"time": "10:00:00"
+	}
+}
+
