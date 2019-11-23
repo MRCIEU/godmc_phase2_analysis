@@ -1,0 +1,128 @@
+---
+title: Are intra and inter chromosomal trans hits occurring at the same rate?
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(knitr)
+	library(dplyr)
+}))
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+We have a 1mb radius defining cis. If a trans hit is 1-6mb away, is that as common as something 6-11mb, or in any 5mb region on another chromosome?
+
+Only analyse significant cis and trans hits, and remove chr 6 for simplicity
+
+```{r}
+load("../results/16/16_clumped.rdata")
+sig <- subset(clumped, 
+	(cis & pval < 1e-8) | (!cis & pval < 1e-14)
+)
+sig <- subset(sig, cpgchr != "chr6" & snpchr != "chr6")
+index <- sig$cpgchr == sig$snpchr
+sig$cisdist <- NA
+sig$cisdist[index] <- abs(sig$cpgpos - sig$snppos)[index]
+```
+
+Distribution of distance from cpg for cis
+
+```{r}
+hist(sig$cisdist[sig$cis], breaks=100)
+```
+
+Distribution in 5 mb region
+
+```{r}
+hist(sig$cisdist[sig$cisdist < 5000000], breaks=100)
+```
+
+
+Question: is the 1mb - 6mb region containing more trans than 6mb-11mb
+
+```{r}
+sum(!is.na(sig$cisdist[sig$cisdist > 1000000 & sig$cisdist <= 6000000]))
+sum(!is.na(sig$cisdist[sig$cisdist > 6000000 & sig$cisdist <= 11000000]))
+```
+
+How often are CpGs close to the chromosome boundary? Note that there will be more CpGs unable to have a further trans effect because of chromosome boundaries
+
+```{r}
+chromsizes <- read.table("chromosome_sizes.txt", header=TRUE, stringsAsFactors=FALSE)
+chromsizes$chrsize / 1000000
+
+# What is the size of the inter chromosomal region for each mQTL?
+chromsizes$inter_size <- sum(chromsizes$chrsize) - chromsizes$chrsize
+
+sig <- merge(sig, chromsizes, by.x="cpgchr", by.y="chr")
+sapply(c(1:11) * 1000000, function(x)
+{
+	sum((sig$cpgpos - x) < 0 | (sig$cpgpos + x) > sig$chrsize ) / nrow(sig)
+})
+```
+
+Restrict only to CpGs that are within the relevant window
+
+```{r}
+# sum((sig$cpgpos - 6000000) > 0 & (sig$cpgpos + 6000000) < sig$chrsize) 
+# sum((sig$cpgpos - 11000000) > 0 & (sig$cpgpos + 11000000) < sig$chrsize)
+
+sum(
+	(sig$cpgpos - 6000000) >= 0 & 
+	(sig$cpgpos + 6000000) <= sig$chrsize &
+	(sig$cisdist > 1000000 & sig$cisdist <= 6000000),
+	na.rm=TRUE
+)
+
+sum(
+	(sig$cpgpos - 11000000) >= 0 & 
+	(sig$cpgpos + 11000000) <= sig$chrsize &
+	(sig$cisdist > 6000000 & sig$cisdist <= 11000000),
+	na.rm=TRUE
+)
+```
+
+
+Question: is the intra-chromosomal trans region containing more trans hits than inter chromosomal regions.
+
+```{r}
+p1 <- subset(sig, cpgchr == snpchr & abs(cpgpos - snppos) > 1000000) %>%
+	group_by(cpgchr) %>%
+	summarise(
+		n=n(), 
+		intra_size=first(chrsize),
+		prop=n/(intra_size / 5000000)
+	) %>%
+	summarise(m= sum(prop*n) / sum(n)) %>%
+	unlist()
+
+p2 <- subset(sig, cpgchr == snpchr & abs(cpgpos - snppos) > 6000000) %>%
+	group_by(cpgchr) %>%
+	summarise(
+		n=n(), 
+		intra_size=first(chrsize),
+		prop=n/(intra_size / 5000000)
+	) %>%
+	summarise(m= sum(prop*n) / sum(n)) %>%
+	unlist()
+
+p3 <- subset(sig, cpgchr != snpchr) %>%
+	group_by(cpgchr) %>%
+	summarise(
+		n=n(), 
+		inter_size=first(inter_size),
+		prop=n/(inter_size / 5000000)
+	) %>%
+	summarise(m= sum(prop*n) / sum(n)) %>%
+	unlist()
+```
+
+Number of trans mQTLs per 5mb region when:
+
+- More than 1mb away on the same chromosome: `r p1`
+- More than 6mb away on the same chromosome: `r p2`
+- On a different chromosome: `r p3`

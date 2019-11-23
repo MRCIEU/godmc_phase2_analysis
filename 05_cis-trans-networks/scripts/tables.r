@@ -1,9 +1,9 @@
-#library(TwoSampleMR)
-#ao <- available_outcomes()
+library(TwoSampleMR)
+ao <- available_outcomes()
 library(magrittr)
 library(dplyr)
 
-#save(ao, file="../data/outcomes.rdata")
+save(ao, file="../data/outcomes.rdata")
 
 
 load("../data/outcomes.rdata")
@@ -15,9 +15,9 @@ uid <- uid[!uid %in% b$id]
 
 
 b0 <- b %$% 
-	data_frame(trait, author, pmid, sample_size, ncase, ncontrol, subcategory, id, mr_outcome=TRUE)
+	data_frame(trait, id, author, pmid, sample_size, ncase, ncontrol, subcategory, mr_outcome=TRUE)
 b1 <- subset(ao, id %in% uid) %$%
-	data_frame(trait, author, pmid, sample_size, ncase, ncontrol, subcategory, id, mr_outcome=FALSE)
+	data_frame(trait, id, author, pmid, sample_size, ncase, ncontrol, subcategory, mr_outcome=FALSE)
 
 b0$mr_exposure <- b0$mr_outcome
 
@@ -49,19 +49,6 @@ b01$subcategory[b01$subcategory=="Autoimmune / inflammatory"] <- "Immune"
 b01$subcategory[b01$subcategory=="Psychiatric / neurological"] <- "Neurological"
 b01$subcategory[is.na(b01$subcategory)] <- "Kidney"
 
-g<-grep("Type 1 diabetes",b01$trait)
-b01[g,"author"]<-"Barrett JC/ Cooper JD"
-b01[g,"pmid"]<-"19430480/18978792"
-
-#b01<-b01[which(!is.na(b01$mr_exposure)&!is.na(b01$mr_outcome)),]
-#b01<-b01[which(b01$mr_outcome=="TRUE"| b01$mr_exposure=="TRUE"),]
-
-community<-read.csv("../results/gwas_enrichment.csv")
-w<-which(b01$id%in%community$mrbase_id)
-b01$community<-"FALSE"
-b01$community[w]<-"TRUE"
-length(unique(community$mrbase_id)) #133
-b01<-b01[which(b01$mr_outcome=="TRUE"| b01$mr_exposure=="TRUE"|b01$community=="TRUE"),]
-length(which(b01$mr_outcome=="TRUE"| b01$mr_exposure=="TRUE"|b01$community=="TRUE")) #144
 write.csv(b01, "../results/trait_list.csv")
-
+traitlist <- b01
+save(traitlist, file="../results/trait_list.rdata")

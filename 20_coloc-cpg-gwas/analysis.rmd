@@ -23,8 +23,8 @@ opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
 Read in data
 
 ```{r}
-load("results/cellcount_coloc.rdata")
-load("results/cellcount_mr.rdata")
+load("results/gwas_coloc.rdata")
+load("results/gwas_mr.rdata")
 mrivw$fdr <- p.adjust(mrivw$pval, "fdr")
 wr$fdr <- p.adjust(wr$pval, "fdr")
 ```
@@ -39,7 +39,6 @@ nrow(mrivw_sig) / nrow(mrivw)
 Significant hits more likely when number of instruments is larger
 
 ```{r}
-table(mrivw_sig$nsnp) / table(mrivw$nsnp)
 summary(glm(I(fdr < 0.05) ~ nsnp, mrivw, family="binomial")) %>% pander::pander()
 ```
 
@@ -160,19 +159,19 @@ Looks like a lot of this is from the MHC region.
 Are the primary and secondary effects correlated?
 
 ```{r}
-summary(lm(b.y ~ b.x, ps)) %>% pander::pander()
+summary(lm(I(b.y/se.y) ~ I(b.x/se.x), ps)) %>% pander::pander()
 ```
 
-This effect attenuates sharply after removing MHC
+This effect improves slightly after removing MHC
 
 ```{r}
-summary(lm(b.y ~ b.x, ps %>% subset(., !grepl("6:", variant)))) %>% pander::pander()
+summary(lm(I(b.y/se.y) ~ I(b.x/se.x), ps %>% subset(., !grepl("6:", variant)))) %>% pander::pander()
 ```
 
 Look at the plots
 
 ```{r}
-ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
+ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x/se.x, y = b.y/se.y)) +
 geom_point(aes(colour=fdr.y < 0.05)) +
 geom_smooth(method="lm") +
 labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05")
@@ -183,7 +182,7 @@ A lot of significant results secondary effects, but not much of a relationship b
 How does it compare by splitting by number of instruments used for secondary association?
 
 ```{r}
-ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
+ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x/se.x, y = b.y/se.y)) +
 geom_point(aes(colour=fdr.y < 0.05)) +
 geom_smooth(method="lm") +
 facet_wrap(~ nsnp.y) +
@@ -195,7 +194,7 @@ What are the primary-secondary associations?
 ```{r}
 assocfn <- function(x)
 {
-	mod <- summary(lm(b.y ~ b.x, x))$coefficients
+	mod <- summary(lm(I(b.y/se.y) ~ I(b.x/se.x), x))$coefficients
 	data.frame(nassoc=nrow(x), b=mod[2,1], se=mod[2,2], p=mod[2,4])	
 }
 
