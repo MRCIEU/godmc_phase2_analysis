@@ -1,15 +1,21 @@
-library(getmstatistic)  # for calculating M statistics
-library(gridExtra)       # for generating tables
-library(ggplot2)
 library(data.table)
 library(dplyr)
+library(ggplot2)
 
 load("../results/16/16_clumped.rdata")
-clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
+#clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
+clumped <- subset(clumped, (pval < 1e-14))
+hla<-which(clumped$snpchr=="chr6"&clumped$snppos>29570005&clumped$snppos<33377657)
+clumped<-clumped[-hla,]
+
 clumped$id<-paste0(clumped$snp,"_",clumped$cpg)
 clumped$Allele1<-toupper(clumped$Allele1)
 clumped$Allele2<-toupper(clumped$Allele2)
 clumped$id2<-paste0(clumped$id,"_",clumped$Allele1,"_", clumped$Allele2)
+
+
+
+
 data=as.data.table(clumped)
 data[,cpgchr:=gsub("23","X",cpgchr),]
 data[,cpgchr:=gsub("24","Y",cpgchr),]
@@ -21,6 +27,22 @@ clumped$cpg_cis2[w]<-"cis+trans_cis"
 w<-which(clumped$cpg_cis=="cis+trans"&clumped$cis=="FALSE")
 clumped$cpg_cis2[w]<-"cis+trans_trans"
 
+load("~/repo/godmc_phase2_analysis/07_enrichments/mean_allcpgs.Robj")
+df.all$meancat<-NA
+hypo<-which(df.all$meancpg<0.2)
+df.all$meancat[hypo]<-"hypo"
+intermediate<-which(df.all$meancpg>0.2&df.all$meancpg<0.8)
+df.all$meancat[intermediate]<-"intermediate"
+hyper<-which(df.all$meancpg>0.8)
+df.all$meancat[hyper]<-"hyper"
+
+clumped<-merge(clumped,df.all[,c("cpg","meancpg","meancat")],by.x="cpg",by.y="cpg",all.x=T)
+clumped$cpg_cis3<-paste0(clumped$cpg_cis2,"_",clumped$meancat)
+table(clumped$cis)
+table(clumped$cpg_cis)
+table(clumped$cpg_cis2)
+table(clumped$cpg_cis3)
+####
 
 a<-read.table("adipose_16pairs.txt",he=T)
 nrow(a)
@@ -142,6 +164,7 @@ dplyr::summarize(gp, cor(Effect, BETA2))
 #3 cis+trans_trans                0.426
 #4 trans only                     0.710
 
+b3<-b2[which(b2$pval<1e-14),]
 gp = group_by(b3, cpg_cis2)
 dplyr::summarize(gp, cor(Effect, BETA2))
 # A tibble: 4 x 2
@@ -173,6 +196,8 @@ h2<-h[w,]
 
 m<-match(h2$cpg,b2$cpg)
 h2<-b2[m,]
+
+
 
 save(clumped,a2,b2,h2,file="tissue.RData")
 
