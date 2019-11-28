@@ -1,14 +1,5 @@
+library(data.table)
 load("tissue.RData")
-load("~/repo/godmc_phase2_analysis/07_enrichments/mean_allcpgs.Robj")
-df.all$meancat<-NA
-hypo<-which(df.all$meancpg<0.2)
-df.all$meancat[hypo]<-"hypo"
-intermediate<-which(df.all$meancpg>0.2&df.all$meancpg<0.8)
-df.all$meancat[intermediate]<-"intermediate"
-hyper<-which(df.all$meancpg>0.8)
-df.all$meancat[hyper]<-"hyper"
-
-clumped<-merge(clumped,df.all[,c("cpg","meancpg","meancat")],by.x="cpg",by.y="cpg",all.x=T)
 
  #standarized beta and SE in SD unit
 # z represent z statistics, p presents allele frequency, n represents sample size.\
@@ -71,36 +62,17 @@ m<-match(a2$MARKERNAME,clumped$id,)
 cl2<-clumped[m,]
 
 cat<-unique(cl2$cpg_cis2)
-
 cor.out<-data.frame()
 for (i in 1:length(cat)){
 cat(cat[i],"\n")
 w<-which(cl2$cpg_cis2==cat[i])
 out<-calcu_cor_true(b1=cl2$Effect[w],se1=cl2$StdErr[w],b2=a2$BETA2[w],se2=a2$SE[w],theta=0)
-cor.out<-rbind(cor.out,unlist(out))
-}
-cor.out<-data.frame(cor.out,category=cat)
-save(cor.out,file="rb_adipose.Robj")
-
-###
-w<-which(cl2$pval<1e-14)
-cl2<-cl2[w,]
-a2<-a2[w,]
-
-cat<-unique(cl2$cpg_cis2)
-cor.out<-data.frame()
-for (i in 1:length(cat)){
-cat(cat[i],"\n")
-w<-which(cl2$cpg_cis2==cat[i])
-out<-calcu_cor_true(b1=cl2$Effect[w],se1=cl2$StdErr[w],b2=a2$BETA2[w],se2=a2$SE[w],theta=0)
-cor.out<-rbind(cor.out,unlist(out))
+out<-data.frame(n=length(w),unlist(out))
+cor.out<-rbind(cor.out,out)
 }
 cor.out<-data.frame(cor.out,category=cat)
 save(cor.out,file="rb.adipose.filtered.Robj")
 ###
-hla<-which(cl2$snpchr=="chr6"&cl2$snppos>29570005&cl2$snppos<33377657)
-cl2<-cl2[-hla,]
-a2<-a2[-hla,]
 
 cat<-unique(cl2$cpg_cis2)
 cor.out<-data.frame()
@@ -109,7 +81,6 @@ cat(cat[i],"\n")
 w<-which(cl2$cpg_cis2==cat[i])
 cl3<-cl2[w,]
 
-####if(cat[i]=="cisonly"|cat[i]=="cis+trans_cis"){
 o<-order(cl3$pval)
 cl3<-cl3[o,]
 m<-match(unique(cl3$cpg),cl3$cpg)
@@ -117,10 +88,9 @@ cl3<-cl3[m,]
 m<-match(cl3$id,a2$MARKERNAME)
 a3<-a2[m,]
 
-####}
-
 out<-calcu_cor_true(b1=cl3$Effect,se1=cl3$StdErr,b2=a3$BETA2,se2=a3$SE,theta=0)
-cor.out<-rbind(cor.out,unlist(out))
+out<-data.frame(n=nrow(cl3),unlist(out))
+cor.out<-rbind(cor.out,out)
 }
 cor.out<-data.frame(cor.out,category=cat)
 save(cor.out,file="rb.adipose.filtered_primary.Robj")
@@ -140,7 +110,9 @@ m<-match(cl3$id,a2$MARKERNAME)
 a3<-a2[m,]
 
 out<-calcu_cor_true(b1=cl3$Effect,se1=cl3$StdErr,b2=a3$BETA2,se2=a3$SE,theta=0)
-cor.out<-rbind(cor.out,unlist(out))
+
+out<-data.frame(n=nrow(cl3),unlist(out))
+cor.out<-rbind(cor.out,out)
 }
 cor.out<-data.frame(cor.out,category=cat2)
 save(cor.out,file="rb.adipose.filtered_primary_cistrans.Robj")
@@ -167,15 +139,31 @@ a3<-a2[m,]
 ####}
 
 out<-calcu_cor_true(b1=cl3$Effect,se1=cl3$StdErr,b2=a3$BETA2,se2=a3$SE,theta=0)
-cor.out<-rbind(cor.out,unlist(out))
+out<-data.frame(n=nrow(cl3),unlist(out))
+cor.out<-rbind(cor.out,out)
 }
 cor.out<-data.frame(cor.out,category=cat)
 save(cor.out,file="rb.adipose.filtered_primary_hypo.Robj")
 
 gc()
+load("rb_adipose.Robj")
+out<-cor.out
+load("rb.adipose.filtered.Robj")
+out1<-cor.out
 
+load("rb.adipose.filtered_primary_cistrans.Robj")
+out2<-cor.out
 
+load("rb.adipose.filtered_primary.Robj")
+out3<-cor.out
+load("rb.adipose.filtered_primary_hypo.Robj")
+out4<-cor.out
 
+df<-rbind(out2,out3,out4)
+df$Rb<-paste0(round(df$r,2)," (",round(df$se_r,3),")")
+df$category<-gsub("TRUE","cis any",df$category)
+df$category<-gsub("FALSE","trans any",df$category)
+write.table(df[,c("category","n","Rb")],"adipose_rb.txt",sep="\t",col.names=T,row.names=F,quote=F)
 #> out
 #             r       se_r
 #[1,] 0.6225506 0.01612748
