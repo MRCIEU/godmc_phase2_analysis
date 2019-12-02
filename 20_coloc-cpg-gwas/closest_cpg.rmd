@@ -95,9 +95,10 @@ closest$id <- paste(closest$trait, closest$thchr, closest$thpos)
 tab <- table(closest$id)
 
 out <- closest %>%
-	subset(., id %in% names(tab)[tab == 2]) %>%
+	subset(., !is.na(cpg) & id %in% names(tab)[tab == 2]) %>%
 	group_by(trait, thchr, thpos) %>%
-	summarise(closest = cpg[1] == cpg[2])
+	summarise(closest = cpg[1] == cpg[2], n=n()) %>% subset(n == 2)
 
+length(tab)
 sum(out$closest) / nrow(out)
 ```

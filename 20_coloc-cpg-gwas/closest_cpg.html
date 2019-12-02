@@ -814,12 +814,14 @@ closest &lt;- mclapply(1:nrow(tophitst), function(i)
 tab &lt;- table(closest$id)
 
 out &lt;- closest %&gt;%
-    subset(., id %in% names(tab)[tab == 2]) %&gt;%
+    subset(., !is.na(cpg) &amp; id %in% names(tab)[tab == 2]) %&gt;%
     group_by(trait, thchr, thpos) %&gt;%
-    summarise(closest = cpg[1] == cpg[2])
+    summarise(closest = cpg[1] == cpg[2], n=n()) %&gt;% subset(n == 2)
 
-sum(out$closest) / nrow(out)</code></pre>
-<pre><code>## [1] NA</code></pre>
+length(tab)</code></pre>
+<pre><code>## [1] 2224</code></pre>
+<pre class="r"><code>sum(out$closest) / nrow(out)</code></pre>
+<pre><code>## [1] 0.1675243</code></pre>
 
 
 
