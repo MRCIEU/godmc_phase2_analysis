@@ -444,10 +444,14 @@ summarise_th &lt;- function(tr, thchr, thpos, cpgpos, res)
 closest &lt;- mclapply(1:nrow(tophitst), function(i)
 {
     message(i)
-    tophitst %$% summarise_th(trait[i], seqnames[i], start[i], cpgpos, res)
+    tophitst %$% summarise_th(trait[i], seqnames[i], start[i], cpgpos, ressig)
 }, mc.cores=10) %&gt;% bind_rows()</code></pre>
 <p>How often is the closest cpg the colocalising cpg?</p>
-<pre class="r"><code>out &lt;- closest %&gt;%
+<pre class="r"><code>closest$id &lt;- paste(closest$trait, closest$thchr, closest$thpos)
+tab &lt;- table(closest$id)
+
+out &lt;- closest %&gt;%
+    subset(., id %in% names(tab)[tab == 2]) %&gt;%
     group_by(trait, thchr, thpos) %&gt;%
     summarise(closest = cpg[1] == cpg[2])
 
