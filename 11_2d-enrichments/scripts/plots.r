@@ -9,8 +9,8 @@ load("../results/difres/difres0.rdata")
 load("../data/annotations.rdata")
 load("../data/blood.rdata")
 
-r<-read.table("~/repo/godmc_phase2_analysis/11_2d-enrichments/data/CellTypes.tsv",he=T,sep="\t")
-r<-r[which(r$collection%in%c("encode_tfbs")),]
+r <- read.table("../data/CellTypes.tsv",he=T,sep="\t")
+r <- r[which(r$collection%in%c("encode_tfbs")),]
 
 anno$code <- paste0(anno$antibody3, " : ", anno$cellType, ", ", anno$tissue, " : ", anno$treatment )
 blood$code <- paste0(blood$antibody3, " : ", blood$cellType, ", ", blood$tissue, " : ", blood$treatment )
