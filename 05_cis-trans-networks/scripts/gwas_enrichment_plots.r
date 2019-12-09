@@ -50,6 +50,12 @@ p1
 ggsave(p1, file="../images/gwas_clusters_full.pdf", width=6, height=12)
 ggsave(p1, file="../images/gwas_clusters_full.png", width=6, height=12)
 
+p2 <- p1 + theme(axis.text.y=element_blank(), axis.ticks.y=element_blank())
+
+ggsave(p2, file="../images/gwas_clusters_full_noy.pdf", width=7, height=14)
+ggsave(p2, file="../images/gwas_clusters_full_noy.png", width=7, height=14)
+
+
 qq(dat$p)
 median(qchisq(dat$p, 1,low=FALSE) / qchisq(0.5, 1))
 
