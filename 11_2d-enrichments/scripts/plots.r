@@ -2,7 +2,7 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(splitstackshape)
-library(bipartite)
+# library(bipartite)
 library(rvest)
 
 load("../results/difres/difres0.rdata")
@@ -75,7 +75,7 @@ names(stab)[names(stab) == "code"] <- "cpg_tfbs"
 stab <- subset(stab, select=c(snp_tfbs, cpg_tfbs, val, Min., Max., sddif)) %>% arrange(desc(sddif))
 write.csv(stab, file="../results/2d_enrichment.csv")
 
-l <- data_frame(
+l <- tibble(
   perm = 0:100,
   max=NA,
   sum20=NA,
@@ -186,7 +186,7 @@ col <- colorRampPalette(c("lightblue", "blue"))(99)[ii]
 # col <- grey((dw[index] - min(dw[index])) / max(dw[index] - min(dw[index])))
 
 
-pdf("../images/bipartite1.pdf", width=12, height=6)
+# pdf("../images/bipartite1.pdf", width=12, height=6)
 plotweb(dw, text.rot=90,
 	col.interaction=col, bor.col.interaction=col,
 	y.width.low=0.03,

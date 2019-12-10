@@ -1,0 +1,36 @@
+Platelet count  Platelet
+Mean platelet volume    Platelet
+Platelet distribution width Platelet
+Plateletcrit    Platelet
+Red blood cell count    Red blood cell
+Mean corpuscular volume Red blood cell
+Hematocrit  Red blood cell
+Mean corpuscular hemoglobin Red blood cell
+Mean corpuscular hemoglobin concentration   Red blood cell
+Hemoglobin concentration    Red blood cell
+Red cell distribution width Red blood cell
+Reticulocyte count  Red blood cell
+Reticulocyte fraction of red cells  Red blood cell
+Immature fraction of reticulocytes  Red blood cell
+High light scatter reticulocyte count   Red blood cell
+High light scatter reticulocyte percentage of red cells Red blood cell
+Monocyte count  Myeloid
+Neutrophil count    Myeloid
+Eosinophil counts   Myeloid
+White blood cell count (basophil)   Myeloid
+Sum neutrophil eosinophil counts    Myeloid
+Sum eosinophil basophil counts  Myeloid
+Sum basophil neutrophil counts  Myeloid
+Granulocyte count   Myeloid
+Neutrophil percentage of granulocytes   Myeloid
+Basophil percentage of granulocytes Myeloid
+Eosinophil percentage of granulocytes   Myeloid
+Myeloid white cell count    Myeloid
+Granulocyte percentage of myeloid white cells   Myeloid
+Lymphocyte counts   Lymphoid
+White blood cell count  Lymphoid
+Monocyte percentage of white cells  Lymphoid
+Neutrophil percentage of white cells    Lymphoid
+Eosinophil percentage of white cells    Lymphoid
+Basophil percentage of white cells  Lymphoid
+Lymphocyte percentage of white cells    Lymphoid

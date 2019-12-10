@@ -1,3 +1,15 @@
+import os.path
+
+if not os.path.exists("job_reports"):
+        os.makedirs("job_reports")
+if not os.path.exists("results"):
+        os.makedirs("results")
+if not os.path.exists("images"):
+        os.makedirs("images")
+if not os.path.exists("data"):
+        os.makedirs("data")
+
+
 PERM = list(range(0,101))
 
 rule all:
