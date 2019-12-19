@@ -1,0 +1,46 @@
+{
+	"__default__" :
+	{
+		"name": "{rule}.{wildcards.perm}",
+		"partition": "mrcieu",
+		"nodes": "1",
+		"ntask": "1",
+		"ncpu": "1",
+		"time": "20:00:00",
+		"mem": "32G",
+		"output": "job_reports/{rule}.{wildcards.perm}.out"
+	},
+
+	"generate_data" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"get_annotations" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	},
+
+	"matrix" :
+	{
+		"name": "{rule}.{wildcards.perm}",
+		"ncpu": "28",
+		"mem": "60G",
+		"output": "job_reports/{rule}.{wildcards.perm}.out"
+	},
+
+	"difres" :
+	{
+		"name": "{rule}.{wildcards.perm}",
+		"output": "job_reports/{rule}.{wildcards.perm}.out"
+	},
+
+	"plots" :
+	{
+		"name": "{rule}",
+		"output": "job_reports/{rule}.out"
+	}
+}
+

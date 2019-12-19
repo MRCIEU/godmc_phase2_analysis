@@ -56,3 +56,20 @@ rule report:
 	shell:
 		"echo $HOSTNAME; Rscript -e \"rmarkdown::render('analysis.rmd', output_format='all')\""
 
+rule closest:
+	input:
+		"results/gwas_mr.rdata",
+		"results/gwas_coloc.rdata"
+	output:
+		"results/tophits.rdata"
+	shell:
+		"echo $HOSTNAME; Rscript closest_cpg.r"
+
+rule closest_report:
+	input:
+		"results/tophits.rdata"
+	output:
+		"closest_cpg.html"		
+	shell:
+		"echo $HOSTNAME; Rscript -e \"rmarkdown::render('closest_cpg.rmd', output_format='all')\""
+

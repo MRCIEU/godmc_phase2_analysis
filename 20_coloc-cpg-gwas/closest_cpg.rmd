@@ -1,0 +1,104 @@
+---
+title: Are colocalising signals the closest to the top hit?
+author: Gibran Hemani
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+```{r}
+suppressWarnings(suppressPackageStartupMessages({
+	library(gwasvcf)
+	library(parallel)
+	library(dplyr)
+	library(magrittr)
+	library(data.table)
+	library(ggplot2)
+	library(tidyr)
+	library(knitr)
+	library(pander)
+}))
+set_bcftools()
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+```
+
+
+
+1. For each GWAS get the positions of the tophits
+2. Find the closest CpG
+3. Find the closest colocalising signal
+
+
+Load in data, Get tophits for each GWAS
+
+
+```{r}
+load("results/closest.rdata")
+```
+
+What did we find
+
+```{r}
+tibble(
+	name = traits,
+	# expected_hits = sapply(1:length(vcfdir), function(i) length(scan(file.path(vcfdir[i], "clump.txt"), what="character"))),
+	found_hits = sapply(tophits, nrow)
+) %>% kable()
+```
+
+For each gwas / tophit pair:
+
+- find the closest CpG
+- find the closest colocalising CpG
+
+```{r}
+
+tophitst <- lapply(names(tophits), function(x) {
+	if(nrow(tophits[[x]]) > 0)
+	{
+		tophits[[x]] %>% vcf_to_granges() %>% as_tibble() %>% mutate(trait=x)}
+	}) %>%
+	bind_rows()
+
+summarise_th <- function(tr, thchr, thpos, cpgpos, res)
+{
+	closestcpg <- subset(cpgpos, cpgchr == thchr) %>%
+		mutate(d = abs(cpgpos - thpos)) %>%
+		arrange(d) %>%
+		first() %>% 
+		mutate(what="closest")
+
+	closestcoloc <- subset(ressig, cpgchr == thchr & trait == tr) %>%
+		mutate(d = abs(cpgpos - thpos)) %>%
+		arrange(d) %>%
+		first() %>%
+		select(cpg, cpgchr, cpgpos, d, H4=PP.H4.abf, nsnps) %>%
+		mutate(what="coloc")
+
+	return(bind_rows(closestcoloc, closestcpg) %>%
+		mutate(trait=tr, thchr=thchr, thpos=thpos))
+}
+
+closest <- mclapply(1:nrow(tophitst), function(i)
+{
+	message(i)
+	tophitst %$% summarise_th(trait[i], seqnames[i], start[i], cpgpos, ressig)
+}, mc.cores=10) %>% bind_rows()
+
+```
+
+How often is the closest cpg the colocalising cpg?
+
+```{r}
+closest$id <- paste(closest$trait, closest$thchr, closest$thpos)
+tab <- table(closest$id)
+
+out <- closest %>%
+	subset(., !is.na(cpg) & id %in% names(tab)[tab == 2]) %>%
+	group_by(trait, thchr, thpos) %>%
+	summarise(closest = cpg[1] == cpg[2], n=n()) %>% subset(n == 2)
+
+length(tab)
+sum(out$closest) / nrow(out)
+```

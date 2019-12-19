@@ -5,7 +5,7 @@ library(GenomicRanges)
 load("../../results/16/16_clumped.rdata")
 zhou <- scan("../../../godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what=character())
 
-clumped <- subset(clumped, cpg %in% zhou & !cis & pval < 1e-14)
+clumped <- subset(clumped, cpg %in% zhou & cpgchr != snpchr & pval < 1e-14)
 
 load("../../05_cis-trans-networks/data/snpcontrolsets_selection.rdata")
 ldinfo <- subset(f.all, select=c(SNP, min, max, nproxies))

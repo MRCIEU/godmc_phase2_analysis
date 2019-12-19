@@ -32,7 +32,7 @@ library(GenomicRanges)
 # brew cask install phantomjs
 
 
-make_sankey <- function(userset, out, snpanno, options = list(height=600, width=700), method=c("googlevis", "networkd3")[1])
+make_sankey <- function(userset, out, snpanno, options = list(height=600, width=700), method=c("googlevis", "networkd3")[1], fontSize=18)
 {
 	temp <- subset(out, userSet == userset) %>% mutate(snp=gsub(":SNP", "", snp))
 	snpanno <- snpanno %>% ungroup %>% mutate(snp=gsub(":SNP", "", snp))
@@ -84,7 +84,7 @@ make_sankey <- function(userset, out, snpanno, options = list(height=600, width=
 		names(bigdat)[names(bigdat) == "index"] <- "target"
 		bigdat$value <- 1
 
-		o <- sankeyNetwork(Links=bigdat, Nodes=nom, Source="source", Target="target", Value="value", NodeID="name", fontSize = 18, fontFamily="Arial", height=options$height, width=options$width)
+		o <- sankeyNetwork(Links=bigdat, Nodes=nom, Source="source", Target="target", Value="value", NodeID="name", fontSize = fontSize, fontFamily="Arial", height=options$height, width=options$width)
 		return(o)
 	}
 }
@@ -103,6 +103,15 @@ ind2 <- grepl("Hematop", snpo2$antibody) | grepl("sheffield_dnase", snpo2$antibo
 snpo2$antibody[ind] <- NA
 snpo2$antibody[ind2] <- "Blood Dnase HS"
 snpo2 <- subset(snpo2, !is.na(antibody))
+
+snpo2$antibody[snpo2$antibody == "c_MYC"] <- "c-Myc"
+index <- grepl("_", snpo2$antibody)
+snpo2$antibody[index] <- sapply(snpo2$antibody[index], function(x) strsplit(x, split="_")[[1]][1])
+
+out$antibody[out$antibody == "c_MYC"] <- "c-Myc"
+index <- grepl("_", out$antibody)
+out$antibody[index] <- sapply(out$antibody[index], function(x) strsplit(x, split="_")[[1]][1])
+
 snpanno <- group_by(snpo2, snp, antibody) %>%
 	summarise(n=n()) %>%
 	arrange(desc(n)) %>%
@@ -112,16 +121,16 @@ snpanno <- group_by(snpo2, snp, antibody) %>%
 Save plots in `networkD3` format
 
 ```{r}
-a <- make_sankey(2, out, snpanno, list(height=1600, width=1000), "networkd3")
+a <- make_sankey(2, out, snpanno, list(height=1600, width=1200), "networkd3", fontSize=20)
 widget2png(a, "../images/sankey2.png")
 
-a <- make_sankey(22, out, snpanno, list(height=600, width=1000), "networkd3")
+a <- make_sankey(22, out, snpanno, list(height=600, width=1200), "networkd3", fontSize=20)
 widget2png(a, "../images/sankey22.png")
 
-a <- make_sankey(76, out, snpanno, list(height=300, width=1000), "networkd3")
+a <- make_sankey(76, out, snpanno, list(height=300, width=1200), "networkd3", fontSize=20)
 widget2png(a, "../images/sankey76.png")
 
-a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "networkd3")
+a <- make_sankey(9, out, snpanno, list(height=700, width=1200), "networkd3", fontSize=20)
 widget2png(a, "../images/sankey9.png")
 
 ```
@@ -130,19 +139,19 @@ Save plots in `googleVis` format. This has to be done manually - `plot(a)` will 
 
 
 ```{r}
-a <- make_sankey(2, out, snpanno, list(height=1600, width=1000), "googlevis")
+a <- make_sankey(2, out, snpanno, list(height=1600, width=1000), "googlevis", fontSize=30)
 plot(a)
 
-a <- make_sankey(22, out, snpanno, list(height=600, width=1000), "googlevis")
+a <- make_sankey(22, out, snpanno, list(height=600, width=1000), "googlevis", fontSize=20)
 plot(a)
 
-a <- make_sankey(76, out, snpanno, list(height=300, width=1000), "googlevis")
+a <- make_sankey(76, out, snpanno, list(height=300, width=1000), "googlevis", fontSize=20)
 plot(a)
 
-a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "googlevis")
+a <- make_sankey(9, out, snpanno, list(height=700, width=1000), "googlevis", fontSize=20)
 plot(a)
 
-a <- make_sankey(6, out, snpanno, list(height=200, width=1000), "googlevis")
+a <- make_sankey(6, out, snpanno, list(height=200, width=1000), "googlevis", fontSize=20)
 plot(a)
 
 

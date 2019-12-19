@@ -1,4 +1,16 @@
-PERM = list(range(0,501))
+import os.path
+
+if not os.path.exists("job_reports"):
+        os.makedirs("job_reports")
+if not os.path.exists("results"):
+        os.makedirs("results")
+if not os.path.exists("images"):
+        os.makedirs("images")
+if not os.path.exists("data"):
+        os.makedirs("data")
+
+
+PERM = list(range(0,101))
 
 rule all:
 	input: 'images/bipartite_network.pdf'
@@ -6,30 +18,30 @@ rule all:
 rule generate_data:
 	input: '../results/16/16_clumped.rdata', '../05_cis-trans-networks/data/snpcontrolsets_selection.rdata'
 	output: 'data/trans_granges.rdata', 'data/trans_clumped.rdata'
-	script:
-		"cd scripts; R CMD BATCH generate_data.r"
+	shell:
+		"cd scripts; Rscript generate_data.r"
 
 rule get_annotations:
 	input: rules.generate_data.output
 	output: 'data/annotations.rdata', 'data/blood.rdata'
-	script:
-		'cd scripts; R CMD BATCH get_annotations.r'
+	shell:
+		'cd scripts; Rscript get_annotations.r'
 
 rule matrix:
 	input: rules.get_annotations.output, rules.generate_data.output
 	output: 'results/matrix/m{perm}.rdata'
-	script:
-		'cd scripts; R CMD BATCH matrix.r {wildcard.perm}'
+	shell:
+		'cd scripts; Rscript matrix.r {wildcards.perm}'
 
 rule difres:
 	input: 'results/matrix/m{perm}.rdata'
 	output: 'results/difres/difres{perm}.rdata'
-	script:
-		'cd scripts; R CMD BATCH difres.r {wildcard.perm}'
+	shell:
+		'cd scripts; Rscript difres.r {wildcards.perm}'
 
 rule plots:
 	input: expand('results/difres/difres{perm}.rdata', perm=PERM)
 	output: 'images/bipartite_network.pdf'
-	script:
-		'cd scripts; R CMD BATCH plots.r'
+	shell:
+		'cd scripts; Rscript plots.r'
 

@@ -135,6 +135,7 @@ Combine primary and secondary results
 ps <- inner_join(wr_cpg_trait_primary, out, by="cpgtrait")
 ps$fdr.y <- p.adjust(ps$pval.y, "fdr")
 ps$fdr.x <- p.adjust(ps$pval.x, "fdr")
+save(ps, file="results/primary-secondary.rdata")
 ```
 
 Check all primary associations have fdr < 0.05
@@ -202,6 +203,31 @@ assocfn <- function(x)
 ps %>% 
 	subset(., !grepl("6:", variant)) %>%
 	group_by(nsnp=nsnp.y) %>%
+	do(assocfn(.)) %>%
+	pander()
+```
+
+Group by blood cell trait category
+
+```{r}
+load("bc_type/bc_type.rdata")
+bcm$id <- gsub("ebi-a-", "", bcm$id)
+stopifnot(all(ps$id.outcome %in% bcm$id))
+ps <- inner_join(ps, subset(bcm, select=c(trait, id, type)), by=c("id.outcome"="id"))
+
+ggplot(ps %>% subset(., !grepl("6:", variant) & fdr.y < 0.05), aes(x = b.x, y = b.y)) +
+geom_point(aes(colour=type)) +
+geom_smooth(method="lm", aes(color=type)) +
+labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05") +
+scale_colour_brewer(type="qual", palette=3)
+```
+
+Coefficients
+
+```{r}
+ps %>% 
+	subset(., !grepl("6:", variant) & fdr.y < 0.05) %>%
+	group_by(type=type) %>%
 	do(assocfn(.)) %>%
 	pander()
 ```
