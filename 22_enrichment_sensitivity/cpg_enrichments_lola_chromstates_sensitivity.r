@@ -428,18 +428,26 @@ res_all5$id<-paste0(res_all5$userSet,"_",res_all5$filename)
 
 m<-match(res_all1$id,res_all5$id)
 res_all5<-res_all5[m,]
-res_all<-data.frame(seg_explanation=res_all1$seg_explanation,logOR_5Mb=res_all5$logOddsRatio,logOR_1Mb=res_all1$logOddsRatio,OR_1Mb=res_all1$oddsRatio,OR_5Mb=res_all5$oddsRatio)
-
+res_all<-data.frame(Annotation=res_all1$userSet,seg_explanation=res_all1$seg_explanation,logOR_5Mb=res_all5$logOddsRatio,logOR_1Mb=res_all1$logOddsRatio,OR_1Mb=res_all1$oddsRatio,OR_5Mb=res_all5$oddsRatio)
 
 pdf("./images/compare_1Mbvs5Mb_chromstate.pdf",height=3,width=4)
 ggplot(res_all,aes(x=OR_5Mb,y=OR_1Mb,colour=seg_explanation)) +
-geom_point() +
-theme(legend.position = "bottom") +
-guides(fill = guide_legend(nrow=2,bycol=TRUE,title=NULL))+
+geom_point(size=0.5) +
+#theme(legend.position = "bottom") +
 theme(legend.title = element_blank()) +
-theme(legend.text=element_text(size=3))
+theme(legend.text=element_text(size=5)) +
+theme(axis.title=element_text(size=5)) +
+theme(axis.text=element_text(size=4)) +
+labs(x="OR (cross chromosomal)",y="OR (1 Mb)") +
+facet_wrap(~Annotation,nrow=3,strip.position="right") +
+theme(strip.text=element_text(size=5)) +
+guides(colour = guide_legend(ncol=1,byrow=TRUE,title=NULL,keyheight=0.5))
+
 dev.off()
 
+test<-res_all[which(res_all$diff>0.5),c("Annotation","seg_explanation")]
+df<-data.frame(table(test$Annotation,test$seg_explanation))
+df[which(df$Freq>1),]
 
 ####
 #STATE NO. MNEMONIC  DESCRIPTION COLOR NAME  COLOR CODE

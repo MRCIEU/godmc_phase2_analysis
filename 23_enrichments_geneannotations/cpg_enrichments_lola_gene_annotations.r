@@ -212,19 +212,21 @@ res_all$Annotation<-gsub("trans_only (3864 regions)","trans only",res_all$Annota
 
 save(res_all,file="../results/enrichments/lola_gene_mqtlcpg_cis.rdata")
 
-
-
-res_all[,pvalue:=10^(-pValueLog),]
+res_all[,Pvalue:=10^(-pValueLog),]
  
 res_all[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
   res_all[,mlog10p.adjust:=-log10(p.adjust),]
   res_all$description<-gsub("hg19_genes_","",res_all$description)
   res_all$description<-gsub("hg19_","",res_all$description)
 
-fisherAlternative = "two.sided"
-res_all[,c("conf_up") := fisher.test(matrix(c(support,b,c,d), 2, 2), alternative=fisherAlternative)$conf.int[1], by=list(userSet,dbSet)]
-res_all[,c("conf_down") := fisher.test(matrix(c(support,b,c,d), 2, 2), alternative=fisherAlternative)$conf.int[2], by=list(userSet,dbSet)]
 
+#res_all2<-res_all[which(res_all$p.adjust<0.001),]
+#dim(res_all2)
+res_all2<-res_all
+res_all3<-res_all2[,c("description","oddsRatio","Pvalue","p.adjust","support","b","c","d","Annotation")]
+names(res_all3)<-c("Gene Annotation","OR","Pvalue","FDR_Pvalue","support","b","c","d","Annotation")                                                   
+
+write.table(res_all3,"TableSXX_LOLA_gene_annotation_updated.txt",sep="\t",quote=F,row.names=F,col.names=T)
 
 
 plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){

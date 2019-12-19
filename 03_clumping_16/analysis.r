@@ -87,10 +87,13 @@ table(clumped2$cis2)
 #trans_inter trans_intra        TRUE 
 #      18601        4516      248607 
 
-clumped2$dist[-w2] <- abs(clumped2$snppos[-w2] - clumped2$cpgpos[-w2])
 
+clumped2$dist <- abs(clumped2$snppos- clumped2$cpgpos)
+clumped2$dist[w2]<-NA
 length(which(clumped2$cis2=="trans_intra"&clumped2$dist<5000000)) #2998
 #2998/4516
+length(which(clumped2$cis2=="trans_intra"&clumped2$dist>5000000)) #1518
+
 length(which(clumped2$cis2=="trans_intra"&clumped2$dist<10000000)) #3291
 
 table(clumped2$cis2)[1]/table(clumped2$cis)[1]

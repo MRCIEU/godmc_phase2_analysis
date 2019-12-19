@@ -93,7 +93,7 @@ table(test[,2])
 #     28023       4267     157812 
 
 data$cis2<-data$cis
-w<-which(data$cis=="FALSE"&data$cpgchr==data$snpchr&abs(data$cpgpos-data$snppos)<5e6)
+w<-which(data$cis=="FALSE"&data$cpgchr==data$snpchr)
 data$cis2[w]<-TRUE
 table(data$cis,data$cis2)
 
@@ -161,7 +161,7 @@ cpg_bg_gr_matched=unique(c(Illumina450_bg_matched,GoDMC_cpg_gr))
 lola_res0_matched=runLOLA(GoDMC_cpg_gr, cpg_bg_gr_matched, regionDB, cores=5)
 lola_res0_matched$logOddsRatio<-log(lola_res0_matched$oddsRatio)
 #plotLOLA(locResults_all=lola_res0_matched,plot_pref="cpg_corebg_matched_5Mb",height=10,width=18)
-save(lola_res0_matched,lola_res0,file="../results/enrichments/lola_gene_mqtlcpg_5Mb.rdata")
+save(lola_res0_matched,lola_res0,file="../results/enrichments/lola_gene_mqtlcpg_crosschr.rdata")
 
 ##ambivalent/FALSE/TRUE
 
@@ -221,7 +221,7 @@ res_all$userSet[w]<-paste0("trans_only (", l[2]," regions)")
 w<-which(res_all$userSet==3)
 res_all$userSet[w]<-paste0("cis_only (", l[3]," regions)")
 
-save(res_all,file="../results/enrichments/lola_gene_mqtlcpg_cis_longrange.rdata")
+save(res_all,file="../results/enrichments/lola_gene_mqtlcpg_cis_crosschr.rdata")
 
 
 
@@ -260,7 +260,7 @@ plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){
   pl3=ggplot(locResults,aes(x=description,y=oddsRatio))+
   geom_hline(yintercept=1, linetype="dotted")+
   geom_point(position=position_dodge(.9)) +
-  geom_errorbar(aes(x=description,ymin=conf_down, ymax=conf_up), width=.2,position=position_dodge(.9)) +
+  #geom_errorbar(aes(x=description,ymin=conf_down, ymax=conf_up), width=.2,position=position_dodge(.9)) +
    
  facet_wrap(~userSet,scale="free_x",ncol=1)+
   #theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5),legend.position="bottom")+
@@ -279,7 +279,7 @@ plotLOLA_OR=function(locResults_all,plot_pref,height=35,width=18){
 } 
 #}
 
-plotLOLA_OR(locResults_all=res_all,plot_pref="cpg_gene_matched_cis_OR_5Mb",height=10,width=18)
+plotLOLA_OR(locResults_all=res_all,plot_pref="cpg_gene_matched_cis_OR_crosschr",height=10,width=18)
 
 res_all$description <- factor(x = res_all$description, levels = c("cpg_shelves","cpg_shores","cpg_islands","cpg_inter","1to5kb","promoters","5UTRs","exons","introns","intronexonboundaries","3UTRs","intergenic"))
                                        
@@ -306,7 +306,7 @@ p2<-ggplot(res_all, aes(color=userSet, y=logOddsRatio, x=description)) +
     #theme(axis.text.x=element_text(angle = 90, hjust = 10))    
 #ggsave(p1,file="test.pdf",height=6,width=10)
 
-pdf("gene_annotation_cpg_enrichment_5Mb.pdf",height=10,width=18)
+pdf("gene_annotation_cpg_enrichment_crosschr.pdf",height=10,width=18)
 #create layout, assign it to viewport, push viewport to plotting device
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(2, 1)))
@@ -325,12 +325,12 @@ res_all1$userSet<-gsub("cis_only (107004 regions)","cis only",res_all1$userSet,f
 res_all1$userSet<-gsub("trans_only (3864 regions)","trans only",res_all1$userSet,fixed=T)
 res_all1$id<-paste0(res_all1$userSet,"_",res_all1$filename)
 
-load("../results/enrichments/lola_gene_mqtlcpg_cis_longrange.rdata")
+load("../results/enrichments/lola_gene_mqtlcpg_cis_crosschr.rdata")
 res_all5<-res_all
-res_all5$cis<-"5Mb"
-res_all5$userSet<-gsub("ambivalent (9793 regions)","cis+trans",res_all5$userSet,fixed=T)
-res_all5$userSet<-gsub("cis_only (108231 regions)","cis only",res_all5$userSet,fixed=T)
-res_all5$userSet<-gsub("trans_only (3785 regions)","trans only",res_all5$userSet,fixed=T)
+res_all5$cis<-"crosschr"
+res_all5$userSet<-gsub("ambivalent (9172 regions)","cis+trans",res_all5$userSet,fixed=T)
+res_all5$userSet<-gsub("cis_only (109176 regions)","cis only",res_all5$userSet,fixed=T)
+res_all5$userSet<-gsub("trans_only (3461 regions)","trans only",res_all5$userSet,fixed=T)
 
 res_all5$id<-paste0(res_all5$userSet,"_",res_all5$filename)
 
@@ -338,13 +338,25 @@ res_all5$id<-paste0(res_all5$userSet,"_",res_all5$filename)
 m<-match(res_all1$id,res_all5$id)
 res_all5<-res_all5[m,]
 res_all1$description<-gsub("hg19_genes_","",res_all1$description,res_all1$description)
-res_all<-data.frame(category=res_all1$description,logOR_5Mb=res_all5$logOddsRatio,logOR_1Mb=res_all1$logOddsRatio,OR_1Mb=res_all1$oddsRatio,OR_5Mb=res_all5$oddsRatio)
 
-pdf("./images/compare_1Mbvs5Mb_gene.pdf",height=3,width=4)
-ggplot(res_all,aes(x=OR_5Mb,y=OR_1Mb,colour=category)) +
-geom_point() +
-theme(legend.position = "bottom") +
-guides(fill = guide_legend(nrow=2,bycol=TRUE,title=NULL))+
+res_all<-data.frame(Annotation=res_all1$userSet,category=res_all1$description,logOR_5Mb=res_all5$logOddsRatio,logOR_1Mb=res_all1$logOddsRatio,OR_1Mb=res_all1$oddsRatio,OR_crosschr=res_all5$oddsRatio)
+
+pdf("./images/compare_1Mbvscrosschr_geneannotation.pdf",height=3,width=4)
+ggplot(res_all,aes(x=OR_crosschr,y=OR_1Mb,colour=category)) +
+geom_point(size=0.5) +
+#theme(legend.position = "bottom") +
 theme(legend.title = element_blank()) +
-theme(legend.text=element_text(size=3))
+theme(legend.text=element_text(size=5)) +
+theme(axis.title=element_text(size=5)) +
+theme(axis.text=element_text(size=4)) +
+labs(x="OR (cross chromosomal)",y="OR (1 Mb)") +
+facet_wrap(~Annotation,nrow=3,strip.position="right") +
+theme(strip.text=element_text(size=5)) +
+guides(colour = guide_legend(ncol=1,byrow=TRUE,title=NULL,keyheight=0.5))
+
 dev.off()
+
+test<-res_all[which(res_all$diff>0.5),c("Annotation","seg_explanation")]
+df<-data.frame(table(test$Annotation,test$seg_explanation))
+df[which(df$Freq>1),]
+

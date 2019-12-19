@@ -61,7 +61,18 @@ m<-min(df2$Pvalue[-w])
 df2$Pvalue[w]<-m
 length(unique(df2$Type)) #7
 
-n<-which(names(df3)%in%c("Annotation","Celltype","Tissue","logOddsRatio"))
+r.all2<-df2
+r.all3<-r.all2[which(r.all2$cis_snp!="All"),]
+names(r.all3)<-gsub("NAnnotThesh","NAnnotThresh",names(r.all3))
+names(r.all3)<-gsub("Annotation","Gene_Annotation",names(r.all3))
+names(r.all3)<-gsub("cis_snp","Annotation",names(r.all3))
+names(r.all3)<-gsub("Type","Gene Annotation",names(r.all3))
+r.all3<-r.all3[,c("Gene Annotation","OR","Pvalue","Beta","SE","CI95_lower","CI95_upper","NAnnotThresh","NAnnot","NThresh","N","Annotation")]
+
+write.table(r.all3,"TableSXX_garfield_gene_annotation.txt",quote=F,row.names=F,col.names=T,sep="\t")
+#State  OR  Pvalue  FDR_Pvalue  support b   c   d   CellType    Tissue  Annotation                                                                                                                                              
+
+n<-which(names(df2)%in%c("Annotation","Celltype","Tissue","logOddsRatio"))
 df3<-df2[which(df2$Category=="Genic"),-n]
 
 n<-which(names(df3)%in%"cis_snp")

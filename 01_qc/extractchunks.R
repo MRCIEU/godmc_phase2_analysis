@@ -18,7 +18,25 @@ clumped$id<-as.character(paste(clumped$snp,clumped$cpg,sep="_"))
 #[1] 23103    29
 a14.cis.out<-clumped
 
-a14.cis.out<-a14.cis.out[which(a14.cis.out$snpchr=="chr20"),] #332
+#a14.cis.out<-a14.cis.out[which(a14.cis.out$snpchr=="chr20"),] #332
+chr=paste0("chr",20)
+a14.cis.out<-a14.cis.out[which(a14.cis.out$snpchr==chr),] #332
+nrow(a14.cis.out)
+length(unique(a14.cis.out$snp))
+
+o<-order(a14.cis.out$pval)
+a14.cis.out<-a14.cis.out[o,]
+snp<-unique(a14.cis.out$snp)
+m<-match(snp,a14.cis.out$snp)
+a14.cis.out<-a14.cis.out[m,]
+nrow(a14.cis.out)
+length(unique(a14.cis.out$snp))
+
+chunks<-unique(data.frame(a14.cis.out$chunk))
+chunks<-as.character(chunks[,1])
+write.table(chunks,paste0(chr,"_chunks2.txt"),sep=" ",quote=F,row.names=F,col.names=F)
+write.table(a14.cis.out$id,paste0(chr,"_ids2.txt"),sep=" ",quote=F,row.names=F,col.names=F)
+
 
 a14.cis.out.filtered<-data.frame()
 
@@ -53,8 +71,4 @@ a14.cis.out.filtered<-rbind(a14.cis.out.filtered,a14.cis.chr)
 #o<-order(as.numeric(as.character(a14.cis.out$cpgpos)))
 #a14.cis.out<-a14.cis.out[o,]
 
-chunks<-unique(data.frame(a14.cis.out$chunk))
-chunks<-as.character(chunks[,1])
-write.table(chunks,"chr20_chunks.txt",sep=" ",quote=F,row.names=F,col.names=F)
 
-write.table(a14.cis.out$id,"chr20_ids.txt",sep=" ",quote=F,row.names=F,col.names=F)
