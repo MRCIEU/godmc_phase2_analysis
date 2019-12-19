@@ -91,8 +91,11 @@ w<-which(is.na(m))
 # 90895    702 103072 
 
 y<-nchar(f.all2$annot)
-m<-min(nchar(f.all2$annot))
+table(y) #1 2
+
+m<-min(nchar(f.all2$annot)) #1
 m<-which(y==m)
+#set missing annotations to 0
 f.all2$annot[w]<-f.all2$annot[m[1]]
 
 write.table(data.frame(f.all2$snppos,f.all2$annot),paste("/panfs/panasas01/shared-godmc/GARFIELDv2/garfield-data/annotation_sds_cis/chr",i,sep=""),sep=" ",col.names=F,row.names=F,quote=F)
