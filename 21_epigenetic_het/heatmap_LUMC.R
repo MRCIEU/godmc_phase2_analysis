@@ -84,28 +84,44 @@ save(ind_t,ct_list,cat,file="tissue.Robj")
 col = c("red","orange","yellow")
 breaks <- c(0, 0.20, 0.80, 1)
 
+library(meffil)
+y<-meffil.get.features("450k")
+y<-data.frame(cpg=y$name,cpgchr=y$chromosome)
 
+w<-which(cat%in%"cis only")
+data<-data.frame(ct_list[[w]])
+m<-match(row.names(data),y$cpg)
+y2<-y[m,]
+hyper<-which(data$blood>0.8)
+table(y2[hyper,2])
+
+hyper<-matrix(nr=4,nc=4)
 for (i in 1:length(cat)){
 ct2<-as.matrix(ct_list[[i]])
 colnames(ct2)[1]<-"Blood"
 colnames(ct2)[2]<-"PBMC"
 
 
-pdf(paste0("heatmap.tissue.",cat[i],".pdf"),height=6,width=6)
+png(paste0("heatmap.tissue.",cat[i],".png"),height=600,width=600)
 heatmap.2(ct2,keysize=1.5,key.title=NA,key.xlab="mean DNAm",dendrogram="none",trace="none",cexCol=1,Colv=FALSE,Rowv=FALSE,labRow=FALSE,labCol=colnames(ct2),breaks=breaks,col=col)
 dev.off()
 
 ct2<-data.frame(ct2)
-length(which(ct2$blood>0.2&ct2$blood<0.8))
-length(which(ct2$blood>0.2&ct2$blood<0.8))/nrow(ct2) #66% 7847
-length(which(ct2$blood<0.2))/nrow(ct2) #2599 22%
-length(which(ct2$blood>0.8))/nrow(ct2) #1456 12%
+hyper[i,1]<-nrow(ct2)
 
-pdf(paste0("heatmap.tissue_ind.",cat[i],".pdf"),height=6,width=8)
-heatmap.2(ind_t[[i]],keysize=1.5,key.title=NA,key.xlab="mean DNAm",dendrogram="column",trace="none",cexCol=1,Colv=TRUE,Rowv=FALSE,labRow=F,labCol=colnames(ct2))
-dev.off()
+hyper[i,3]<-length(which(ct2$Blood>0.2&ct2$Blood<0.8))
+#length(which(ct2$Blood>0.2&ct2$Blood<0.8))/nrow(ct2))#66% 7847
+hyper[i,2]<-length(which(ct2$Blood<0.2)) #2599 22%
+hyper[i,4]<-length(which(ct2$Blood>0.8)) #1456 12%
+
+#pdf(paste0("heatmap.tissue_ind.",cat[i],".pdf"),height=6,width=8)
+#heatmap.2(ind_t[[i]],keysize=1.5,key.title=NA,key.xlab="mean DNAm",dendrogram="column",trace="none",cexCol=1,Colv=TRUE,Rowv=FALSE,labRow=F,labCol=colnames(ct2))
+#dev.off()
 
 }
+
+colnames(hyper)<-c("N","hypo","intermediate","hyper")
+hyper<-data.frame(category=cat,hyper)
 
 for (i in 1:length(cat)){
 ct2<-as.matrix(ct_list[[i]])

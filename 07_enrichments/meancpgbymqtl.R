@@ -476,6 +476,19 @@ labs(x="mQTL category", y="Maximum absolute mQTL effect size") +
 theme(legend.position="none")
 ggsave(plot=p1, file="./images/effectsizescpg_ciscategory.pdf", width=7, height=7)
 
+summary(lm(abs(df3[w,"max_abs_Effect"])~df3[w,"cpg_cis"]))
+
+#Coefficients:
+#                              Estimate Std. Error t value Pr(>|t|)    
+#(Intercept)                  0.2850567  0.0005418 526.145  < 2e-16 ***
+#df3[w, "cpg_cis"]trans only -0.0205893  0.0026927  -7.646 2.08e-14 ***
+
+#table(df3[w, "cpg_cis"])
+
+#            All        cis only       cis+trans      trans only   cis+trans_cis 
+#              0          170986               0            7214               0 
+#cis+trans_trans 
+#              0 
 
 df.all$cpg_cis<-gsub("No mqtl","no mQTL",df.all$cpg_cis)
 df.all$cpg_cis<-gsub("cis+trans      ","cis+trans",df.all$cpg_cis)

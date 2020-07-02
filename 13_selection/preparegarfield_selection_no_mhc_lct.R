@@ -104,7 +104,7 @@ r<-read.table(paste(path,"chr",i,sep=""))
 if(i==6){
 w<-which(r$V1>24570005&r$V1<38377657)}
 
-if(i==3){
+if(i==2){
 w<-which(r$V1>129608646&r$V1<143608646)}
 
 if(length(w)>0){
@@ -199,7 +199,7 @@ r<-read.table(paste(path,"chr",i,sep=""))
 if(i==6){
 w<-which(r$V1>24570005&r$V1<38377657)}
 
-if(i==3){
+if(i==2){
 w<-which(r$V1>129608646&r$V1<143608646)}
 
 if(length(w)>0){

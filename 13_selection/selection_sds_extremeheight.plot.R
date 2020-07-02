@@ -1,75 +1,60 @@
 library(ggplot2)
+library(dplyr)
 
-load("../results/enrichments/snpcontrolsets_selection.rdata")
-w<-which(is.na(f.all$snp_cis))
-f.all$Category<-as.character(f.all$snp_cis)
-f.all$Category[w]<-"no_mqtl"
-
-f.all$Category<-gsub("TRUE","cisonly",f.all$Category)
-f.all$Category<-gsub("FALSE","transonly",f.all$Category)
-f.all$Category<-gsub("ambivalent","cis+trans",f.all$Category)
-
-f.all$min_log10pval<-f.all$min_pval
-w0<-which(f.all$min_pval==0)
-mx<-min(f.all$min_pval[-w0],na.rm=T)
-f.all$min_log10pval[w0]<-mx
-f.all$min_log10pval<--log10(as.numeric(f.all$min_log10pval))
-
-w<-which(f.all$mqtl_clumped=="TRUE")
-f.all2<-f.all[w,]
-
-r2<-read.table("./height_sds/vars.EXTREME_HEIGHT_mqtl_6cols",sep=" ",he=T)
+r2<-read.table("./height_sds/vars.EXTREME_HEIGHT_Berndt_2013",sep=" ",he=T)
+#r2<-read.table("./height_sds/vars.EXTREME_HEIGHT_mqtl_6cols",sep=" ",he=T)
 r2[,8]<-gsub("\\([^\\)]+\\)","",as.character(r2[,5])) #260 #40
 
 r3<-read.table("./height_sds/vars.EXTREME_HEIGHT_sds",sep=" ",he=T)
 r3[,8]<-gsub("\\([^\\)]+\\)","",as.character(r3[,5]))
-
 mqtl<-paste0("chr",unique(r2[,8]),":SNP")
-f.all$height_mqtl<-"no mqtl"
-
-w<-which(f.all$mqtl_clumped=="TRUE")
-f.all$height_mqtl[w]<-"clumped mqtl"
-
-w<-which(f.all$SNP%in%mqtl)
-f.all$height_mqtl[w]<-"height mqtl"
 
 sds<-paste0("chr",r3[,8],":SNP")
-print(sds)
-w<-which(f.all$SNP%in%sds)
-f.all$height_mqtl[w]<-"height mqtl sds"
-#ES = 2β^2f(1 − f)
-f.all$max_abs_Effect_sq<-f.all$max_abs_Effect^2
-f.all$es<-(2*f.all$max_abs_Effect_sq)*(f.all$MAF*(1-f.all$MAF))
 
-p1<-ggplot(f.all, aes(es, colour=height_mqtl)) +
-geom_density() +
-labs(x="Genetic Variance")
-ggsave(p1,file="Mqtl_GeneticVariance.pdf")
 
 #how much of the height variance
 
 h<-read.table("./height_sds/GIANT_EXTREME_HEIGHT_Stage1_Berndt2013_publicrelease_HapMapCeuFreq.txt.gz",he=T)
-bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
-m<-match(h$MarkerName,bim$V2)
-h<-data.frame(SNP=paste0("chr",bim[m,1],":",bim[m,4],":SNP"),h)
+load("/newshared/godmc/database_files/snps.rdata")
+
+
+table(h$Allele1)
+
+#     a      c      g      t 
+#482299 502872 501689 479696 
+
+#bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
+#m<-match(h$MarkerName,bim$V2)
+
+m<-match(h$MarkerName,out_df2$rsid)
+h<-data.frame(SNP=out_df2[m,"name"],h)
+length(which(is.na(h$SNP))) #14780
+
 h$b_sq<-h$b^2
 h$MAF<-h$Allele1_Freq_HapMapCEU
 w<-which(h$MAF>0.5)
 h$MAF[w]<-1-h$MAF[w]
 h$es<-(2*h$b_sq)*(h$MAF*(1-h$MAF))
 #r<-read.table("/panfs/panasas01/sscm/epzjlm/repo/goya/godmc/resources/genetics/wood.height.snps_af0.1.txt",he=F,stringsAsFactors=F)
-r<-read.table("./height_sds/extreme_height_snps.txt",he=F,sep="\t")
+load("/newshared/godmc/database_files/snps.rdata")
 
+m<-match(h$MarkerName,out_df2$rsid)
+id<-out_df2[m,c("name","rsid")]
+h<-data.frame(id,h)
+
+#r<-read.table("./height_sds/extreme_height_snps.txt",he=F,sep="\t")
+r<-read.table("./height_sds/ext_height_rsid",he=F)
 h$height_mqtl<-"no_mqtl"
+#w<-which(h$MarkerName%in%r$V1)
 w<-which(h$MarkerName%in%r$V1)
-h$height_mqtl[w]<-"extreme height SNPs (n=60)"
+h$height_mqtl[w]<-rep("extreme height SNPs (n=60)",length(w))
 h_all<-h[w,]
 
-w<-which(h$SNP%in%mqtl)
+w<-which(h$name%in%mqtl)
 h$height_mqtl[w]<-"extreme height mqtl (n=48)"
 h_all2<-h[w,]
 
-w<-which(h$SNP%in%sds)
+w<-which(h$name%in%sds)
 h$height_mqtl[w]<-"extreme height mqtl sds (n=4)"
 h_all3<-h[w,]
 
@@ -95,7 +80,7 @@ p1<-ggplot(h_all, aes(y=es, x=height_mqtl)) +
 ggsave(p1,file="Extremeheight_GeneticVariance_boxplot.pdf")
 
 
-library(dplyr)
+
 h_all%>%group_by(height_mqtl)%>%summarise(es=mean(es,na.rm=T))
 
 # A tibble: 3 x 2

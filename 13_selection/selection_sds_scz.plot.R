@@ -1,4 +1,6 @@
 library(ggplot2)
+library(dplyr)
+
 contingency<-function (af, prop, odds_ratio, eps = 1e-15) 
 {
     a <- odds_ratio - 1
@@ -76,8 +78,6 @@ ncase=40675
 ncontrol=64643
 
 h<-read.table("./scz_sds/clozuk_pgc2.meta.sumstats.txt.gz",he=T)
-spl<-strsplit(as.character(h$SNP),split=":")
-spl<-do.call("rbind",spl)
 
 h<-data.frame(ID=paste0("chr",h$CHR,":",h$BP,":","SNP"),h)
 a1<-(nchar(as.character(h$A1)))
@@ -98,75 +98,42 @@ h$logodds<-log(h$OR)
 h$es<-get_r_from_lor(lor=h$logodds, af=h$MAF, ncase=ncase, ncontrol=ncontrol, prevalence=prevalence, model="logit")
 save(h,file="./scz_sds/clozuk_pgc2.Robj")
 
-load("../results/enrichments/snpcontrolsets_selection.rdata")
-w<-which(is.na(f.all$snp_cis))
-f.all$Category<-as.character(f.all$snp_cis)
-f.all$Category[w]<-"no_mqtl"
 
-f.all$Category<-gsub("TRUE","cisonly",f.all$Category)
-f.all$Category<-gsub("FALSE","transonly",f.all$Category)
-f.all$Category<-gsub("ambivalent","cis+trans",f.all$Category)
+#r2<-read.table("./scz_sds/vars.SCZ_Pardinas_2018_mqtl_7cols",sep=" ",he=T)
+r2<-read.table("./scz_sds/vars.SCZ_Pardinas_2018",sep=" ",he=T)
 
-f.all$min_log10pval<-f.all$min_pval
-w0<-which(f.all$min_pval==0)
-mx<-min(f.all$min_pval[-w0],na.rm=T)
-f.all$min_log10pval[w0]<-mx
-f.all$min_log10pval<--log10(as.numeric(f.all$min_log10pval))
-
-w<-which(f.all$mqtl_clumped=="TRUE")
-f.all2<-f.all[w,]
-
-r2<-read.table("./scz_sds/vars.SCZ_Pardinas_2018_mqtl_7cols",sep=" ",he=T)
 r2[,8]<-gsub("\\([^\\)]+\\)","",as.character(r2[,5])) #260 #40
 
 r3<-read.table("./scz_sds/vars.SCZ_Pardinas_2018_sds",sep=" ",he=T)
 r3[,8]<-gsub("\\([^\\)]+\\)","",as.character(r3[,5]))
 
 mqtl<-paste0("chr",unique(r2[,8]),":SNP")
-
-f.all$scz_mqtl<-"no mqtl"
-
-w<-which(f.all$mqtl_clumped=="TRUE")
-f.all$scz_mqtl[w]<-"clumped mqtl"
-
-w<-which(f.all$SNP%in%mqtl)
-f.all$scz_mqtl[w]<-"scz mqtl"
-
 sds<-paste0("chr",r3[,8],":SNP")
-w<-which(f.all$SNP%in%sds)
-w<-which(sds%in%f.all$SNP==F)
-if(length(w)>0){
-sds[w]<-gsub(":SNP",":INDEL",sds[w])}
 
-w<-which(f.all$SNP%in%sds)
-f.all$scz_mqtl[w]<-"scz mqtl sds"
 
 ##ES = 2β^2f(1 − f)
 #f.all$max_abs_Effect_sq<-f.all$max_abs_Effect^2
 #f.all$es<-(2*f.all$max_abs_Effect_sq)*(f.all$MAF*(1-f.all$MAF))
 
-p1<-ggplot(f.all, aes(es, colour=scz_mqtl)) +
-geom_density() +
-labs(x="Genetic Variance")
-ggsave(p1,file="Mqtl_GeneticVariance.pdf")
 
+r<-read.table("./scz_sds/scz_gwas.txt",he=T) # no match in dbSNP for rs72342102
+r_pos<-read.table("./scz_sds/scz_pos.txt",he=T) 
 
-r<-read.table("./scz_sds/scz_gwas.txt",he=T)
-bim<-read.table("/panfs/panasas01/shared-godmc/1kg_reference_ph3/eur.bim.orig",sep="\t",he=F)
-m<-match(r$rsid,bim$V2)
-r<-data.frame(r,pos=bim$V4[m])
-r$SNP<-paste0("chr",r$chr,":",r$pos,":",r$INDEL)
+m<-match(r$rsid,r_pos$name)
+r<-data.frame(r,r_pos[m,])
+r$id<-paste0(r$chrom,":",r$chromEnd,":",r$INDEL)
 
-w<-which(is.na(r$pos))#17
+w<-which(is.na(r$chromEnd)) #3
 r<-r[-w,]
 
 h$scz_mqtl<-"No mqtl"
-w<-which(h$ID%in%r$SNP)
+w<-which(h$ID%in%r$id)
 h$scz_mqtl[w]<-"scz SNPs (n=159)"
 h_all<-h[w,]
 
 w<-which(h$ID%in%mqtl)
-h$scz_mqtl[w]<-"scz mQTL (n=133)"
+#h$scz_mqtl[w]<-"scz mQTL (n=133)"
+h$scz_mqtl[w]<-"scz mQTL (n=226)"
 h_all2<-h[w,]
 
 w<-which(h$ID%in%sds)
@@ -181,27 +148,48 @@ table(h_all$scz_mqtl)
 #scz mQTL (n=133) scz mQTL SDS (n=9)   scz SNPs (n=159)
 #133                  9                159
 
+table(h_all$scz_mqtl)
+
+#  scz mQTL (n=226) scz mQTL SDS (n=9)   scz SNPs (n=159) 
+#               226                  9                165
+
 p1<-ggplot(h_all, aes(es, colour=scz_mqtl)) +
 geom_density() +
 labs(x="Genetic Variance")
 ggsave(p1,file="scz_GeneticVariance.pdf")
 
-library(dplyr)
+
 h_all%>%group_by(scz_mqtl)%>%summarise(es=mean(es,na.rm=T))
 # A tibble: 3 x 2
-#            cd_mqtl         es
-#              <chr>      <dbl>
-#1    cd mqtl (n=60) 0.06206499
-#2 cd mqtl sds (n=3) 0.06075588
-#3    cd SNPs (n=31) 0.03340113
+#  scz_mqtl               es
+#  <chr>               <dbl>
+#1 scz mQTL (n=226)   0.0245
+#2 scz mQTL SDS (n=9) 0.0298
+#3 scz SNPs (n=159)   0.0225
 
-h_all$scz_mqtl <- factor(h_all$scz_mqtl, levels = c("scz SNPs (n=159)","scz mQTL (n=133)", "scz mQTL SDS (n=9)"))
+h_all$scz_mqtl <- factor(h_all$scz_mqtl, levels = c("scz SNPs (n=159)","scz mQTL (n=226)", "scz mQTL SDS (n=9)"))
 p1<-ggplot(h_all, aes(y=es, x=scz_mqtl)) +
   geom_boxplot() +
   labs(y="Genetic Variance",x="mQTL category")
 ggsave(p1,file="scz_GeneticVariance_boxplot.pdf")
 save(h_all,file="./scz_sds/scz_plot.Robj")
 
+#no mapping
+load("/newshared/godmc/database_files/snps.rdata")
+h_all[which(h_all$ID%in%out_df2$name==F),c("SNP","scz_mqtl")]
+#                      SNP        cd_mqtl
+#192126  chr10:35542343:SNP cd mqtl (n=60)
+#3708494 chr16:50756540:SNP cd mqtl (n=60)
+#8699915  chr6:32767249:SNP cd mqtl (n=60)
 
-save(h_all,file="./scz_sds/scz_plot.Robj")
+length(mqtl) #263
+h_all[which(h_all$ID%in%mqtl==F),c("SNP","scz_mqtl")]
+length(unique(h_all[which(h_all$ID%in%mqtl),c("SNP")])) #226
+unique(h_all[which(h_all$ID%in%mqtl),c("SNP")])
+
+length(sds) #9
+h_all[which(h_all$ID%in%sds==F),c("SNP","scz_mqtl")]
+length(unique(h_all[which(h_all$ID%in%sds),c("SNP")])) #9
+unique(h_all[which(h_all$ID%in%sds),c("SNP")])
+
 

@@ -110,3 +110,26 @@ print(p1, vp = vplayout(1, 1))
 print(p2, vp = vplayout(2, 1))
 
 dev.off()
+
+library(dplyr)
+snp<-read.table("TableSXX_garfield_gene_annotation.txt",he=T,sep="\t")
+snp<-reshape(snp[,c("Gene.Annotation","Annotation","OR")],idvar="Gene.Annotation",timevar = "Annotation", direction = "wide")
+
+cpg<-read.table("TableSXX_LOLA_gene_annotation_updated.txt",he=T,sep="\t")
+cpg<-reshape(cpg[,c("Gene.Annotation","Annotation","OR")],idvar="Gene.Annotation",timevar = "Annotation", direction = "wide")
+cpg$Gene.Annotation<-gsub("3UTRs","3UTR",cpg$Gene.Annotation)
+cpg$Gene.Annotation<-gsub("5UTRs","5UTR",cpg$Gene.Annotation)
+cpg$Gene.Annotation<-gsub("intergenic","Intergenic",cpg$Gene.Annotation)
+cpg$Gene.Annotation<-gsub("introns","Intron",cpg$Gene.Annotation)
+cpg$Gene.Annotation<-gsub("exons","Exon",cpg$Gene.Annotation)
+
+
+
+
+
+
+
+
+
+
+
