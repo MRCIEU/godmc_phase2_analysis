@@ -1,0 +1,15 @@
+---
+title: Colocalisation sensitivity analysis
+author: Gibran Hemani
+---
+
+
+
+```{r}
+library(dplyr)
+load("../data/coloc_results.rdata")
+
+group_by(res, coloc, coverage==1, method) %>%
+summarise(c=sum(coloc_result==5, na.rm=TRUE)/sum(!is.na(coloc_result)))
+
+```

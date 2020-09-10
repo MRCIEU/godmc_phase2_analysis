@@ -1,6 +1,7 @@
 library(ggplot2)
 library(coloc)
 library(simulateGP)
+library(parallel)
 
 sample_causal_variants <- function(map, ncausal, h2, S=0, radius=500000)
 {
@@ -40,27 +41,16 @@ simulate_summary_data <- function(r, map, nid)
 	map$bhat <- ss$bhat
 	map$se <- ss$se
 	map$pval <- ss$pval
+	map$nid <- nid
 	return(map)
 }
 
-load("../data/ld.rdata")
-
-r <- ld[[1]][[1]]
-map <- ld[[1]][[2]]
-map1 <- sample_causal_variants(map, 3, 0.3)
-o1 <- simulate_summary_data(r, map1, 25000)
-map2 <- map1
-map2$b <- map2$b * 0.2
-o2 <- simulate_summary_data(r, map2, 25000)
-
-plot(o2$bhat)
-
-plot(o1$bhat)
 
 run_coloc <- function(ss1, ss2, coverage, method)
 {
-	ss1 <- ss1[ss1$selected,]
-	ss2 <- ss2[ss1$selected,]
+	sel <- ss1$selected
+	ss1 <- ss1[sel,]
+	ss2 <- ss2[sel,]
 
 	prob <- -log10(ss1$pval)
 	prob[is.infinite(prob)] <- 300
@@ -74,36 +64,76 @@ run_coloc <- function(ss1, ss2, coverage, method)
 		ss1$bhat[!ss1$include] <- 0
 		ss1$se[!ss1$include] <- 1
 		ss1$pval[!ss1$include] <- 1
-	} else {
+	} else if(method == "sparse") {
 		ss1 <- subset(ss1, include)
 		ss2 <- subset(ss2, include)
+	} else {
+		stop("method: fill or sparse")
 	}
 
 	d1 <- list(
-		pvalues = ss1$pval[selected]
+		pvalues = ss1$pval,
+		N=ss1$nid,
+		MAF=ss1$freq,
+		beta=ss1$bhat,
+		varbeta=ss1$se^2,
+		sdY=1,
+		type="quant"
 	)
 	d2 <- list(
-		)
+		pvalues = ss2$pval,
+		N=ss2$nid,
+		MAF=ss2$freq,
+		beta=ss2$bhat,
+		varbeta=ss2$se^2,
+		sdY=1,
+		type="quant"
+	)
+	coloc.abf(d1, d2)
+}
+
+simulation <- function(param, ld)
+{
+	ld <- ld[[param$region]]
+	map1 <- sample_causal_variants(ld$map, param$ncausal, param$rsq_trait1)
+	ss1 <- simulate_summary_data(ld$ld, map1, param$nid)
+	if(param$coloc)
+	{
+		map2 <- map1
+		map2$b <- map2$b * sqrt(param$rsq_trait2) / sqrt(param$rsq_trait1)
+	} else {
+		map2 <- sample_causal_variants(ld$map, param$ncausal, param$rsq_trait2)
+	}
+	ss2 <- simulate_summary_data(ld$ld, map2, param$nid)
+	param$coloc_result <- run_coloc(ss1, ss2, param$coverage, "sparse")$summary %>% {which.max(.[-1])}
+	return(param)
 }
 
 
-
-
-
-ncausal <- 3
-rsq_trait1 <- 0.4
-nid <- 25000
-radius <- 500000
-S <- 0
+load("../data/ld.rdata")
 
 params <- expand.grid(
-	n = 28000,
-	region = 1,
-	ncausal = c(1, 2, 3),
-	coverage = c(1, 0.8, 0.6, 0.4, 0.2, 0.1),
-	rsq_trait1 = c(0, 0.3, 0.1, 0.01),
-	scale_trait2 = c(1, 0.5, 0.1),
+	nid = 20000,
+	region = 1:2,
+	ncausal = c(1, 3),
+	coverage = c(1, 0.1, 0.01),
+	rsq_trait1 = c(0.1, 0.01),
+	rsq_trait2 = c(0.1, 0.01, 0),
+	coloc = c(TRUE, FALSE),
 	method = c("fill", "sparse"),
-	nsim = c(1:100)
+	nsim = c(1:50)
 ) %>% as_tibble
 
+params
+
+res <- mclapply(1:nrow(params), function(x) {
+	message(x)
+	tryCatch(
+	{
+		simulation(params[x,], ld)
+	}, error = function(e) {
+		params[x,]
+	})
+}, mc.cores=16) %>% bind_rows()
+
+save(res, file="../data/coloc_results.rdata")
