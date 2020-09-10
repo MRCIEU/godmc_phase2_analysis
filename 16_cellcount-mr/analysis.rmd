@@ -220,15 +220,39 @@ geom_point(aes(colour=type)) +
 geom_smooth(method="lm", aes(color=type)) +
 labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05") +
 scale_colour_brewer(type="qual", palette=3)
+
+
+ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
+geom_point(aes(colour=type)) +
+geom_smooth(method="lm", aes(color=type)) +
+labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05") +
+scale_colour_brewer(type="qual", palette=3)
 ```
 
-Coefficients
+Coefficients per type
 
 ```{r}
 ps %>% 
 	subset(., !grepl("6:", variant) & fdr.y < 0.05) %>%
 	group_by(type=type) %>%
 	do(assocfn(.)) %>%
+	pander()
+ps %>% 
+	subset(., !grepl("6:", variant)) %>%
+	group_by(type=type) %>%
+	do(assocfn(.)) %>%
+	pander()
+
+```
+
+Coefficients per study
+
+```{r}
+ps %>% 
+	subset(., !grepl("6:", variant)) %>%
+	group_by(type=trait) %>%
+	do(assocfn(.)) %>%
+	arrange(desc(b)) %>%
 	pander()
 ```
 
