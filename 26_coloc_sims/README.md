@@ -12,15 +12,13 @@ The method for simulating effect sizes and standard errors with appropriate samp
 
 https://explodecomputer.github.io/simulateGP/articles/gwas_summary_data.html
 
-The marginal effect sizes given correlations can be obtained simply by 
+Most of the theory for simulating under an LD matrix is laid out in:
 
-$$
-\boldsymbol{b \rho}
-$$
+https://github.com/explodecomputer/simulateGP/blob/master/vignettes/gwas_summary_data_ld.Rmd
 
 Use the ALSPAC LD reference panel ~8000 samples as has been used for other parts of the GoDMC analysis.
 
-To obtain the SNPs to retain in a region, sample some proportion with the chance of being retained being higher if the p-value is higher.
+To determine the SNPs to retain in a region, sample some proportion with the chance of being retained being higher if the p-value is higher. This mimics what is done in GoDMC, where an imperfect predictor of a well performing SNP is selected in stage 1 and then tested in stage 2.
 
 To deal with coverage being less than 100%, either only look at the available SNPs, or fill in the missing SNPs to have p-values of 1.
 
