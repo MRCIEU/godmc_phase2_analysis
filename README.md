@@ -1,29 +1,5 @@
 # Phase 2 analysis
 
-RDSF location:
-
-```
-/projects/MRC-IEU/research/data/godmc/_devs/GODMC_Analysis/data
-```
-
-BC4 location:
-
-```
-/mnt/storage/private/mrcieu/research/GODMC_Analysis/
-```
-
-BC3 location:
-
-```
-/panfs/panasas01/shared-godmc/
-```
-
-SFTP server location:
-
-```
-/srv/sftponly/GoDMC/shared
-```
-
 Note that the meta analysis, clumped and conditional analysis results from section 16 have now been uploaded to the SFTP server. These are stored in `/srv/sftponly/GoDMC/shared/16.tar`. To incorporate into your repository:
 
 1. Update repository with `git pull` and navigate to the `results/` folder
@@ -32,56 +8,6 @@ Note that the meta analysis, clumped and conditional analysis results from secti
 3. Download the results `get shared/16.tar`
 4. Untar `tar xvf 16.tar`
 5. If you type `git status` it should not show any staged changes. Main files in here are `16_clumped.rdata`, `16_conditional.rdata` and the meta analysis results `16_*.txt.gz`
-
----
-
-The paper is being written [here](https://drive.google.com/drive/folders/0B0vAR1k68I5fZkhpS1I3and0T2s?usp=sharing)
-
-**Current strategy**
-
-1. Use Google docs so that we can write and edit collaboratively
-2. Use [paperpile](http://paperpile.com) for citations. Install it on google chrome so that you can edit / add citations
-
-Problems with google docs: It doesn't do referencing of figures/tables automatically, so have to manually type e.g. Supplementary figure 1 etc.
-
-The paper structure is currently written in the Main document in the shared google drive folder
-
-## To do
-
-There is a task list [here](https://docs.google.com/spreadsheets/d/1VihsoQhCNYwY07g-Asjgr6p9PBnQ44PQqhCSgzYm5mQ/edit?usp=sharing).
-
-
-There is google doc for cohort descriptions/acknowledgements/funding which you can find here:
-https://docs.google.com/document/d/1T5Tk_87WhUMkDP4weiFK_2KXtIqqlQvPVITpfhZ5HAI/edit#
-
-Information required from cohorts:
-
-1. Cohort description/recruitment incl. references
-2. Genotype/methylation measurements
-3. Informed consent information
-4. Ethical approval information
-5. Acknowledgements
-6. Funding
-
-We still need to set up doc for authorship:
-1. Authorships
-
-
-QC section for supplementary information:
-
-1. Generate table from cohort_descriptives.rdata (03/analysis.r)
-2. Plot of n CpGs and n SNPs (03/analysis.r)
-3. M statistics (01/mstat.R)
-4. comparison of FE and MRE (03/analysis.r)
-5. Histograms of effect directions in meta analysis (03/analysis.r)
-6. Meta regression (01/mstat.metaregression.R)
-7. Check 16a and lambdas - add lambdas to table
-8. Show that largest effect sizes have largest heterogeneity because standard errors are very small - scale issue
-
-
-Main figures:
-
-???
 
 ---
 
@@ -219,5 +145,7 @@ or
 sbatch run_conditional_bc4.sh
 ```
 
+
+See documentation within each of the subsequent sections for details.
 
 
