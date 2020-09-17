@@ -76,6 +76,9 @@ summary(lm(df3$es~df3$mqtl))
 #df3$mqtlcvd mqtl (n=15)    0.0009666  0.0003626   2.666  0.00817 ** 
 #df3$mqtlcvd mqtl sds (n=2) 0.0088471  0.0016896   5.236 3.47e-07 ***
 
+#chr9:22098619:SNP   CVD 1.869237e-02 cvd mqtl sds (n=2) #rs2891168
+#chr12:112059557:SNP   CVD 2.179914e-03 cvd mqtl sds (n=2) #rs11065979
+
 
 load("./cd_sds/cd_plot.Robj")
 w1<-which(h_all$CHR=="6"&h_all$BP>24570005&h_all$BP<38377657)
