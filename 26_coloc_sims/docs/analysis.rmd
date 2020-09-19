@@ -27,11 +27,17 @@ summarise(c=sum(coloc_result==5, na.rm=TRUE)/sum(!is.na(coloc_result)))
 Plot by coverage
 
 ```{r}
-res %>%
+p1 <- res %>%
 	group_by(ncausal, coverage, coloc, method) %>%
 	summarise(n = sum(!is.na(coloc_result)), pow = sum(coloc_result == 5, na.rm=T) / n) %>%
+	mutate(
+		ncausal = paste0("causal variants = ", ncausal),
+		coloc = ifelse(coloc, "Shared causal variants", "Distinct causal variants")) %>%
 	ggplot(., aes(x=coverage, y=pow)) +
 	geom_point(aes(colour=method)) +
-	facet_grid(ncausal ~ coloc)
-
+	facet_grid(ncausal ~ coloc) +
+	scale_x_log10() +
+	labs(x="Proportion of variants present", y="Proportion colocalising")
+ggsave(p1, file="../images/analysis.pdf")
 ```
+

@@ -33,3 +33,10 @@ Allow the following to vary
 - Methods for dealing with incomplete coverage
 - Whether the traits colocalise at the region or not
 
+
+## To run
+
+```
+snakemake
+```
+
