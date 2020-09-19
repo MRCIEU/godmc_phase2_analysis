@@ -20,6 +20,7 @@ There are two methods being used:
 When the simulations involve shared causal variants, evaluate how likely the `coloc` method is to detect a shared variant. When the simulations involve distinct causal varients evaluate the false discovery rate of the `coloc` method. Allow the coverage to be complete or incomplete. General picture:
 
 ```{r}
+res$coloc[res$rsq_trait2 == 0] <- FALSE
 group_by(res, coloc, coverage==1, method) %>%
 summarise(c=sum(coloc_result==5, na.rm=TRUE)/sum(!is.na(coloc_result)))
 ```

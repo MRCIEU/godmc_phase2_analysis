@@ -382,21 +382,22 @@ summary {
 load(&quot;../data/coloc_results.rdata&quot;)</code></pre>
 <p>There are two methods being used: - <code>fill</code> = where SNPs are missing fill them in with small effects / high p-values - <code>sparse</code> = where SNPs are missing only use the ones that are available</p>
 <p>When the simulations involve shared causal variants, evaluate how likely the <code>coloc</code> method is to detect a shared variant. When the simulations involve distinct causal varients evaluate the false discovery rate of the <code>coloc</code> method. Allow the coverage to be complete or incomplete. General picture:</p>
-<pre class="r"><code>group_by(res, coloc, coverage==1, method) %&gt;%
+<pre class="r"><code>res$coloc[res$rsq_trait2 == 0] &lt;- FALSE
+group_by(res, coloc, coverage==1, method) %&gt;%
 summarise(c=sum(coloc_result==5, na.rm=TRUE)/sum(!is.na(coloc_result)))</code></pre>
 <pre><code>## `summarise()` regrouping output by &#39;coloc&#39;, &#39;coverage == 1&#39; (override with `.groups` argument)</code></pre>
 <pre><code>## # A tibble: 8 x 4
 ## # Groups:   coloc, coverage == 1 [4]
 ##   coloc `coverage == 1` method       c
 ##   &lt;lgl&gt; &lt;lgl&gt;           &lt;fct&gt;    &lt;dbl&gt;
-## 1 FALSE FALSE           fill   0.0159 
-## 2 FALSE FALSE           sparse 0.0152 
-## 3 FALSE TRUE            fill   0.00234
-## 4 FALSE TRUE            sparse 0.00150
-## 5 TRUE  FALSE           fill   0.321  
-## 6 TRUE  FALSE           sparse 0.326  
-## 7 TRUE  TRUE            fill   0.211  
-## 8 TRUE  TRUE            sparse 0.217</code></pre>
+## 1 FALSE FALSE           fill   0.0126 
+## 2 FALSE FALSE           sparse 0.0118 
+## 3 FALSE TRUE            fill   0.00219
+## 4 FALSE TRUE            sparse 0.00194
+## 5 TRUE  FALSE           fill   0.481  
+## 6 TRUE  FALSE           sparse 0.488  
+## 7 TRUE  TRUE            fill   0.315  
+## 8 TRUE  TRUE            sparse 0.325</code></pre>
 <p>Plot by coverage</p>
 <pre class="r"><code>p1 &lt;- res %&gt;%
     group_by(ncausal, coverage, coloc, method) %&gt;%
