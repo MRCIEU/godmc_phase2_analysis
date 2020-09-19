@@ -116,12 +116,12 @@ params <- expand.grid(
 	nid = 20000,
 	region = 1:2,
 	ncausal = c(1, 3),
-	coverage = c(1, 0.1, 0.01),
+	coverage = c(1, 0.1, 0.05, 0.01, 0.005),
 	rsq_trait1 = c(0.1, 0.01),
 	rsq_trait2 = c(0.1, 0.01, 0),
 	coloc = c(TRUE, FALSE),
 	method = c("fill", "sparse"),
-	nsim = c(1:50)
+	nsim = c(1:500)
 ) %>% as_tibble
 
 params
