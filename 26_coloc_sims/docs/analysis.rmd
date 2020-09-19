@@ -1,0 +1,43 @@
+---
+title: Colocalisation sensitivity analysis
+author: Gibran Hemani
+---
+
+
+The `coloc` method may perform at different levels depending on how sparse the SNP data is available to it. In GoDMC the sparseness is non-random - more strongly associated SNPs are more likely to be present. Simulations were conducted to evaluate how this might influence the efficacy of the method.
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+load("../data/coloc_results.rdata")
+```
+
+There are two methods being used: 
+- `fill` = where SNPs are missing fill them in with small effects / high p-values 
+- `sparse` = where SNPs are missing only use the ones that are available
+
+When the simulations involve shared causal variants, evaluate how likely the `coloc` method is to detect a shared variant. When the simulations involve distinct causal varients evaluate the false discovery rate of the `coloc` method. Allow the coverage to be complete or incomplete. General picture:
+
+```{r}
+group_by(res, coloc, coverage==1, method) %>%
+summarise(c=sum(coloc_result==5, na.rm=TRUE)/sum(!is.na(coloc_result)))
+```
+
+Plot by coverage
+
+```{r}
+p1 <- res %>%
+	group_by(ncausal, coverage, coloc, method) %>%
+	summarise(n = sum(!is.na(coloc_result)), pow = sum(coloc_result == 5, na.rm=T) / n) %>%
+	mutate(
+		ncausal = paste0("causal variants = ", ncausal),
+		coloc = ifelse(coloc, "Shared causal variants", "Distinct causal variants")) %>%
+	ggplot(., aes(x=coverage, y=pow)) +
+	geom_point(aes(colour=method)) +
+	facet_grid(ncausal ~ coloc) +
+	scale_x_log10() +
+	labs(x="Proportion of variants present", y="Proportion colocalising")
+ggsave(p1, file="../images/analysis.pdf")
+```
+

@@ -1,0 +1,25 @@
+import os
+os.makedirs("../data", exist_ok=True)
+os.makedirs("../images", exist_ok=True)
+os.makedirs("../docs", exist_ok=True)
+
+rule all:
+	input: "docs/analysis.html"
+
+rule generate_ld_matrices:
+	input: "../data/ldetect/EUR.bed", "../data/ref/out_hrc.bed"
+	output: "data/ld.rdata"
+	shell:
+		"cd scripts; Rscript generate_ld_matrices.r"
+
+rule simulation:
+	input: "data/ld.rdata", "scripts/simulation.r"
+	output: "data/coloc_results.rdata"
+	shell:
+		"cd scripts; Rscript simulation.r"
+
+rule analysis:
+	input: "data/coloc_results.rdata", "docs/analysis.rmd"
+	output: "docs/analysis.html"
+	shell:
+		"cd docs; Rscript -e 'rmarkdown::render(\"analysis.rmd\", output_format=\"all\")'"
