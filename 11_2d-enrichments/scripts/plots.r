@@ -216,6 +216,7 @@ l$lab[l$perm==0] <- "Real"
 
 save(l, file="../results/difres_summary.rdata")
 
+load("../results/difres_summary.rdata")
 p <- ggplot(l, aes(x=sddif)) +
 geom_density(aes(fill=lab), alpha=0.5) +
 xlim(c(0,20)) +
@@ -239,12 +240,13 @@ l$type2 <- as.character(l$type)
 l$type2[l$type == "Blood - blood"] <- "Blood"
 l$type2[l$type != "Blood - blood"] <- "Other"
 p <- ggplot(l, aes(x=sddif2)) +
-geom_density(aes(fill=lab, colour=type2), alpha=0.7) +
+geom_density(aes(fill=lab), alpha=0.7) +
 labs(x="Standard deviation units from the mean", fill="", colour="Tissue") +
 scale_fill_brewer(type="qual") +
 scale_colour_brewer(type="qual", palette = 2) +
-theme(legend.position=c(0.9,0.8)) 
-ggsave(p, file="../images/real_vs_perm4.pdf")
+theme(legend.position="bottom") +
+facet_grid(type2 ~ .)
+ggsave(p, file="../images/real_vs_perm4.pdf", width=4, height=4)
 
 
 l %>% group_by(type2, perm == 0) %>% summarise(n=n(), m=mean(sddif), s=sd(sddif), ma=max(sddif), np=sum(sddif>20))
