@@ -2,7 +2,7 @@
 
 #SBATCH --job-name=meta17
 #SBATCH --array=1-300%50
-#SBATCH --nodes=1 --mem=25G --time=0-24:00:00
+#SBATCH --nodes=1 --ntask=1 --ncpu=1 --mem=25G --time=0-24:00:00 --partition=mrcieu
 #SBATCH --output=job_reports/slurm-%A_%a.out
 
 set -e
@@ -12,7 +12,7 @@ set -e
 
 
 echo "Running on ${HOSTNAME}"
-module add R/3.2.3-foss-2016a
+module add languages/r/4.0.2
 
 start_time=`date +%s`
 
