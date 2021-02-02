@@ -158,8 +158,8 @@ ggplot(temp, aes(y=newpos,x=1:nrow(temp))) +
 geom_line(aes(colour=as.factor(chr)))
 
 p1 <- ggplot(temp %>% filter(!sig), aes(x=newpos, y=pval2)) +	
-geom_point(data=temp %>% filter(chrcol), size=0.2, colour="#bbbbbb") +
-geom_point(data=temp %>% filter(!chrcol), size=0.2, colour="#dddddd") +
+geom_point(data=temp %>% filter(chrcol & what2=="nr" & pval > -log10(threshold2)), size=0.2, colour="#bbbbbb") +
+geom_point(data=temp %>% filter(!chrcol & what2=="nr" & pval > -log10(threshold2)), size=0.2, colour="#dddddd") +
 geom_point(data=temp %>% filter(sig), size=2, colour="black", alpha=1) +
 geom_point(data=temp %>% filter(sig), size=1, aes(colour=subcategory), alpha=1) +
 # facet_grid(. ~ chr, scale="free", space="free") +
