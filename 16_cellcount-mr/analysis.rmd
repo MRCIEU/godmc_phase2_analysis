@@ -17,7 +17,7 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(knitr)
 	library(pander)
 }))
-opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE, dev="pdf")
 ```
 
 Read in data

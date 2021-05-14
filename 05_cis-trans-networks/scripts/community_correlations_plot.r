@@ -5,6 +5,8 @@ library(ggplot2)
 
 load("../results/corres.rdata")
 load("../results/graph.rdata")
+dat <- ungroup(dat)
+corres <- ungroup(corres)
 a <- inner_join(dat, subset(corres, select=c(creg, tcpg, r)), by=c("creg", "tcpg"))
 a$rquant <- cut(sqrt(abs(a$r)), breaks=5)
 a$rquant2 <- cut(a$r, breaks=5)
