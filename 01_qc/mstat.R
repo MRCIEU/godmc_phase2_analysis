@@ -1,6 +1,13 @@
 library(getmstatistic)  # for calculating M statistics
 library(gridExtra)       # for generating tables
 library(ggplot2)
+source("plot.R")
+
+#getmstatistic uses summary data i.e. study effect-sizes and their corresponding standard errors
+#to calculate M statistics (One M for each study in the meta-analysis).
+#In particular, getmstatistic employs the inverse-variance weighted random effects regression
+#model provided in the metafor R package to extract SPREs (standardized predicted random effects)
+#which are then aggregated to formulate M statistics.
 
 cohort_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/scratch/input"
 result_dir="/panfs/panasas01/shared-godmc/godmc_phase2_analysis/mstat"
@@ -49,7 +56,8 @@ m<-m[which(m$Freq>1),1]
 res2<-res2[res2$MARKERNAME%in%m,]
 
 length(unique(res2$MARKERNAME))
-#[1] 332
+#[1] 337
+plots_dir <-"./images/pdf"
 getmstatistic_results <- getmstatistic(res2$BETA, res2$SE,res2$MARKERNAME, res2$study)
 
 dframe <- getmstatistic_results$M_dataset
@@ -71,6 +79,7 @@ getmstatistic_results$M_expected_sd
 getmstatistic_results$M_crit_alpha_0_05
 
 save(getmstatistic_results,dframe,file="/panfs/panasas01/sscm/epzjlm/repo/godmc_phase2_analysis/mstat/mstats_chr20.RData")
+#getmstatistic_results
 
 #filename_mstats_vs_avg_effectsize <- base::paste0("Mstatistics_vs_average_variant_effectsize_", nstudies, "studies_", nsnps, "snps.tif")
 #grDevices::tiff(filename_mstats_vs_avg_effectsize, width = 23.35, height = 17.35, units = "cm", res = 300, compression = "lzw", pointsize = 14)
@@ -87,11 +96,12 @@ dframe$study_names_in<-gsub("Leiden_Longevity_Study","LLS",dframe$study_names_in
 dframe$study_names_in<-gsub("Project_MinE_s27","MinE",dframe$study_names_in)
 dframe$study_names_in<-gsub("IOW3g","IOW F2",dframe$study_names_in)
 
+dframe$study_names_in<-paste0(dframe$study_names_in," (n=",dframe$beta_n,")")
 p1 <- ggplot(dframe, aes(x=as.factor(study_names_in), y=beta_in)) +
 geom_boxplot() +
-theme(axis.title.x=element_text(size=8),axis.title.y=element_text(size=8),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=6)) +
+theme(axis.title.x=element_text(size=12),axis.title.y=element_text(size=12),axis.text.x=element_text(angle=90,hjust=1),axis.text.y=element_text(size=10)) +
 labs(x="Study", y="Effect size")
-ggsave(plot=p1, file="./images/effectsizechr20bystudy.pdf", width=7, height=7)
+ggsave(plot=p1, file="./images/effectsizechr20bystudy.v2.pdf", width=7, height=7)
 
 library(plyr)
 tmp<-daply(df, .(variant_names_in,study_names_in), function(x) x$beta_in)

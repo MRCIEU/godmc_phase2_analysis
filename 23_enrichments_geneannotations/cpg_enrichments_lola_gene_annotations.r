@@ -1,6 +1,6 @@
 #module add languages/R-3.5.1-ATLAS-gcc-6.1
 
-library(data.table)
+
 library(LOLA)
 library(simpleCache)
 library(reshape2)
@@ -9,7 +9,7 @@ library(Rsamtools)
 library(ggplot2)
 library(biovizBase)
 library(meffil)
-library(dplyr)
+library(tidyverse)
 library(gridExtra)
 library(grid)
 
@@ -24,9 +24,9 @@ regionDB <- loadRegionDB("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/ge
 
 #
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped.rdata")
-max(clumped[which(clumped$cis==TRUE),"pval"])
+#max(clumped[which(clumped$cis==TRUE),"pval"])
 #1e-4
-max(clumped[which(clumped$cis==FALSE),"pval"])
+#max(clumped[which(clumped$cis==FALSE),"pval"])
 #5e-8
 retaincpg <- scan("~/repo/godmc_phase1_analysis/07.snp_cpg_selection/data/retain_from_zhou.txt", what="character")
  
@@ -38,6 +38,7 @@ rm<-which(retaincpg%in%excl[,1])
 retaincpg<-retaincpg[-rm]
 clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
 
+library(data.table)
 data=as.data.table(clumped)
 
 #get 450k locations
@@ -90,8 +91,7 @@ grs_cis=create_grs(data=data,selector=c("cpg_cis=='TRUE'","cpg_cis=='FALSE'","cp
 test<-unique(data.frame(data$cpg,data$cpg_cis))
 table(test[,2])
 #ambivalent      FALSE       TRUE 
-#     28023       4267     157812 
-
+#     29881       4120     162734 
 
 hg19_Illumina450_gr=with(Illumina450_dt, GRanges(seqnames = Rle(chr), IRanges(start=cpgstart, end=cpgend),strand=Rle(strand),ID=cpgID))
 seq_Illumina450=getSeq(BSgenome.Hsapiens.UCSC.hg19,hg19_Illumina450_gr)
@@ -219,6 +219,10 @@ res_all[,p.adjust:=p.adjust(10^(-pValueLog),method="BY"),by=userSet]
   res_all$description<-gsub("hg19_genes_","",res_all$description)
   res_all$description<-gsub("hg19_","",res_all$description)
 
+fisherAlternative = "two.sided"
+res_all[,c("conf_up") := fisher.test(matrix(c(support,b,c,d), 2, 2), alternative=fisherAlternative)$conf.int[1], by=list(userSet,dbSet)]
+res_all[,c("conf_down") := fisher.test(matrix(c(support,b,c,d), 2, 2), alternative=fisherAlternative)$conf.int[2], by=list(userSet,dbSet)]
+
 
 #res_all2<-res_all[which(res_all$p.adjust<0.001),]
 #dim(res_all2)
@@ -274,9 +278,11 @@ plotLOLA_OR(locResults_all=res_all,plot_pref="cpg_gene_matched_cis_OR",height=10
 
 res_all$description <- factor(x = res_all$description, levels = c("cpg_shelves","cpg_shores","cpg_islands","cpg_inter","1to5kb","promoters","5UTRs","exons","introns","intronexonboundaries","3UTRs","intergenic"))
                                        
-p1<-ggplot(res_all, aes(fill=Annotation, y=-log10(res_all$pvalue), x=description)) + 
-    geom_bar(position="dodge", stat="identity") +
+p1<-ggplot(res_all, aes(color=Annotation, y=-log10(res_all$Pvalue), x=description)) + 
+    #geom_bar(position="dodge", stat="identity") +
+    geom_point(aes(fill=Annotation, y=-log10(res_all$Pvalue), x=description),position=position_dodge(.9),size=3) +
     labs(x="",y="-log10 (Pvalue)") +
+    scale_y_continuous(limits=c(0,max(-log10(res_all$Pvalue)+10))) +
     theme(axis.text.x = element_blank())
     #scale_fill_brewer(type="qual")
 
@@ -285,9 +291,9 @@ m2<-max(round(res_all$logOddsRatio,0))
 
 p2<-ggplot(res_all, aes(color=Annotation, y=logOddsRatio, x=description)) +
  #scale_fill_brewer(type="qual") +
-    #geom_bar(position="dodge", stat="identity") +
     geom_point(position=position_dodge(.9)) +
     geom_errorbar(aes(x=description,ymin=log(res_all$conf_down), ymax=log(res_all$conf_up)), width=.2,position=position_dodge(.9)) +
+    #geom_errorbar(aes(x=description, width=.2)) +
     #scale_fill_brewer(type="qual") +
     labs(x="Gene annotation",y="log OR") +
     #scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1:m),limits=c(0.2,m)) +
@@ -297,7 +303,29 @@ p2<-ggplot(res_all, aes(color=Annotation, y=logOddsRatio, x=description)) +
     #theme(axis.text.x=element_text(angle = 90, hjust = 10))    
 #ggsave(p1,file="test.pdf",height=6,width=10)
 
-pdf("gene_annotation_cpg_enrichment.pdf",height=10,width=18)
+pdf("gene_annotation_cpg_enrichment_revision.pdf",height=10,width=18)
+#create layout, assign it to viewport, push viewport to plotting device
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(2, 1)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(p1, vp = vplayout(1, 1))
+print(p2, vp = vplayout(2, 1))
+
+dev.off()
+
+
+    geom_errorbar(aes(x=description,ymin=log(res_all$conf_down), ymax=log(res_all$conf_up)), width=.2,position=position_dodge(.9)) +
+    #geom_errorbar(aes(x=description, width=.2)) +
+    #scale_fill_brewer(type="qual") +
+    labs(x="Gene annotation",y="log OR") +
+    #scale_y_continuous(trans = 'log10',breaks=c(.2,.3,.4,.5,1:m),limits=c(0.2,m)) +
+    scale_y_continuous(limits=c(-m2,m2)) +
+    geom_hline(aes(yintercept = 0))
+    #scale_fill_brewer(type="qual")
+    #theme(axis.text.x=element_text(angle = 90, hjust = 10))    
+#ggsave(p1,file="test.pdf",height=6,width=10)
+
+pdf("gene_annotation_cpg_enrichmenttest.pdf",height=10,width=18)
 #create layout, assign it to viewport, push viewport to plotting device
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(2, 1)))

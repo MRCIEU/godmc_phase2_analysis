@@ -78,8 +78,8 @@ df3<-df2[which(df2$Category=="Genic"),-n]
 n<-which(names(df3)%in%"cis_snp")
 names(df3)[n]<-"Annotation"
 
-p1<-ggplot(df3, aes(fill=Annotation, y=-log10(df3$Pvalue), x=Type)) + 
-    geom_bar(position="dodge", stat="identity") +
+p1<-ggplot(df3, aes(color=Annotation, y=-log10(df3$Pvalue), x=Type)) + 
+    geom_point(aes(color=Annotation, y=-log10(df3$Pvalue), x=Type),position=position_dodge(.9),size=3) +
     labs(x="",y="-log10 (Pvalue)") +
     theme(axis.text.x = element_blank())
     #scale_fill_brewer(type="qual")
@@ -101,7 +101,7 @@ p2<-ggplot(df3, aes(color=Annotation, y=Beta, x=Type)) +
     #theme(axis.text.x=element_text(angle = 90, hjust = 10))    
 #ggsave(p1,file="test.pdf",height=6,width=10)
 
-pdf("gene_annotation_enrichment.pdf",height=10,width=18)
+pdf("gene_annotation_enrichment.v2.pdf",height=10,width=18)
 #create layout, assign it to viewport, push viewport to plotting device
 grid.newpage()
 pushViewport(viewport(layout = grid.layout(2, 1)))
@@ -122,6 +122,8 @@ cpg$Gene.Annotation<-gsub("5UTRs","5UTR",cpg$Gene.Annotation)
 cpg$Gene.Annotation<-gsub("intergenic","Intergenic",cpg$Gene.Annotation)
 cpg$Gene.Annotation<-gsub("introns","Intron",cpg$Gene.Annotation)
 cpg$Gene.Annotation<-gsub("exons","Exon",cpg$Gene.Annotation)
+
+
 
 
 
