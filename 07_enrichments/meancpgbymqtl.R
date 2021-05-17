@@ -48,7 +48,7 @@ clumped<-data.table(clumped)
 clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
 #clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
 #
-
+data<-clumped
 
 data[,cpgchr:=gsub("23","X",cpgchr),]
 data[,cpgchr:=gsub("24","Y",cpgchr),]
@@ -331,8 +331,8 @@ ylab("Proportion CpGs") +
 xlab("weighted mean by cpg")
 ggsave(plot=p1, file="./images/cpgmean_cpgisland.pdf", width=7, height=7)
 
-
-df.all$facet = factor(df.all$cpg_cis_n, levels = c("no mQTL (n=230407)", "cis only (n=170986)", "cis+trans (n=11902)", "trans only (n=7214)"))
+df.all$cpg_cis_n <-factor(df.all$cpg_cis_n)
+df.all$cpg_cis_n <- factor(df.all$cpg_cis_n, levels = c("no mQTL (n=230407)", "cis only (n=170986)", "cis+trans (n=11902)", "trans only (n=7214)"))
 
 library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 library("IlluminaHumanMethylationEPICanno.ilm10b2.hg19")
@@ -376,12 +376,13 @@ ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, heig
 p1<-ggplot(df.all,aes(x=meancpg,fill=relation.to.island)) + 
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
 #facet_wrap(~facet,scales="free_y",nr=1) +
-facet_wrap(~facet,nr=1) +
+facet_wrap(~cpg_cis_n,nr=1) +
 labs(y="Proportion DNAm sites",x="Weighted mean by mQTL site",fill = "DNAm site annotation") +
 theme(axis.text.x = element_text(size=14),axis.text.y = element_text(size=14),axis.title.x = element_text(size = 18),axis.title.y = element_text(size = 18), strip.text = element_text(size = 20)) +
 theme(legend.text=element_text(size=20),legend.title=element_text(size=20)) +
+theme_bw() +
 scale_fill_brewer(type="qual")
-ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=18, height=6)
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=177, height=60,units="mm",dpi=1200)
 
 p1<-ggplot(df.all,aes(x=meancpg,fill=type)) + 
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
