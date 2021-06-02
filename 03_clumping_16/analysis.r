@@ -905,8 +905,10 @@ p0 <- ggplot(subset(temp1, abs(posdif) > 1000000), aes(x=posdif,y=log10pval)) +
   #geom_bin2d(bins=3000) +
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance of SNP from DNAm site (bp)",y="-log10 (mQTL Pvalue)")
-  scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+  labs(x="Distance of SNP from DNAm site (bp)",y="-log10 (mQTL Pvalue)") +
+  #scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=8),axis.text.y=element_text(size=8),legend.title = element_text(size = 8),legend.text = element_text(size = 8))
 #scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 ggsave(plot=p0, file="./images/trans_distance.png", width=7, height=7)
@@ -929,13 +931,15 @@ p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
   #geom_bin2d(bins=3000) +
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance of SNP from DNAm site (bp)",y="-log10 (mQTL Pvalue)")
-  scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+  labs(x="Distance of SNP from DNAm site (bp)",y="-log10 (mQTL Pvalue)") +
+  #scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=8),axis.text.y=element_text(size=8),legend.title = element_text(size = 8),legend.text = element_text(size = 8))
 #scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 ggsave(plot=p1, file="./images/cis_distance.v2.png", width=7, height=7)
 
-pdf("./images/distancetoSNP.pdf", width=12, height=7)
+pdf("./images/distancetoSNPv2.pdf", width=7, height=4.06)
 grid.arrange(p0,p1,ncol=2,nrow=1)
 dev.off()
 
