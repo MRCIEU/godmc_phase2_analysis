@@ -33,7 +33,7 @@ labs(x="Phenotype", y="Inflation factor") +
 theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5,size=6),axis.text.y=element_text(size=6),axis.title.x=element_text(size=8),axis.title.y=element_text(size=8)) +
 
 #ggsave("../images/lambda.pdf", width=15, height=8)
-ggsave(plot=p1,file="../images/lambda.jpg", height=5, width=7,device = function(...) jpeg(...,units="in",res=1200))
+ggsave(plot=p1,file="../images/lambda.tiff", height=5, width=7,device = function(...) tiff(...,units="in",res=1200))
 
 
 ```
