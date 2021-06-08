@@ -377,10 +377,10 @@ p1<-ggplot(df.all,aes(x=meancpg,fill=relation.to.island)) +
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
 #facet_wrap(~facet,scales="free_y",nr=1) +
 facet_wrap(~cpg_cis_n,nr=1) +
-labs(y="Proportion DNAm sites",x="Weighted mean by mQTL site",fill = "DNAm site annotation") +
-theme(axis.text.x = element_text(size=14),axis.text.y = element_text(size=14),axis.title.x = element_text(size = 18),axis.title.y = element_text(size = 18), strip.text = element_text(size = 20)) +
-theme(legend.text=element_text(size=20),legend.title=element_text(size=20)) +
+labs(y="Proportion DNAm sites",x="Weighted mean by mQTL site",fill = "DNAm site\nAnnotation") +
 theme_bw() +
+theme(axis.text.x = element_text(size=6),axis.text.y = element_text(size=6),axis.title.x = element_text(size = 8),axis.title.y = element_text(size = 8), strip.text = element_text(size = 8)) +
+theme(legend.text=element_text(size=6),legend.title=element_text(size=8)) +
 scale_fill_brewer(type="qual")
 ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=177, height=60,units="mm",dpi=1200)
 
