@@ -480,7 +480,7 @@ temp2<-data.frame(cpg_cis=df.all$cpg_cis,meancpg=df.all$meancpg,sdcpg=df.all$sdc
 temp3<-data.frame(cpg_cis=df.all$cpg_cis,meancpg=df.all$meancpg,sdcpg=df.all$sdcpg,max_abs_Effect=NA,outcome=df.all$meancpg,what="Weighted mean by mQTL category")
 
 temp<-rbind(temp1,temp2)
-
+save(temp,file="temp.Robj")
 temp$cpg_cis<-factor(temp$cpg_cis, levels=c("all","cis only","cis+trans","cis+trans_cis","cis+trans_trans","trans only","no mQTL"))
 p1 <- ggplot(temp, aes(x=factor(cpg_cis, levels=c("all","cis only","cis+trans","cis+trans_cis","cis+trans_trans","trans only","no mQTL")), y=outcome,fill=factor(cpg_cis, levels=c("all","cis only","cis+trans","cis+trans_cis","cis+trans_trans","trans only","no mQTL")))) +
 #geom_boxplot() +
@@ -497,7 +497,7 @@ guides(fill=guide_legend(title="Annotation")) +
 theme_bw()
 
 #ggsave(plot=p1, file="./images/cpg_ciscategory_combined.pdf", width=10, height=7)
-ggsave(plot=p1, file="./images/cpg_ciscategory_combined.jpg", height=12, width=17.8,device = function(...) jpeg(..., units="cm",res=1200))
+ggsave(plot=p1, file="./images/cpg_ciscategory_combined.tiff", height=12, width=17.8,device = function(...) tiff(..., units="cm",res=1200))
 
 
 p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=abs(max_abs_Effect),fill=as.factor(cpg_cis))) +
