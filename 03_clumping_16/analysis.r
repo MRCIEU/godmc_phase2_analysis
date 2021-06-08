@@ -943,6 +943,9 @@ pdf("./images/distancetoSNPv2.pdf", width=7, height=4.06)
 grid.arrange(p0,p1,ncol=2,nrow=1)
 dev.off()
 
+tiff("./images/distancetoSNPv2.tiff", width=7, height=4.06,units="in",res=1200,compression="lzw",type="cairo")
+grid.arrange(p0,p1,ncol=2,nrow=1)
+dev.off()
 
 ## Directions
 
