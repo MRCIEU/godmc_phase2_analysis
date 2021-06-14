@@ -176,6 +176,7 @@ Look at the plots
 ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
 geom_point(aes(colour=fdr.y < 0.05)) +
 geom_smooth(method="lm") +
+theme_bw() +
 labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05")
 ```
 

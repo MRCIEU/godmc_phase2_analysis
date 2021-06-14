@@ -31,6 +31,7 @@ geom_point(aes(colour=fdr < 0.05)) +
 geom_abline(slope=1, linetype="dotted") +
 geom_smooth(method="lm") +
 ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+theme_bw() +
 labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\nFDR < 0.05")
 ```
 
