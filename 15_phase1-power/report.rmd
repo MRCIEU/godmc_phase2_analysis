@@ -122,6 +122,7 @@ $$
 
 ```{r}
 load("../14_replication/replication.rdata")
+replication <- ungroup(replication)
 hist(replication$r2, breaks=100)
 replication$r2r <- round(replication$r2, 4)
 
@@ -139,7 +140,7 @@ geom_line(aes(colour=key)) +
 geom_point(aes(colour=key)) +
 scale_x_log10() +
 facet_grid(key ~ cist, scale="free_y") +
-labs(x="% variance explained by mQTL", y = "Counts")
+labs(x="% variance explained by mQTLs", y = "Counts")
 ```
 
 Same as before but now log the counts and plot everything together
@@ -151,7 +152,7 @@ geom_point(aes(colour=key)) +
 scale_x_log10() +
 scale_y_log10() +
 facet_grid(. ~ cist) +
-labs(x="% variance explained by mQTL", y = "Counts")
+labs(x="% variance explained by mQTLs", y = "Counts")
 
 ```
 
@@ -164,7 +165,7 @@ geom_smooth(aes(colour=key)) +
 scale_x_log10() +
 scale_y_log10() +
 facet_grid(. ~ cist) +
-labs(x="% variance explained by mQTL", y = "Counts")
+labs(x="% variance explained by mQTLs", y = "Counts")
 
 ```
 
