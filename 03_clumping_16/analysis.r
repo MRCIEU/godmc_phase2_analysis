@@ -3,8 +3,10 @@ library(ggthemes)
 library(meffil)
 library(dplyr)
 library(gridExtra)
+library(grid)
 library(stringr)
 library(data.table)
+
 
 load("/panfs/panasas01/shared-godmc/godmc_phase2_analysis/results/16/16_clumped.rdata")
 max(clumped[which(clumped$cis==TRUE),"pval"])
@@ -139,6 +141,21 @@ retaincpg<-retaincpg[-rm]
 
 clumped$rsq <- 2 * clumped$Effect^2 * clumped$Freq1 * (1 - clumped$Freq1)
 
+clumped$pval2<-clumped$pval
+w<-which(clumped$pval2==0)
+clumped$pval2[w]<-1e-323
+clumped$pval2<-as.numeric(clumped$pval2)
+clumped$cis2<-clumped$cis
+clumped$cis2<-gsub("TRUE","Cis",clumped$cis2)
+clumped$cis2<-gsub("FALSE","Trans",clumped$cis2)
+p1 <- ggplot(clumped) +
+geom_histogram(aes(-log10(pval2))) +
+#geom_text(aes(label=count, y=count+10000), size=3) +
+facet_grid(. ~ cis2, space="free_x", scale="free_x") +
+#theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(x="-log10 p threshold", y="Count of clumped mQTL from FE meta analysis of 36 cohorts")
+ggsave(plot=p1, file="./images/mqtl_histogram_thresholds_FE.pdf", width=7, height=7)
+
 
 cisthresh <- c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)
 transthresh <- c(1e-8, 1e-9, 1e-10, 1e-11, 1e-12, 1e-13, 1e-14)
@@ -195,6 +212,48 @@ mqtl_countsrm <- bind_rows(
 	tibble(thresh=transthresh, count=arrt, cis='Trans')
 )
 
+
+###Total count of mQTL by pvalue threshold
+p1 <- ggplot(mqtl_counts, aes(x=as.factor(-log10(thresh)), y=count)) +
+#geom_point(stat="identity",size=3) +
+geom_bar(stat="identity") +
+geom_text(aes(label=count, y=count+10000), size=3) +
+facet_grid(. ~ cis, space="free", scale="free") +
+#facet_grid(. ~ cis) +
+#theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(x="-log10 p threshold", y="Count of clumped mQTL from FE meta analysis of 36 cohorts") +
+scale_y_continuous(limits=c(0, 300000))
+ggsave(plot=p1, file="./images/mqtl_counts_thresholds_FE.pdf", width=7, height=7)
+
+p2 <- ggplot(mqtl_countsr, aes(x=as.factor(-log10(thresh)), y=count)) +
+#geom_point(stat="identity",size=3) +
+geom_bar(stat="identity") +
+geom_text(aes(label=count, y=count+10000), size=3) +
+facet_grid(. ~ cis, space="free_x", scale="free_x") +
+#theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(x="-log10 p threshold", y="Count of clumped mQTL from ARE meta analysis of 36 cohorts")
+ggsave(plot=p1, file="./images/mqtl_counts_thresholds_ARE.pdf", width=7, height=7)
+
+p3 <- ggplot(mqtl_countsrm, aes(x=as.factor(-log10(thresh)), y=count)) +
+#geom_point(stat="identity",size=3) +
+geom_bar(stat="identity") +
+geom_text(aes(label=count, y=count+10000), size=3) +
+facet_grid(. ~ cis, space="free", scale="free") +
+#facet_grid(. ~ cis) +
+#theme(axis.text.y=element_blank(), axis.ticks.y=element_blank()) +
+labs(x="-log10 p threshold", y="Count of clumped mQTL from MRE meta analysis of 36 cohorts") +
+scale_y_continuous(limits=c(0, 300000))
+ggsave(plot=p1, file="./images/mqtl_counts_thresholds_MRE.pdf", width=7, height=7)
+
+pdf("./images/mqtl_counts_thresholds_barplot.pdf",height=10,width=20)
+#create layout, assign it to viewport, push viewport to plotting device
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1, 2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(p1, vp = vplayout(1, 1))
+print(p3, vp = vplayout(1, 2))
+
+dev.off()
 
 ##
 y<-meffil.get.features("450k")
@@ -471,6 +530,9 @@ w<-c(w1,w2)
 
 clumped2$mre<-"FE + MRE +"
 clumped2$mre[w]<-"FE + MRE - "
+table(clumped2$mre)
+#FE + MRE + FE + MRE -  
+#      89062      182662
 
 mean(abs(clumped2$Effect))
 #[1] 0.25865
@@ -796,12 +858,16 @@ summary(lm(rsq ~ TotalSampleSize, a))
 
 ## Position of CpG relative to SNP
 
-temp1 <- subset(clumped2, cpgchr == snpchr)
+temp1 <- subset(clumped2, cpgchr == snpchr) #253140
 temp1$posdif <- temp1$snppos - temp1$cpgpos 
 cisdist<-temp1[which(temp1$cis=="TRUE"),]
 mediandist<-round(median(abs(cisdist$posdif))/1000,0) #36
 iqrdist<-round(iqr(abs(cisdist$posdif))/1000,0)
 temp1$log10pval<--log10(temp1$pval)
+
+ncisassoc<-nrow(subset(temp1, abs(posdif) < 1000000))
+
+
 #p1 <- ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
 #	geom_density() +
 #	labs(x="Distance of SNP from CpG") +
@@ -809,7 +875,7 @@ temp1$log10pval<--log10(temp1$pval)
 
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
 geom_point(size=0.1) +
-labs(x="Distance of SNP from methylation site",y="-log10 (mQTL Pvalue)")
+labs(x="Distance of SNP from DNAm site",y="-log10 (mQTL Pvalue)")
 
 p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
   stat_density2d(geom="tile", aes(fill=..density..^0.25, alpha=1), contour=FALSE) + 
@@ -822,10 +888,10 @@ p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
 
 temp1 <- subset(clumped2, cpgchr == snpchr)
 temp1$posdif <- temp1$snppos - temp1$cpgpos
-length(which(abs(temp1$posdif)>1e6)) #4516
-length(which(abs(temp1$posdif)>5e6)) #1518
+length(which(abs(temp1$posdif)>1e6)) #4533
+length(which(abs(temp1$posdif)>5e6)) #1519
 temp1$log10pval<--log10(temp1$pval)
-
+length(which(abs(temp1$posdif)<1e6))
 cisdist<-temp1[which(temp1$cis=="TRUE"),]
 mediandist<-round(median(abs(cisdist$posdif))/1000,0)
 
@@ -839,16 +905,18 @@ p0 <- ggplot(subset(temp1, abs(posdif) > 1000000), aes(x=posdif,y=log10pval)) +
   #geom_bin2d(bins=3000) +
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance of SNP from DNAm site",y="-log10 (mQTL Pvalue)")
-  scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+  labs(x="Distance of SNP from DNAm site (bp)",y="-log10 (mQTL Pvalue)") +
+  #scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=8),axis.text.y=element_text(size=8),legend.title = element_text(size = 8),legend.text = element_text(size = 8))
 #scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
 ggsave(plot=p0, file="./images/trans_distance.png", width=7, height=7)
 
-p0 <- ggplot(subset(temp1, abs(posdif) > 1000000), aes(x=posdif)) +
-geom_histogram(binwidth=5e6) +
-labs(x="Distance of SNP from DNAm site",y="number of intrachromosomal mQTL")
-ggsave(plot=p0, file="./images/trans_distance_hist.png", width=7, height=7)
+#p0 <- ggplot(subset(temp1, abs(posdif) > 1000000), aes(x=posdif)) +
+#geom_histogram(binwidth=5e6) +
+#labs(x="Distance of SNP from DNAm site (geom_boxplot)",y="number of intrachromosomal mQTL")
+#ggsave(plot=p0, file="./images/trans_distance_hist.png", width=7, height=7)
 
 
 #p1 <- ggplot(subset(temp1, abs(posdif) < 2000000), aes(x=posdif)) +
@@ -863,12 +931,21 @@ p1 <- ggplot(subset(temp1, abs(posdif) < 1000000), aes(x=posdif,y=log10pval)) +
   #geom_bin2d(bins=3000) +
   #geom_point(size=0.1) +
   #stat_density2d(geom="tile", aes(fill=..density..^0.25,     alpha=ifelse(..density..^0.25<0.1,0,1)), contour=FALSE) + 
-  labs(x="Distance of SNP from DNAm site",y="-log10 (mQTL Pvalue)")
-  scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256))
+  labs(x="Distance of SNP from DNAm site (bp)",y="-log10 (mQTL Pvalue)") +
+  #scale_fill_gradientn(colours = colorRampPalette(c(blues9))(256)) +
+  theme_bw() +
+  theme(axis.text.x=element_text(size=8),axis.text.y=element_text(size=8),legend.title = element_text(size = 8),legend.text = element_text(size = 8))
 #scale_fill_gradientn(colours = colorRampPalette(c("light green", "yellow", "orange", "red"))(100), -1)
 #annotate(geom="text", x=0, y=4e-5, label=paste("Median distance = ",mediandist,"kb",sep=""), color="black")
-ggsave(plot=p1, file="./images/cis_distance.png", width=7, height=7)
+ggsave(plot=p1, file="./images/cis_distance.v2.png", width=7, height=7)
 
+pdf("./images/distancetoSNPv2.pdf", width=7, height=4.06)
+grid.arrange(p0,p1,ncol=2,nrow=1)
+dev.off()
+
+tiff("./images/distancetoSNPv2.tiff", width=7, height=4.06,units="in",res=1200,compression="lzw",type="cairo")
+grid.arrange(p0,p1,ncol=2,nrow=1)
+dev.off()
 
 ## Directions
 
@@ -901,9 +978,10 @@ max(df[which(df$count>100),"meanhetI2"])
 temp4 <- subset(clumped2, Direction %in% dir_count$Direction)
 
 p2 <- ggplot(dir_count, aes(x=Direction, y=count)) +
-geom_bar(stat="identity") +
-theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5,size=4))
-
+geom_bar(stat="identity")+
+#geom_point(stat="identity",size=3) +
+#theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5,size=4))
+theme(axis.title.x=element_blank(),axis.text.x=element_blank())
 temp4$sdcat<-cut(as.numeric(as.character(temp4$cpgsd)), breaks = seq(0,1,by=0.01))
 labs <- data.frame(table(temp4$sdcat))
 m<-match(temp4$sdcat,labs[,1])
@@ -911,7 +989,7 @@ temp4<-data.frame(temp4,Ncatsd=as.character(labs[m,-1]))
 
 p3 <- ggplot(temp4, aes(x=Direction, y=HetISq)) +
 geom_boxplot(fill="red") +
-theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5,size=4)) +
+theme(axis.text.x=element_text(angle=90, hjust=0.5, vjust=0.5,size=8)) +
 ylab(bquote(I^2))
 
 temp4$Effect_abs<-abs(temp4$Effect)
@@ -950,8 +1028,24 @@ geom_text(data = labels, aes(label = Ncati2, y = maxbeta+0.1),
 labs(y="Beta coefficient") +
 xlab(bquote(I^2 ~ category))
 
-pdf("./images/heterogeneity_qc.pdf", width=12, height=7)
-grid.arrange(p1,p2,p3,p4,ncol=2,nrow=2)
+pdf("./images/heterogeneity_qc_v2.pdf", width=10, height=10)
+#grid.arrange(p2,p3,p4,ncol=1,nrow=4)
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(4, 1)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(p2, vp = vplayout(1, 1))
+print(p3, vp = vplayout(2:3, 1))
+print(p4, vp = vplayout(4, 1))
+dev.off()
+
+pdf("./images/mqtl_counts_thresholds_barplot.pdf",height=10,width=20)
+#create layout, assign it to viewport, push viewport to plotting device
+grid.newpage()
+pushViewport(viewport(layout = grid.layout(1, 2)))
+vplayout <- function(x, y) viewport(layout.pos.row = x, layout.pos.col = y)
+print(p1, vp = vplayout(1, 1))
+print(p3, vp = vplayout(1, 2))
+
 dev.off()
 
 ## Plot maf

@@ -16,11 +16,12 @@ suppressWarnings(suppressPackageStartupMessages(library(knitr)))
 suppressWarnings(suppressPackageStartupMessages(library(scales)))
 opts_chunk$set(cache=TRUE, echo=FALSE, message=FALSE, warning=FALSE)
 load("replication.rdata")
+replication<-data.frame(replication)
 cis<-replication[which(replication$cist=="Cis"),]
 trans<-replication[which(replication$cist=="Trans"),]
 
 ```
-There are `r nrow(replication)` associations in the replication file of which `r nrow(cis)` in cis and `r nrow(trans)`
+There are `r nrow(replication)` associations in the replication file of which `r nrow(cis)` in cis and `r nrow(trans)` in trans
 
 ## Variance explained
 
@@ -459,6 +460,7 @@ tab2$r2.cis[is.na(tab2$r2.cis)] <- 0
 tab2$r2.trans[is.na(tab2$r2.trans)] <- 0
 
 load("../results/16/16_clumped.rdata")
+clumped<-data.frame(clumped)
 clumped<-clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
 mqtlcount <- group_by(clumped, cpg) %>% summarise(mqtls=n())
 clumped.cis<-clumped[which(clumped$cis==TRUE & clumped$pval<1e-8),]
@@ -473,7 +475,7 @@ clumped<-clumped[o,]
 clumped[which(clumped$cpg%in%c("cg03228974")),]
 
 m<-match(tab2$cpg,clumped$cpg)
-tab2<-data.frame(tab2,clumped[m,"Effect"])
+tab2<-data.frame(tab2,Effect=clumped[m,"Effect"])
 tab2[which(tab2$cpg%in%c("cg03228974")),]
 
 
@@ -492,6 +494,10 @@ table(tab2l$key[w.miss])
 
 w<-which(is.na(tab2l$Effect))
 length(w)
+
+w.u<-unique(c(w,w.miss))
+
+table(tab2l[-w.u,"key"])
 
 ggplot(tab2l[-w.miss,], aes(x=as.factor(round(value*2, 1)/2), y=abs(Effect))) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
@@ -534,6 +540,8 @@ tab2l$cismqtls[is.na(tab2l$cismqtls)] <- 0
 tab2l <- merge(tab2l, transcount, by="cpg", all.x=TRUE)
 tab2l$transmqtls[is.na(tab2l$transmqtls)] <- 0
 
+plotting of mQTLs vs h2 using `r nrow(na.omit(tab2l[which(tab2l$key%in%c("Twin family")),c("cpg","mqtls","value")]))` probes, missing mQTLs are set to 0
+
 ggplot(tab2l, aes(x=as.factor(mqtls), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
 theme(axis.text.x=element_text(angle=90)) +
@@ -564,6 +572,7 @@ tab3l$cistransmqtls[w]<-tab3l$cismqtls[w]
 w<-which(tab3l$key2=="trans")
 tab3l$cistransmqtls[w]<-tab3l$transmqtls[w]
 
+plotting of mQTLs vs r2 using `r nrow(na.omit(tab3l[which(tab2l$key%in%c("Twin family")),c("cpg","mqtls","r2")]))` probes, missing mQTLs are set to 0
 
 
 ggplot(tab3l, aes(x=as.factor(mqtls), y=r2)) +
@@ -612,14 +621,17 @@ regression of h2_McRae~r2 using `r nrow(tab2l[tab2l$key=="Twin family",])` probe
 tab2l %>% filter(key == "Family") %>% lm(value ~ r2, data=.) %>% summary %>% coefficients
 
 
-ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
+p1<-ggplot(tab2l, aes(x=as.factor(round(r2*4, 1)/4), y=value)) +
 geom_boxplot(outlier.size=0.01, aes(fill=key)) +
-theme(axis.text.x=element_text(angle=90)) +
-labs(x="Variance explained in GS replication", y="Heritability estimate", fill="Heritability\nstudy design")
-ggsave(file="images/r2_vs_h2.png", width=9, height=4)
-ggsave(file="images/r2_vs_h2.pdf", width=9, height=4)
+#scale_x_continuous(guide = guide_axis(angle = 90)) +
+theme_bw() +
+labs(x="Variance explained in GS replication", y="Heritability estimate", fill="Heritability\nstudy design") +
+theme(axis.text.x=element_text(angle=90))
+#ggsave(file="images/r2_vs_h2.png", width=9, height=4)
+ggsave(plot=p1,file="images/r2_vs_h2.pdf", width=177, height=100,units="mm",dpi=1200)
 
-write.csv(tab1, file="results/replication.csv")
+
+#write.csv(tab1, file="results/replication.csv")
 
 #tab3<-tab2[which(tab2$cpg %in% replication2$cpg),]
 tab3<-left_join(replication2[,1],tab2,by="cpg")
@@ -637,7 +649,7 @@ tab3$genetic_r2_mcrae[w1]<-1
 w2<-which(tab3$h2_vandongen>1)
 tab3$genetic_r2_vandongen[w2]<-1
 
-write.csv(tab3, file="results/variance_explained.csv")
+#write.csv(tab3, file="results/variance_explained.csv")
 
 ```
 

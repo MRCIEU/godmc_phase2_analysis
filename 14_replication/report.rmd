@@ -266,16 +266,17 @@ replication %>% lm(beta1 ~ Effect, data=.) %>% summary %>% coefficients
 ```
 
 ```{r, dev="png"}
-ggplot(subset(replication), aes(x=Effect, y=beta1)) +
+p1<-ggplot(subset(replication), aes(x=Effect, y=beta1)) +
 geom_point(aes(colour=sigct), cex=0.5) +
 geom_point(data=subset(replication, !sigct), aes(x = Effect, y = beta1, color = sigct), cex=0.5) +
 facet_grid(. ~ cist ) +
 labs(x="GoDMC effect size", y="Generation Scotland effect size", colour="Replication") +
 theme(legend.position="right") +
 scale_fill_brewer(type="qual") +
-guides(alpha=FALSE)
-ggsave("images/replication.png", width=9, height=4)
-ggsave("images/replication.pdf", width=9, height=4)
+theme_bw() +
+guides(alpha=FALSE) +
+#ggsave("images/replication.png", width=9, height=4)
+ggsave(plot=p1,"images/replication.pdf", width=177, height=78,units="mm",dpi=1200)
 ```
 
 Do smoking associated probes associated explain the bidirectional effects?

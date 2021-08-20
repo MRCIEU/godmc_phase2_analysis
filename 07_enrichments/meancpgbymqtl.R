@@ -43,9 +43,12 @@ retaincpg<-retaincpg[-rm]
 #clumped<-clumped[which(clumped$cpg%in%retaincpg),]
 #nrow(clumped)
 
-clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
 data=as.data.table(clumped)
-
+clumped<-data.table(clumped)
+clumped <- subset(clumped, (pval < 1e-14 & cis == FALSE) | (pval < 1e-8 & cis == TRUE ))
+#clumped[which(clumped$cis==TRUE & clumped$pval<1e-8 | clumped$cis==FALSE & clumped$pval<1e-14),]
+#
+data<-clumped
 
 data[,cpgchr:=gsub("23","X",cpgchr),]
 data[,cpgchr:=gsub("24","Y",cpgchr),]
@@ -139,9 +142,9 @@ df.all %>%
 #2   cis only 0.01344013 0.4715994
 #3  cis+trans 0.01081446 0.4411792
 #4 trans only 0.01036164 0.3452771
-df3 %>%
-  group_by(cpg_cis) %>%
-  dplyr::summarize(SD = median(sdcpg, na.rm=TRUE),mean = mean(meancpg, na.rm=TRUE),median=median(meancpg,na.rm=TRUE))
+#df3 %>%
+#  group_by(cpg_cis) %>%
+#  dplyr::summarize(SD = median(sdcpg, na.rm=TRUE),mean = mean(meancpg, na.rm=TRUE),median=median(meancpg,na.rm=TRUE))
 
 
 data$MAF<-data$Freq1
@@ -328,8 +331,8 @@ ylab("Proportion CpGs") +
 xlab("weighted mean by cpg")
 ggsave(plot=p1, file="./images/cpgmean_cpgisland.pdf", width=7, height=7)
 
-
-df.all$facet = factor(df.all$cpg_cis_n, levels = c("no mQTL (n=230407)", "cis only (n=170986)", "cis+trans (n=11902)", "trans only (n=7214)"))
+df.all$cpg_cis_n <-factor(df.all$cpg_cis_n)
+df.all$cpg_cis_n <- factor(df.all$cpg_cis_n, levels = c("no mQTL (n=230407)", "cis only (n=170986)", "cis+trans (n=11902)", "trans only (n=7214)"))
 
 library(IlluminaHumanMethylation450kanno.ilmn12.hg19)
 library("IlluminaHumanMethylationEPICanno.ilm10b2.hg19")
@@ -373,12 +376,13 @@ ggsave(plot=p1, file="./images/geneannotationcpg_ciscategory.pdf", width=7, heig
 p1<-ggplot(df.all,aes(x=meancpg,fill=relation.to.island)) + 
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
 #facet_wrap(~facet,scales="free_y",nr=1) +
-facet_wrap(~facet,nr=1) +
-labs(y="Proportion DNAm sites",x="Weighted mean by mQTL site",fill = "DNAm site annotation") +
-theme(axis.text.x = element_text(size=14),axis.text.y = element_text(size=14),axis.title.x = element_text(size = 18),axis.title.y = element_text(size = 18), strip.text = element_text(size = 20)) +
-theme(legend.text=element_text(size=20),legend.title=element_text(size=20)) +
+facet_wrap(~cpg_cis_n,nr=1) +
+labs(y="Proportion DNAm sites",x="Weighted mean by mQTL site",fill = "DNAm site\nAnnotation") +
+theme_bw() +
+theme(axis.text.x = element_text(size=6),axis.text.y = element_text(size=6),axis.title.x = element_text(size = 8),axis.title.y = element_text(size = 8), strip.text = element_text(size = 8)) +
+theme(legend.text=element_text(size=6),legend.title=element_text(size=8)) +
 scale_fill_brewer(type="qual")
-ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=18, height=6)
+ggsave(plot=p1, file="./images/cpgmean_nomqtl_cpgisland.pdf", width=177, height=60,units="mm",dpi=1200)
 
 p1<-ggplot(df.all,aes(x=meancpg,fill=type)) + 
 geom_histogram(aes(y=(..count..)/tapply(..count..,..PANEL..,sum)[..PANEL..])) +
@@ -467,11 +471,40 @@ labs(x="Category", y="max I2")
 ggsave(plot=p1, file="./images/maxi2_cpg_ciscategory.pdf", width=7, height=7)
 
 df3$cpg_cis<-gsub("All","all",df3$cpg_cis)
+df.all$cpg_cis<-gsub("No mqtl","no mQTL",df.all$cpg_cis)
+df.all$cpg_cis<-gsub("cis+trans      ","cis+trans",df.all$cpg_cis)
+df.all$cpg_cis = factor(df.all$cpg_cis, levels = c("no mQTL", "cis only", "cis+trans", "trans only"))
+
+temp1<-data.frame(cpg_cis=df3$cpg_cis,meancpg=df3$meancpg,sdcpg=df3$sdcpg, max_abs_Effect=df3$max_abs_Effect,outcome=abs(df3$max_abs_Effect),what="ES")
+temp2<-data.frame(cpg_cis=df.all$cpg_cis,meancpg=df.all$meancpg,sdcpg=df.all$sdcpg,max_abs_Effect=NA,outcome=df.all$sdcpg,what="SD")
+temp3<-data.frame(cpg_cis=df.all$cpg_cis,meancpg=df.all$meancpg,sdcpg=df.all$sdcpg,max_abs_Effect=NA,outcome=df.all$meancpg,what="Weighted mean by mQTL category")
+
+temp<-rbind(temp1,temp2)
+save(temp,file="temp.Robj")
+temp$cpg_cis<-factor(temp$cpg_cis, levels=c("all","cis only","cis+trans","cis+trans_cis","cis+trans_trans","trans only","no mQTL"))
+p1 <- ggplot(temp, aes(x=factor(cpg_cis, levels=c("all","cis only","cis+trans","cis+trans_cis","cis+trans_trans","trans only","no mQTL")), y=outcome,fill=factor(cpg_cis, levels=c("all","cis only","cis+trans","cis+trans_cis","cis+trans_trans","trans only","no mQTL")))) +
+#geom_boxplot() +
+geom_violin() +
+geom_boxplot(width=0.1,fill="white") +
+facet_wrap(~what,drop=TRUE,scales="free",strip.position = "left", labeller = as_labeller(c(ES="Maximum absolute mQTL effect size",SD="Weighted SD DNAm") ) )  +
+ylab(NULL) +
+theme(strip.background = element_blank(),strip.placement = "outside") +
+theme(axis.title.y=element_text(size=16),axis.title.x=element_text(size=16),axis.text.y=element_text(size=16)) +
+scale_x_discrete(guide = guide_axis(angle = 90)) +
+labs(x="mQTL category",size=12) +
+theme(strip.text.y = element_text(size = 16), legend.text=element_text(size=12),legend.title=element_text(size=12)) +
+guides(fill=guide_legend(title="Annotation")) +
+theme_bw()
+
+#ggsave(plot=p1, file="./images/cpg_ciscategory_combined.pdf", width=10, height=7)
+ggsave(plot=p1, file="./images/cpg_ciscategory_combined.tiff", height=12, width=17.8,device = function(...) tiff(..., units="cm",res=1200))
+
+
 p1 <- ggplot(df3, aes(x=as.factor(cpg_cis), y=abs(max_abs_Effect),fill=as.factor(cpg_cis))) +
 #geom_boxplot() +
 geom_violin() +
 geom_boxplot(width=0.1,fill="white") +
-theme(axis.title.y=element_text(size=20),axis.title.x=element_text(size=20),axis.text.x=element_text(angle = 90, hjust = 1,size=16),axis.text.y=element_text(size=16)) +
+theme(axis.title.y=element_text(size=20),axis.title.x=element_text(size=20),axis.text.x=element_text(angle = 90, vjust=0.5, hjust = 1,size=16),axis.text.y=element_text(size=16)) +
 labs(x="mQTL category", y="Maximum absolute mQTL effect size") +
 theme(legend.position="none")
 ggsave(plot=p1, file="./images/effectsizescpg_ciscategory.pdf", width=7, height=7)
@@ -490,9 +523,6 @@ summary(lm(abs(df3[w,"max_abs_Effect"])~df3[w,"cpg_cis"]))
 #cis+trans_trans 
 #              0 
 
-df.all$cpg_cis<-gsub("No mqtl","no mQTL",df.all$cpg_cis)
-df.all$cpg_cis<-gsub("cis+trans      ","cis+trans",df.all$cpg_cis)
-df.all$cpg_cis = factor(df.all$cpg_cis, levels = c("no mQTL", "cis only", "cis+trans", "trans only"))
 
 p2 <- ggplot(df.all, aes(x=as.factor(cpg_cis), y=sdcpg,fill=as.factor(cpg_cis))) +
 geom_violin() +

@@ -169,6 +169,16 @@ labs(x="% variance explained by mQTLs", y = "Counts", colour="Number of mQTLs")
 
 ```
 
+```{r}
+p1<-ggplot(emp2 %>% subset(r2 > 0.0022), aes(x=r2*100, y=value)) +
+geom_smooth(aes(colour=key)) +
+scale_x_log10() +
+scale_y_log10() +
+facet_grid(. ~ cist) +
+labs(x="% variance explained by mQTL", y = "Counts")
+ggsave("genetic_architecture.pdf",height=6,width=8)
+```
+
 ## Probability of being significant in meta-analysis
 
 After detection in phase 1, what is the probability of being significant in the overall meta analysis? We have to assume that the meta analysis is basically an overall analysis (i.e. no heternogeneity). So, if one mQTL is significant at 1e-5 in one study then what is the probability of it being significant at 1e-8 in the full meta analysis of 28k samples?
