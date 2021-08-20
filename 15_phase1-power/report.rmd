@@ -105,7 +105,7 @@ out2 <- group_by(out, cist) %>% select(-missed_overall) %>% spread(key="what", v
 
 ggplot(out2 %>% filter(r2 <= 0.02), aes(x=r2*100, y=(phase1 - phase2)*100)) +
 geom_line(aes(colour=cist)) +
-labs(x="mQTL % variance explained", y="Loss in % power of two stage design", colour="")
+labs(x="mQTL % variance explained", y="Loss in % power of two stage design", colour="mQTL annotation")
 
 ```
 
@@ -140,7 +140,7 @@ geom_line(aes(colour=key)) +
 geom_point(aes(colour=key)) +
 scale_x_log10() +
 facet_grid(key ~ cist, scale="free_y") +
-labs(x="% variance explained by mQTLs", y = "Counts")
+labs(x="% variance explained by mQTLs", y = "Counts", colour="Number of mQTLs")
 ```
 
 Same as before but now log the counts and plot everything together
@@ -152,7 +152,7 @@ geom_point(aes(colour=key)) +
 scale_x_log10() +
 scale_y_log10() +
 facet_grid(. ~ cist) +
-labs(x="% variance explained by mQTLs", y = "Counts")
+labs(x="% variance explained by mQTLs", y = "Counts", colour="Number of mQTLs")
 
 ```
 
@@ -165,7 +165,7 @@ geom_smooth(aes(colour=key)) +
 scale_x_log10() +
 scale_y_log10() +
 facet_grid(. ~ cist) +
-labs(x="% variance explained by mQTLs", y = "Counts")
+labs(x="% variance explained by mQTLs", y = "Counts", colour="Number of mQTLs")
 
 ```
 
