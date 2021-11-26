@@ -73,7 +73,7 @@ clumped <- group_by(res, cpg, cis) %>%
 		system(paste0("rm ", fn, "*"))
 
 		x <- subset(x, snp %in% keep)
-		return(x)
+		x
 	})
 
 save(clumped, file=out)
