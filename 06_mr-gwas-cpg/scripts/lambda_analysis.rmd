@@ -25,12 +25,17 @@ Is there a general influence of a single trait having an influence on large numb
 
 
 ```{r}
-ggplot(lamb %>% arrange(lambda), aes(x=phen, y=lambda)) +
+p1<-ggplot(lamb %>% arrange(lambda), aes(x=phen, y=lambda)) +
 geom_point() +
 geom_hline(yintercept=1, linetype="dotted") +
-theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5)) +
-labs(x="Phenotype", y="Inflation factor")
-ggsave("../images/lambda.pdf", width=15, height=8)
+theme_bw() +
+labs(x="Phenotype", y="Inflation factor") +
+theme(axis.text.x=element_text(angle=90, hjust=1, vjust=0.5,size=6),axis.text.y=element_text(size=6),axis.title.x=element_text(size=8),axis.title.y=element_text(size=8)) +
+
+#ggsave("../images/lambda.pdf", width=15, height=8)
+ggsave(plot=p1,file="../images/lambda.tiff", height=5, width=7,device = function(...) tiff(...,units="in",res=1200))
+
+
 ```
 
 Also calculate the proportion of MR effect estimates that are positive. If there is substantial over or under representation of positive MR estimates then it indicates that there is a general directionality of that trait on the methylation levels.

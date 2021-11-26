@@ -14,7 +14,7 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(magrittr)
 	library(ggrepel)
 }))
-opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE, dev="pdf")
 ```
 
 ```{r}
@@ -31,6 +31,7 @@ geom_point(aes(colour=fdr < 0.05)) +
 geom_abline(slope=1, linetype="dotted") +
 geom_smooth(method="lm") +
 ylim(min(mr_disc_repl$z.disc), max(mr_disc_repl$z.disc)) +
+theme_bw() +
 labs(x="Z-score primary MR", y="Z-score secondary MR", colour="Replication\nFDR < 0.05")
 ```
 
@@ -150,8 +151,8 @@ replchr <- subset(replication, select=c(SNP, id.outcome, exposure))
 temp <- merge(mr_disc_repl, discchr, by=c("id.outcome", "exposure"))
 temp <- merge(temp, replchr, by=c("id.outcome", "exposure"))
 str(temp)
-temp <- tidyr::separate(temp, SNP.x, split=":", into=c("disc.chr", "disc.pos", "disc.type"))
-temp <- tidyr::separate(temp, SNP.y, split=":", into=c("repl.chr", "repl.pos", "repl.type"))
+temp <- tidyr::separate(temp, SNP.x, sep=":", into=c("disc.chr", "disc.pos", "disc.type"))
+temp <- tidyr::separate(temp, SNP.y, sep=":", into=c("repl.chr", "repl.pos", "repl.type"))
 table(temp$disc.chr == temp$repl.chr)
 subset(temp, pval.repl < 0.05 & temp$disc.chr != temp$repl.chr & sign(b.repl) == sign(b.disc))
 ```
@@ -173,5 +174,3 @@ out <- mr_disc_repl %$% data_frame(
 write.csv(out, file="../results/mr_primary_secondary.csv")
 
 ```
-	
-

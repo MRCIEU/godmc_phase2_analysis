@@ -17,7 +17,7 @@ suppressWarnings(suppressPackageStartupMessages({
 	library(knitr)
 	library(pander)
 }))
-opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE)
+opts_chunk$set(cache=TRUE, echo=TRUE, message=FALSE, warning=FALSE, dev="pdf")
 ```
 
 Read in data
@@ -173,10 +173,19 @@ summary(lm(b.y ~ b.x, ps %>% subset(., !grepl("6:", variant)))) %>% pander::pand
 Look at the plots
 
 ```{r}
-ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
+#ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
+#geom_point(aes(colour=fdr.y < 0.05)) +
+#geom_smooth(method="lm") +
+#labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05")
+
+p1<-ggplot(ps %>% subset(., !grepl("6:", variant)), aes(x = b.x, y = b.y)) +
 geom_point(aes(colour=fdr.y < 0.05)) +
 geom_smooth(method="lm") +
+theme_bw() +
 labs(x="Primary causal estimate", y="Secondary causal estimate", colour="Secondary\nFDR < 0.05")
+ggsave(plot=p1,file="/mnt/storage/home/epzjlm/scratch/repo/godmc_phase2_analysis/images/mr_cellcounts.jpg", height=7, width=7,device = function(...) jpeg(...,units="in",res=1200))
+ggsave(plot=p1,file="/mnt/storage/home/epzjlm/scratch/repo/godmc_phase2_analysis/images/mr_cellcounts.pdf", height=7, width=7,units="in",dpi=1200)
+
 ```
 
 A lot of significant results secondary effects, but not much of a relationship between primary and secondary hits.
